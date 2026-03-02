@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Building2, Users, Briefcase, Plus, Pencil, Trash2, Monitor, Globe, Phone, Mail, User, Search, X, Download, Upload, Printer, BarChart3, History, ListTodo, Eye, CheckSquare, Clock, AlertCircle, HardDrive, Flag } from 'lucide-react';
+import { Building2, Users, Briefcase, Plus, Pencil, Trash2, Monitor, Globe, Phone, Mail, User, Search, X, Download, Upload, Printer, BarChart3, History, ListTodo, Eye, CheckSquare, Clock, AlertCircle, HardDrive, Flag, FileDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,6 +63,7 @@ export default function SupportUsers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterUnit, setFilterUnit] = useState<string>('all');
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
+  const [filterExtension, setFilterExtension] = useState<string>('all');
 
   // Dialog states
   const [unitDialog, setUnitDialog] = useState<{ open: boolean; editing: SupportUnit | null }>({ open: false, editing: null });
@@ -218,16 +219,20 @@ export default function SupportUsers() {
     loadUserTasks(user.id);
   };
 
+  // Get unique extension numbers for filter
+  const uniqueExtensions = Array.from(new Set(supportUsers.map(u => u.extension_number).filter(Boolean))).sort() as string[];
+
   // Filter support users based on search and filters
   const filteredSupportUsers = supportUsers.filter(user => {
-    // Search filter - now includes device_info and ip_address
+    // Search filter - now includes device_info, ip_address, and extension_number
     const query = searchQuery.toLowerCase();
     const matchesSearch = !query || 
       user.name.toLowerCase().includes(query) ||
       (user.email?.toLowerCase().includes(query)) ||
       (user.designation?.toLowerCase().includes(query)) ||
       (user.device_info?.toLowerCase().includes(query)) ||
-      (user.ip_address?.toLowerCase().includes(query));
+      (user.ip_address?.toLowerCase().includes(query)) ||
+      (user.extension_number?.toLowerCase().includes(query));
 
     if (!matchesSearch) return false;
 
@@ -240,6 +245,11 @@ export default function SupportUsers() {
     // Department filter
     if (filterDepartment !== 'all') {
       if (user.department_id !== filterDepartment) return false;
+    }
+
+    // Extension number filter
+    if (filterExtension !== 'all') {
+      if (user.extension_number !== filterExtension) return false;
     }
 
     return true;
@@ -514,7 +524,7 @@ export default function SupportUsers() {
 
   // Export functions
   const exportToCSV = () => {
-    const headers = ['Name', 'Email', 'Phone', 'Designation', 'Unit', 'Department', 'Device Info', 'IP Address', 'Status', 'Notes'];
+    const headers = ['Name', 'Email', 'Phone', 'Designation', 'Unit', 'Department', 'Extension Number', 'Device Info', 'IP Address', 'Status', 'Notes'];
     const rows = filteredSupportUsers.map(user => {
       const dept = departments.find(d => d.id === user.department_id);
       const unit = dept ? units.find(u => u.id === dept.unit_id) : null;
@@ -525,6 +535,7 @@ export default function SupportUsers() {
         user.designation || '',
         unit?.name || '',
         dept?.name || '',
+        user.extension_number || '',
         user.device_info || '',
         user.ip_address || '',
         user.is_active ? 'Active' : 'Inactive',
@@ -548,7 +559,7 @@ export default function SupportUsers() {
 
   const exportToExcel = () => {
     // Create Excel-compatible XML
-    const headers = ['Name', 'Email', 'Phone', 'Designation', 'Unit', 'Department', 'Device Info', 'IP Address', 'Status', 'Notes'];
+    const headers = ['Name', 'Email', 'Phone', 'Designation', 'Unit', 'Department', 'Extension Number', 'Device Info', 'IP Address', 'Status', 'Notes'];
     const rows = filteredSupportUsers.map(user => {
       const dept = departments.find(d => d.id === user.department_id);
       const unit = dept ? units.find(u => u.id === dept.unit_id) : null;
@@ -559,6 +570,7 @@ export default function SupportUsers() {
         user.designation || '',
         unit?.name || '',
         dept?.name || '',
+        user.extension_number || '',
         user.device_info || '',
         user.ip_address || '',
         user.is_active ? 'Active' : 'Inactive',
@@ -626,6 +638,7 @@ export default function SupportUsers() {
           ${language === 'bn' ? 'ফিল্টার' : 'Filters'}: 
           ${filterUnit !== 'all' ? `Unit: ${units.find(u => u.id === filterUnit)?.name || 'Unknown'}` : ''}
           ${filterDepartment !== 'all' ? ` | Department: ${departments.find(d => d.id === filterDepartment)?.name || 'Unknown'}` : ''}
+          ${filterExtension !== 'all' ? ` | Extension: ${filterExtension}` : ''}
           ${searchQuery ? ` | Search: "${searchQuery}"` : ''}
         </p>
         ` : ''}
@@ -637,6 +650,7 @@ export default function SupportUsers() {
               <th>${language === 'bn' ? 'পদবী' : 'Designation'}</th>
               <th>${language === 'bn' ? 'ইউনিট' : 'Unit'}</th>
               <th>${language === 'bn' ? 'বিভাগ' : 'Department'}</th>
+              <th>${language === 'bn' ? 'এক্সটেনশন' : 'Ext.'}</th>
               <th>${language === 'bn' ? 'ইমেইল' : 'Email'}</th>
               <th>${language === 'bn' ? 'ফোন' : 'Phone'}</th>
               <th>${language === 'bn' ? 'ডিভাইস' : 'Device'}</th>
@@ -655,6 +669,7 @@ export default function SupportUsers() {
                   <td>${user.designation || '-'}</td>
                   <td>${unit?.name || '-'}</td>
                   <td>${dept?.name || '-'}</td>
+                  <td>${user.extension_number || '-'}</td>
                   <td>${user.email || '-'}</td>
                   <td>${user.phone || '-'}</td>
                   <td>${user.device_info || '-'}</td>
@@ -774,6 +789,7 @@ export default function SupportUsers() {
           designation: row.designation?.trim() || null,
           device_info: row.device_info?.trim() || row['device info']?.trim() || null,
           ip_address: row.ip_address?.trim() || row['ip address']?.trim() || null,
+          extension_number: row.extension_number?.trim() || row['extension number']?.trim() || null,
           notes: row.notes?.trim() || null,
           department_id: row._department_id,
           is_active: row.status?.toLowerCase() !== 'inactive',
@@ -798,8 +814,8 @@ export default function SupportUsers() {
   };
 
   const downloadTemplate = () => {
-    const headers = ['Name', 'Email', 'Phone', 'Designation', 'Department', 'Device Info', 'IP Address', 'Status', 'Notes'];
-    const exampleRow = ['John Doe', 'john@example.com', '+1234567890', 'Manager', departments[0]?.name || 'IT Support', 'Windows 11 PC', '192.168.1.100', 'Active', 'Example user'];
+    const headers = ['Name', 'Email', 'Phone', 'Designation', 'Department', 'Extension Number', 'Device Info', 'IP Address', 'Status', 'Notes'];
+    const exampleRow = ['John Doe', 'john@example.com', '+1234567890', 'Manager', departments[0]?.name || 'IT Support', '1001', 'Windows 11 PC', '192.168.1.100', 'Active', 'Example user'];
     
     const csvContent = [
       headers.join(','),
@@ -907,6 +923,19 @@ export default function SupportUsers() {
                 ))}
               </SelectContent>
             </Select>
+            {uniqueExtensions.length > 0 && (
+              <Select value={filterExtension} onValueChange={setFilterExtension}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder={language === 'bn' ? 'এক্সটেনশন' : 'Extension'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{language === 'bn' ? 'সকল এক্সটেনশন' : 'All Extensions'}</SelectItem>
+                  {uniqueExtensions.map(ext => (
+                    <SelectItem key={ext} value={ext}>{ext}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <div className="flex flex-wrap gap-2">
               <input
                 ref={fileInputRef}
@@ -931,7 +960,11 @@ export default function SupportUsers() {
                 <>
                   <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={departments.length === 0}>
                     <Upload className="h-4 w-4 mr-2" />
-                    {language === 'bn' ? 'ইম্পোর্ট' : 'Import'}
+                    {language === 'bn' ? 'ইম্পোর্ট' : 'Import CSV'}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={downloadTemplate}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    {language === 'bn' ? 'স্যাম্পল CSV' : 'Sample CSV'}
                   </Button>
                   <Button size="sm" onClick={() => openUserDialog()} disabled={departments.length === 0}>
                     <Plus className="h-4 w-4 mr-2" />
