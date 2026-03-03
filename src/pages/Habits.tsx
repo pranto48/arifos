@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Flame, Trophy, CheckCircle2, Circle, MoreVertical, Pencil, Trash2, Calendar, LayoutGrid, Bell, BellOff, Clock } from 'lucide-react';
+import { ReportActions } from '@/components/shared/ReportActions';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, subDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -232,16 +233,29 @@ export default function Habits() {
           <p className="text-muted-foreground">Build better habits, one day at a time</p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Habit
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <ReportActions
+            variant="compact"
+            headers={['Habit', 'Streak', 'Total Completions', 'Frequency', 'Reminder']}
+            rows={habits.map(h => [h.title, String(h.streak), String(h.totalCompletions), h.frequency || 'daily', h.reminder_enabled ? h.reminder_time || 'On' : 'Off'])}
+            filename={`lifeos-habits-${new Date().toISOString().split('T')[0]}`}
+            title="Habits Report"
+            summaryCards={[
+              { label: 'Total Habits', value: habits.length },
+              { label: 'Longest Streak', value: longestStreak },
+              { label: 'Completions Today', value: habits.filter(h => h.completedToday).length },
+            ]}
+          />
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button onClick={() => handleOpenDialog()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Habit
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingHabit ? 'Edit Habit' : 'Create New Habit'}</DialogTitle>
@@ -335,6 +349,7 @@ export default function Habits() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Stats Cards */}

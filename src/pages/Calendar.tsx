@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, isToday, parseISO } from 'date-fns';
+import { ReportActions } from '@/components/shared/ReportActions';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckSquare, Target, Heart, Plus, Clock, AlertCircle, Repeat } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -213,18 +214,33 @@ export default function Calendar() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <CalendarIcon className="h-6 w-6" />
           {language === 'bn' ? 'ক্যালেন্ডার' : 'Calendar'}
         </h1>
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-          <TabsList>
-            <TabsTrigger value="month">{language === 'bn' ? 'মাস' : 'Month'}</TabsTrigger>
-            <TabsTrigger value="week">{language === 'bn' ? 'সপ্তাহ' : 'Week'}</TabsTrigger>
-            <TabsTrigger value="day">{language === 'bn' ? 'দিন' : 'Day'}</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-2">
+          <ReportActions
+            variant="compact"
+            headers={['Title', 'Date', 'Type', 'Status/Priority']}
+            rows={events.map(e => [e.title, e.date, e.type, e.priority || e.status || ''])}
+            filename={`lifeos-calendar-${format(currentDate, 'yyyy-MM')}`}
+            title="Calendar Events Report"
+            subtitle={format(currentDate, 'MMMM yyyy')}
+            summaryCards={[
+              { label: 'Total Events', value: events.length },
+              { label: 'Tasks', value: events.filter(e => e.type === 'task').length },
+              { label: 'Goals', value: events.filter(e => e.type === 'goal').length },
+            ]}
+          />
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+            <TabsList>
+              <TabsTrigger value="month">{language === 'bn' ? 'মাস' : 'Month'}</TabsTrigger>
+              <TabsTrigger value="week">{language === 'bn' ? 'সপ্তাহ' : 'Week'}</TabsTrigger>
+              <TabsTrigger value="day">{language === 'bn' ? 'দিন' : 'Day'}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       <Card className="bg-card border-border">

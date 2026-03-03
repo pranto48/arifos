@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, Plus, Pencil, Trash2, MoreVertical } from 'lucide-react';
+import { ReportActions } from '@/components/shared/ReportActions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -165,6 +166,19 @@ export default function Salary() {
         <h1 className="text-2xl font-bold text-foreground">{t('salary.salaryHistory')}</h1>
         
         <div className="flex items-center gap-4">
+          <ReportActions
+            variant="compact"
+            headers={['Month', 'Year', 'Gross', 'Allowances', 'Deductions', 'Net', 'Notes']}
+            rows={entries.map(e => [months[e.month - 1], String(e.year), String(e.gross_amount), String(e.allowances || 0), String(e.deductions || 0), String(e.net_amount), e.notes || ''])}
+            filename={`lifeos-salary-${new Date().toISOString().split('T')[0]}`}
+            title="Salary History Report"
+            summaryCards={[
+              { label: 'Total Gross', value: `৳${totalGross.toLocaleString()}` },
+              { label: 'Total Net', value: `৳${totalNet.toLocaleString()}` },
+              { label: 'Average Net', value: `৳${Math.round(avgNet).toLocaleString()}` },
+              { label: 'Entries', value: entries.length },
+            ]}
+          />
           <div className="text-right">
             <p className="text-sm text-muted-foreground">{t('salary.totalNetEarned')}</p>
             <p className="font-mono text-2xl font-bold text-primary">৳{totalNet.toLocaleString()}</p>

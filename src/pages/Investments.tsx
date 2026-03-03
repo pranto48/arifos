@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Plus, Pencil, Trash2, MoreVertical, Calendar, RefreshCw } from 'lucide-react';
+import { ReportActions } from '@/components/shared/ReportActions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -182,6 +183,21 @@ export default function Investments() {
         <h1 className="text-2xl font-bold text-foreground">{t('investments.title')}</h1>
         
         <div className="flex items-center gap-4">
+          <ReportActions
+            variant="compact"
+            headers={['Name', 'Type', 'Principal', 'Current Value', 'P/L', 'Purchase Date', 'Maturity Date', 'Recurring']}
+            rows={investments.map(inv => {
+              const pl = Number(inv.current_value || inv.principal) - Number(inv.principal);
+              return [inv.name, getTypeLabel(inv.type), String(inv.principal), String(inv.current_value || inv.principal), String(pl), inv.purchase_date || '', inv.maturity_date || '', inv.is_recurring ? 'Yes' : 'No'];
+            })}
+            filename={`lifeos-investments-${new Date().toISOString().split('T')[0]}`}
+            title="Investment Portfolio Report"
+            summaryCards={[
+              { label: 'Total Principal', value: `৳${totalPrincipal.toLocaleString()}` },
+              { label: 'Current Value', value: `৳${totalCurrent.toLocaleString()}` },
+              { label: 'P/L', value: `৳${totalPL.toLocaleString()}` },
+            ]}
+          />
           <div className="text-right">
             <p className="text-sm text-muted-foreground">{t('investments.totalValue')}</p>
             <p className="font-mono text-2xl font-bold text-primary">৳{totalCurrent.toLocaleString()}</p>
