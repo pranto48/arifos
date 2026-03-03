@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Wallet, ArrowUpRight, ArrowDownRight, TrendingUp, Users, Plus, Filter, MoreVertical, Pencil, Trash2, Target, AlertTriangle, Settings, Tag, CreditCard, Banknote, PiggyBank, Receipt, ShoppingCart, ShoppingBag, Utensils, Coffee, Car, Fuel, Home, Lightbulb, Wifi, Phone, Laptop, Gamepad2, Music, Film, Book, GraduationCap, Briefcase, Heart, Activity, Pill, Plane, Train, Bus, Gift, Baby, Dog, Shirt, Scissors, Wrench, Building, DollarSign, HandCoins, Coins, MoreHorizontal, CheckSquare, FolderKanban, FileText, Zap, Link2 } from 'lucide-react';
+import { ReportActions } from '@/components/shared/ReportActions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -610,6 +611,22 @@ export default function Budget() {
         <h1 className="text-2xl font-bold text-foreground">{t('budget.title')}</h1>
         
         <div className="flex items-center gap-2 flex-wrap">
+          <ReportActions
+            variant="compact"
+            headers={['Date', 'Type', 'Category', 'Amount', 'Merchant', 'Account', 'Notes']}
+            rows={filteredTransactions.map(t => [
+              t.date, t.type, t.budget_categories?.name || '', String(t.amount),
+              t.merchant || '', t.account || '', ''
+            ])}
+            filename={`lifeos-budget-${new Date().toISOString().split('T')[0]}`}
+            title="Budget Report"
+            subtitle={`${new Date().toLocaleDateString('en', { month: 'long', year: 'numeric' })}`}
+            summaryCards={[
+              { label: 'Income', value: `৳${filteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0).toLocaleString()}` },
+              { label: 'Expenses', value: `৳${filteredTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0).toLocaleString()}` },
+              { label: 'Transactions', value: filteredTransactions.length },
+            ]}
+          />
           <Select value={filterMember} onValueChange={setFilterMember}>
             <SelectTrigger className="w-[160px]">
               <Filter className="h-4 w-4 mr-2" />

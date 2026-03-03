@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTickets } from '@/hooks/useTickets';
+import { ReportActions } from '@/components/shared/ReportActions';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -169,6 +170,23 @@ export default function SupportTickets() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header with Export */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Support Tickets</h1>
+        <ReportActions
+          variant="compact"
+          headers={['Ticket #', 'Title', 'Status', 'Priority', 'Category', 'Created']}
+          rows={filteredTickets.map(t => [t.ticket_number, t.title, t.status, t.priority, getCategory(t.category_id)?.name || '', t.created_at ? format(new Date(t.created_at), 'yyyy-MM-dd') : ''])}
+          filename={`lifeos-tickets-${new Date().toISOString().split('T')[0]}`}
+          title="Support Tickets Report"
+          summaryCards={[
+            { label: 'Total', value: ticketStats.total },
+            { label: 'Open', value: ticketStats.open },
+            { label: 'In Progress', value: ticketStats.inProgress },
+            { label: 'Resolved', value: ticketStats.resolved },
+          ]}
+        />
+      </div>
       {/* Header Stats */}
       <div className="grid gap-4 md:grid-cols-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>

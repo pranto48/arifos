@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Target, Plus, Pencil, Trash2, MoreVertical, CheckCircle2, Circle, Calendar, TrendingUp, Flag, ArrowRightLeft } from 'lucide-react';
+import { ReportActions } from '@/components/shared/ReportActions';
 import { useDashboardMode } from '@/contexts/DashboardModeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -302,6 +303,17 @@ export default function Goals() {
         <h1 className="text-2xl font-bold text-foreground">{t('goals.goalsAndPlans')}</h1>
         
         <div className="flex items-center gap-4">
+          <ReportActions
+            variant="compact"
+            headers={['Title', 'Category', 'Status', 'Target Amount', 'Current Amount', 'Target Date']}
+            rows={goals.map(g => [g.title, g.category || '', g.status || '', String(g.target_amount || ''), String(g.current_amount || ''), g.target_date || ''])}
+            filename={`lifeos-goals-${new Date().toISOString().split('T')[0]}`}
+            title="Goals Report"
+            summaryCards={[
+              { label: 'Active', value: activeGoals.length },
+              { label: 'Total', value: goals.length },
+            ]}
+          />
           <div className="text-right hidden sm:block">
             <p className="text-sm text-muted-foreground">{t('goals.activeGoals')}</p>
             <p className="text-xl font-bold text-primary">{activeGoals.length}</p>

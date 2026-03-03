@@ -29,6 +29,7 @@ import { OutgoingTaskAssignments } from '@/components/tasks/OutgoingTaskAssignme
 import { TaskAssignmentHistory } from '@/components/tasks/TaskAssignmentHistory';
 import { TaskFollowUp } from '@/components/tasks/TaskFollowUp';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
+import { ReportActions } from '@/components/shared/ReportActions';
 import {
   DndContext,
   closestCenter,
@@ -601,6 +602,18 @@ export default function Tasks() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h1>
         <div className="flex flex-wrap gap-2">
+          <ReportActions
+            variant="compact"
+            headers={['Title', 'Priority', 'Status', 'Due Date', 'Category']}
+            rows={tasks.map(t => [t.title, t.priority || '', t.status || '', t.due_date || '', categories.find(c => c.id === t.category_id)?.name || ''])}
+            filename={`lifeos-tasks-${new Date().toISOString().split('T')[0]}`}
+            title="Tasks Report"
+            summaryCards={[
+              { label: 'Total', value: tasks.length },
+              { label: 'Completed', value: tasks.filter(t => t.status === 'completed').length },
+              { label: 'Active', value: tasks.filter(t => t.status !== 'completed').length },
+            ]}
+          />
           <DataExportImportButton preset="tasks" />
           <Button
             variant={selectionMode ? 'secondary' : 'ghost'}

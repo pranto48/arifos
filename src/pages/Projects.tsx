@@ -18,6 +18,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
+import { ReportActions } from '@/components/shared/ReportActions';
 
 interface Milestone {
   id: string;
@@ -362,6 +363,18 @@ export default function Projects() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">{t('projects.projectIdeas')}</h1>
         <div className="flex items-center gap-2">
+        <ReportActions
+          variant="compact"
+          headers={['Title', 'Status', 'Priority', 'Target Date', 'Tags']}
+          rows={projects.map(p => [p.title, p.status, p.priority, p.target_date || '', (p.tags || []).join(', ')])}
+          filename={`lifeos-projects-${new Date().toISOString().split('T')[0]}`}
+          title="Projects Report"
+          summaryCards={[
+            { label: 'Total', value: projects.length },
+            { label: 'Building', value: projects.filter(p => p.status === 'building').length },
+            { label: 'Done', value: projects.filter(p => p.status === 'done').length },
+          ]}
+        />
         <DataExportImportButton preset="projects" />
         <Dialog open={dialogOpen} onOpenChange={(open) => {
           setDialogOpen(open);

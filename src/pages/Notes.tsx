@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowRightLeft } from 'lucide-react';
 import { FileText, Pin, Star, Search, Lock, LockOpen, Plus, X, Eye, EyeOff, Trash2, MoreVertical } from 'lucide-react';
+import { ReportActions } from '@/components/shared/ReportActions';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -201,6 +202,18 @@ export default function Notes() {
               className="pl-9 bg-muted/50" 
             />
           </div>
+          <ReportActions
+            variant="compact"
+            headers={['Title', 'Type', 'Tags', 'Pinned', 'Vault', 'Created']}
+            rows={filtered.map(n => [n.title, n.note_type || '', (n.tags || []).join(', '), n.is_pinned ? 'Yes' : 'No', n.is_vault ? 'Yes' : 'No', n.created_at ? format(new Date(n.created_at), 'yyyy-MM-dd') : ''])}
+            filename={`lifeos-notes-${new Date().toISOString().split('T')[0]}`}
+            title="Notes Report"
+            summaryCards={[
+              { label: 'Total', value: filtered.length },
+              { label: 'Vault', value: filtered.filter(n => n.is_vault).length },
+              { label: 'Pinned', value: filtered.filter(n => n.is_pinned).length },
+            ]}
+          />
           <DataExportImportButton preset="notes" />
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" /> {t('notes.newNote')}

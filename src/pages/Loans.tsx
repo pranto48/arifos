@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, differenceInDays } from 'date-fns';
+import { ReportActions } from '@/components/shared/ReportActions';
 import { 
   Plus, 
   Wallet, 
@@ -236,10 +237,24 @@ export default function Loans() {
           <h1 className="text-2xl font-bold text-foreground">Loans</h1>
           <p className="text-sm text-muted-foreground">Track and manage your loans & payments</p>
         </div>
-        <Button onClick={() => handleOpenLoanDialog()} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Loan
-        </Button>
+        <div className="flex items-center gap-2">
+          <ReportActions
+            variant="compact"
+            headers={['Lender', 'Type', 'Principal', 'Total', 'Remaining', 'Monthly', 'Start Date', 'Status']}
+            rows={loans.map(l => [l.lender_name, l.loan_type, String(l.principal_amount), String(l.total_amount), String(l.remaining_amount), String(l.monthly_payment || ''), l.start_date, l.status])}
+            filename={`lifeos-loans-${new Date().toISOString().split('T')[0]}`}
+            title="Loans Report"
+            summaryCards={[
+              { label: 'Total Debt', value: `৳${stats.totalDebt.toLocaleString()}` },
+              { label: 'Remaining', value: `৳${(stats.totalDebt - stats.totalPaid).toLocaleString()}` },
+              { label: 'Active Loans', value: stats.activeLoans },
+            ]}
+          />
+          <Button onClick={() => handleOpenLoanDialog()} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Loan
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

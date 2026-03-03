@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { format, differenceInDays, differenceInYears, parseISO, isBefore, addYears, setYear } from 'date-fns';
+import { ReportActions } from '@/components/shared/ReportActions';
 import { 
   Plus, Users, Calendar, FileText, Gift, Heart, Cake, 
   MoreVertical, Pencil, Trash2, Upload, Download, User,
@@ -346,6 +347,17 @@ export default function Family() {
           <h1 className="text-2xl font-bold text-foreground">{t('family.title')}</h1>
           <p className="text-muted-foreground">{t('family.manageDescription')}</p>
         </div>
+        <ReportActions
+          variant="compact"
+          headers={['Name', 'Relationship', 'Date of Birth', 'Notes']}
+          rows={members.map(m => [m.name, m.relationship, m.date_of_birth || '', m.notes || ''])}
+          filename={`lifeos-family-${new Date().toISOString().split('T')[0]}`}
+          title="Family Members Report"
+          summaryCards={[
+            { label: 'Members', value: members.length },
+            { label: 'Events', value: events.length },
+          ]}
+        />
       </div>
 
       {/* Upcoming Events Alert */}
