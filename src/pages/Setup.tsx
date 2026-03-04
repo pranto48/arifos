@@ -328,34 +328,7 @@ export default function Setup() {
     }
   };
 
-  const handleSkipLicense = async () => {
-    const freeInfo: LicenseInfo = {
-      licenseKey: 'FREE',
-      status: 'free',
-      maxDevices: 5,
-      expiresAt: null,
-      lastVerified: new Date().toISOString(),
-      installationId: getInstallationId(),
-      plan: 'basic',
-    };
-    saveLicenseInfo(freeInfo);
-    setLicenseInfo(freeInfo);
-
-    // Mark setup complete on backend for Docker mode
-    if (isDockerMode) {
-      try {
-        const apiUrl = getApiUrl();
-        await fetch(`${apiUrl}/license/setup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ license_key: 'FREE' }),
-        });
-      } catch {}
-      markSetupComplete();
-    }
-
-    setStep('complete');
-  };
+  // handleSkipLicense removed — license is mandatory for all self-hosted installations
 
   // Docker mode: Welcome → Admin → License → Complete
   // Normal mode: Welcome → Environment → Database → Admin → License → Complete
