@@ -33,6 +33,7 @@ import { SupplierManager } from '@/components/device/SupplierManager';
 import { DeviceDisposalDialog } from '@/components/device/DeviceDisposalDialog';
 import { AnimatedIcon, LoadingSpinner, PulsingDot } from '@/components/ui/animated-icon';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
+import { ReportActions } from '@/components/shared/ReportActions';
 
 const STATUS_OPTIONS = [
   { value: 'available', label: 'Available', labelBn: 'উপলব্ধ', color: 'bg-green-500/20 text-green-600' },
@@ -554,52 +555,37 @@ export default function DeviceInventoryPage() {
     }
   };
 
-  // Export to CSV
-  const exportToCSV = () => {
-    const headers = ['Device Name', 'Device Number', 'Serial Number', 'Category', 'Status', 'Purchase Date', 'Delivery Date', 'Supplier', 'Requisition No', 'BOD No', 'Warranty Date', 'Price', 'Assigned To', 'Unit', 'Department', 'RAM Info', 'Storage Info', 'Processor Info', 'UPS', 'Monitor', 'Webcam', 'Headset', 'Notes'];
-    const rows = filteredDevices.map(device => {
-      const category = categories.find(c => c.id === device.category_id);
-      const supportUser = device.support_user_id ? supportUserMap[device.support_user_id] : null;
-      return [
-        device.device_name,
-        device.device_number || '',
-        device.serial_number || '',
-        category?.name || '',
-        STATUS_OPTIONS.find(s => s.value === device.status)?.label || device.status,
-        device.purchase_date || '',
-        device.delivery_date || '',
-        device.supplier_name || '',
-        device.requisition_number || '',
-        device.bod_number || '',
-        device.warranty_date || '',
-        device.price?.toString() || '',
-        supportUser?.name || '',
-        supportUser?.unit_name || '',
-        supportUser?.department_name || '',
-        device.ram_info || '',
-        device.storage_info || '',
-        (device as any).processor_info || '',
-        device.has_ups ? (device.ups_info || 'Yes') : 'No',
-        device.monitor_info || '',
-        device.webcam_info || '',
-        device.headset_info || '',
-        device.notes || '',
-      ];
-    });
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `device_inventory_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    toast.success(language === 'bn' ? 'CSV ডাউনলোড হয়েছে' : 'CSV downloaded');
-  };
+  // Report data for shared ReportActions
+  const reportHeaders = ['Device Name', 'Device Number', 'Serial Number', 'Category', 'Status', 'Purchase Date', 'Delivery Date', 'Supplier', 'Requisition No', 'BOD No', 'Warranty Date', 'Price', 'Assigned To', 'Unit', 'Department', 'RAM', 'Storage', 'Processor', 'UPS', 'Monitor', 'Webcam', 'Headset', 'Notes'];
+  const reportRows = filteredDevices.map(device => {
+    const category = categories.find(c => c.id === device.category_id);
+    const supportUser = device.support_user_id ? supportUserMap[device.support_user_id] : null;
+    return [
+      device.device_name,
+      device.device_number || '',
+      device.serial_number || '',
+      category?.name || '',
+      STATUS_OPTIONS.find(s => s.value === device.status)?.label || device.status,
+      device.purchase_date || '',
+      device.delivery_date || '',
+      device.supplier_name || '',
+      device.requisition_number || '',
+      device.bod_number || '',
+      device.warranty_date || '',
+      device.price?.toString() || '',
+      supportUser?.name || '',
+      supportUser?.unit_name || '',
+      supportUser?.department_name || '',
+      device.ram_info || '',
+      device.storage_info || '',
+      (device as any).processor_info || '',
+      device.has_ups ? (device.ups_info || 'Yes') : 'No',
+      device.monitor_info || '',
+      device.webcam_info || '',
+      device.headset_info || '',
+      device.notes || '',
+    ];
+  });
 
   // Stats
   const stats = {
@@ -655,12 +641,20 @@ export default function DeviceInventoryPage() {
         </div>
         <div className="flex gap-2">
           <DataExportImportButton preset="devices" />
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button variant="outline" size="sm" onClick={exportToCSV} className="hover-lift">
-              <Download className="h-4 w-4 mr-1 icon-hover-bounce" />
-              <span className="hidden sm:inline">{language === 'bn' ? 'রপ্তানি' : 'CSV'}</span>
-            </Button>
-          </motion.div>
+          <ReportActions
+            variant="compact"
+            headers={reportHeaders}
+            rows={reportRows}
+            filename={`device-inventory-${format(new Date(), 'yyyy-MM-dd')}`}
+            title="Device Inventory Report"
+            subtitle={`${filteredDevices.length} devices`}
+            summaryCards={[
+              { label: 'Total', value: stats.total },
+              { label: 'Available', value: stats.available },
+              { label: 'Assigned', value: stats.assigned },
+              { label: 'Maintenance', value: stats.maintenance },
+            ]}
+          />
           {isAdmin && (
             <>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
