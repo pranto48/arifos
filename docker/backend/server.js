@@ -613,7 +613,7 @@ routes['POST /api/auth/update-email'] = async (req, res) => {
 
 // --- License Verification via Supabase Edge Function ---
 const LICENSE_VERIFY_URL = process.env.LICENSE_API_URL || 'https://abcytwvuntyicdknpzju.supabase.co/functions/v1/verify-license';
-const LICENSE_ENCRYPTION_KEY = 'ITSupportBD_SecureKey_2024';
+const LICENSE_ENCRYPTION_KEY = process.env.LICENSE_ENC_KEY || 'ITSupportBD_SecureKey_2024';
 const LICENSE_VERIFICATION_INTERVAL = 86400; // 24 hours
 const LICENSE_GRACE_PERIOD_DAYS = 7;
 const LICENSE_OFFLINE_MAX_DAYS = 30;
