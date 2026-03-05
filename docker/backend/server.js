@@ -969,7 +969,7 @@ async function checkLicenseMiddleware(req) {
     await loadLicenseCache();
   }
 
-  const allowedStatuses = ['active', 'free', 'grace_period', 'offline_mode', 'offline_warning', 'unknown'];
+  const allowedStatuses = ['active', 'free', 'grace_period', 'offline_mode', 'offline_warning'];
   return allowedStatuses.includes(licenseCache.status);
 }
 
