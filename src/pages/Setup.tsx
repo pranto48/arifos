@@ -298,7 +298,7 @@ export default function Setup() {
           installationId: getInstallationId(),
           plan: getPlanFromMaxDevices(result.max_devices || 5),
         };
-        saveLicenseInfo(info);
+        await saveLicenseInfo(info);
         setLicenseInfo(info);
         setLicenseVerified(true);
 
