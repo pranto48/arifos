@@ -26,7 +26,6 @@ import {
 import { selfHostedApi, markSetupComplete, getApiUrl } from '@/lib/selfHostedConfig';
 import {
   verifyLicenseViaBackend,
-  verifyLicenseWithPortal,
   saveLicenseInfo,
   getPlanFromMaxDevices,
   getInstallationId,

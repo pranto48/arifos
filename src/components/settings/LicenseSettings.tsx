@@ -21,7 +21,6 @@ import {
   getLicenseInfo,
   saveLicenseInfo,
   clearLicenseInfo,
-  verifyLicenseWithPortal,
   verifyLicenseViaBackend,
   getPlanFromMaxDevices,
   getInstallationId,
