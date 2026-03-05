@@ -28,7 +28,7 @@ import {
   LICENSE_PORTAL_URL,
   type LicenseInfo,
 } from '@/lib/licenseConfig';
-import { isSelfHosted, getApiUrl } from '@/lib/selfHostedConfig';
+import { getApiUrl } from '@/lib/selfHostedConfig';
 
 export function LicenseSettings() {
   const [license, setLicense] = useState<LicenseInfo | null>(null);
