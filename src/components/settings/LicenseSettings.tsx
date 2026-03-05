@@ -21,7 +21,6 @@ import {
   getLicenseInfo,
   saveLicenseInfo,
   clearLicenseInfo,
-  verifyLicenseWithPortal,
   verifyLicenseViaBackend,
   getPlanFromMaxDevices,
   getInstallationId,
@@ -29,7 +28,7 @@ import {
   LICENSE_PORTAL_URL,
   type LicenseInfo,
 } from '@/lib/licenseConfig';
-import { isSelfHosted, getApiUrl } from '@/lib/selfHostedConfig';
+import { getApiUrl } from '@/lib/selfHostedConfig';
 
 export function LicenseSettings() {
   const [license, setLicense] = useState<LicenseInfo | null>(null);
@@ -38,11 +37,13 @@ export function LicenseSettings() {
   const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
-    const stored = getLicenseInfo();
-    if (stored) {
-      setLicense(stored);
-      setLicenseKey(stored.licenseKey);
-    }
+    (async () => {
+      const stored = await getLicenseInfo();
+      if (stored) {
+        setLicense(stored);
+        setLicenseKey(stored.licenseKey);
+      }
+    })();
   }, []);
 
   const handleVerify = async () => {
@@ -53,16 +54,11 @@ export function LicenseSettings() {
 
     setVerifying(true);
     try {
-      let result;
-      if (isSelfHosted()) {
-        result = await verifyLicenseViaBackend(licenseKey, getApiUrl());
-      } else {
-        result = await verifyLicenseWithPortal(licenseKey, 'cloud-user', 1);
-      }
+      const result = await verifyLicenseViaBackend(licenseKey, getApiUrl());
 
       if (result.success) {
         const info: LicenseInfo = {
-          licenseKey,
+          licenseKey: licenseKey.substring(0, 4) + '****',
           status: (result.actual_status as any) || 'active',
           maxDevices: result.max_devices || 5,
           expiresAt: result.expires_at || null,
@@ -70,7 +66,7 @@ export function LicenseSettings() {
           installationId: getInstallationId(),
           plan: getPlanFromMaxDevices(result.max_devices || 5),
         };
-        saveLicenseInfo(info);
+        await saveLicenseInfo(info);
         setLicense(info);
         toast({ title: 'License Verified!', description: result.message });
       } else {
