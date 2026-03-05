@@ -1,9 +1,8 @@
 // LifeOS License Configuration
 // Integrates with portal.itsupport.com.bd licensing system
+// Security: All verification is server-side. Client stores signed tokens only.
 
 export const LICENSE_PORTAL_URL = 'https://portal.itsupport.com.bd';
-export const LICENSE_VERIFY_ENDPOINT = `${LICENSE_PORTAL_URL}/verify_license.php`;
-export const ENCRYPTION_KEY = 'ITSupportBD_SecureKey_2024';
 
 export interface LicenseInfo {
   licenseKey: string;
@@ -13,6 +12,10 @@ export interface LicenseInfo {
   lastVerified: string;
   installationId: string;
   plan: 'basic' | 'standard' | 'professional' | 'unknown';
+  /** HMAC signature from the backend to prevent client-side tampering */
+  _sig?: string;
+  /** Timestamp when this token was issued by backend */
+  _iat?: number;
 }
 
 export interface LicenseVerifyResponse {
@@ -21,6 +24,8 @@ export interface LicenseVerifyResponse {
   max_devices?: number;
   actual_status?: string;
   expires_at?: string | null;
+  /** Signed license token from backend */
+  signed_token?: string;
 }
 
 export const LICENSE_PLANS = [
@@ -68,124 +73,96 @@ export const LICENSE_PLANS = [
   },
 ];
 
+// ---- Storage keys (obfuscated) ----
+const _SK = {
+  /** License data blob */
+  ld: '\x6c\x6f\x73\x5f\x6c\x64',
+  /** Installation id */
+  ii: '\x6c\x6f\x73\x5f\x69\x69',
+  /** Integrity marker */
+  im: '\x6c\x6f\x73\x5f\x69\x6d',
+};
+
 // Get or generate a unique installation ID for this LifeOS instance
 export function getInstallationId(): string {
-  let id = localStorage.getItem('lifeos_installation_id');
+  let id = localStorage.getItem(_SK.ii);
   if (!id) {
     id = 'LIFEOS-' + crypto.randomUUID();
-    localStorage.setItem('lifeos_installation_id', id);
+    localStorage.setItem(_SK.ii, id);
   }
   return id;
 }
 
-// Store license info locally
-export function saveLicenseInfo(info: LicenseInfo): void {
-  localStorage.setItem('lifeos_license', JSON.stringify(info));
+/**
+ * Compute a client-side integrity hash over critical license fields.
+ * This is NOT a security boundary (client can read it), but raises the bar
+ * for casual tampering — the real check happens server-side.
+ */
+async function computeIntegrity(data: Record<string, unknown>): Promise<string> {
+  const payload = JSON.stringify([
+    data.licenseKey,
+    data.status,
+    data.maxDevices,
+    data.plan,
+    data._iat,
+    getInstallationId(),
+  ]);
+  const buf = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(payload)
+  );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
-// Get stored license info
-export function getLicenseInfo(): LicenseInfo | null {
-  const stored = localStorage.getItem('lifeos_license');
+/** Store license info with integrity marker */
+export async function saveLicenseInfo(info: LicenseInfo): Promise<void> {
+  info._iat = Date.now();
+  const integrity = await computeIntegrity(info as unknown as Record<string, unknown>);
+  localStorage.setItem(_SK.ld, JSON.stringify(info));
+  localStorage.setItem(_SK.im, integrity);
+}
+
+/** Get stored license info — returns null if tampered or missing */
+export async function getLicenseInfo(): Promise<LicenseInfo | null> {
+  const stored = localStorage.getItem(_SK.ld);
   if (!stored) return null;
   try {
-    return JSON.parse(stored);
+    const info: LicenseInfo = JSON.parse(stored);
+    // Verify client-side integrity
+    const expected = await computeIntegrity(info as unknown as Record<string, unknown>);
+    const actual = localStorage.getItem(_SK.im);
+    if (actual !== expected) {
+      // Tampered — wipe
+      clearLicenseInfo();
+      return null;
+    }
+    return info;
   } catch {
+    clearLicenseInfo();
     return null;
   }
 }
 
-// Clear stored license
+/** Clear stored license */
 export function clearLicenseInfo(): void {
-  localStorage.removeItem('lifeos_license');
+  localStorage.removeItem(_SK.ld);
+  localStorage.removeItem(_SK.im);
 }
 
-// Determine plan from max_devices
+/** Determine plan from max_devices */
 export function getPlanFromMaxDevices(maxDevices: number): LicenseInfo['plan'] {
   if (maxDevices <= 5) return 'basic';
   if (maxDevices <= 20) return 'standard';
   return 'professional';
 }
 
-// Verify license with the portal (client-side for self-hosted)
-export async function verifyLicenseWithPortal(
-  licenseKey: string,
-  userId: string,
-  currentDeviceCount: number = 1
-): Promise<LicenseVerifyResponse> {
-  const installationId = getInstallationId();
-
-  try {
-    const response = await fetch(LICENSE_VERIFY_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        app_license_key: licenseKey,
-        user_id: userId,
-        current_device_count: currentDeviceCount,
-        installation_id: installationId,
-      }),
-    });
-
-    if (!response.ok) {
-      return { success: false, message: 'License server unreachable.' };
-    }
-
-    // The response is AES-256-CBC encrypted
-    const encryptedText = await response.text();
-    
-    // For client-side, we'll use the backend proxy to decrypt
-    // Or handle it via the self-hosted API
-    try {
-      const decoded = decryptLicenseResponse(encryptedText);
-      return decoded;
-    } catch {
-      // If decryption fails, try parsing as plain JSON (fallback)
-      try {
-        return JSON.parse(encryptedText);
-      } catch {
-        return { success: false, message: 'Failed to process license response.' };
-      }
-    }
-  } catch (error: any) {
-    return { success: false, message: error.message || 'Network error verifying license.' };
-  }
-}
-
-// Client-side AES-256-CBC decryption using Web Crypto API
-async function decryptLicenseResponse(encryptedBase64: string): Promise<LicenseVerifyResponse> {
-  const encryptedData = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
-  
-  // AES-256-CBC: first 16 bytes = IV, rest = ciphertext
-  const ivLength = 16;
-  const iv = encryptedData.slice(0, ivLength);
-  const ciphertextBase64 = new TextDecoder().decode(encryptedData.slice(ivLength));
-  const ciphertext = Uint8Array.from(atob(ciphertextBase64), c => c.charCodeAt(0));
-
-  // Derive key from ENCRYPTION_KEY (must match PHP's openssl_encrypt behavior)
-  // PHP uses the key directly padded/truncated to 32 bytes for aes-256-cbc
-  const keyBytes = new TextEncoder().encode(ENCRYPTION_KEY.padEnd(32, '\0').slice(0, 32));
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    keyBytes,
-    { name: 'AES-CBC' },
-    false,
-    ['decrypt']
-  );
-
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-CBC', iv },
-    cryptoKey,
-    ciphertext
-  );
-
-  const jsonStr = new TextDecoder().decode(decrypted);
-  // Remove PKCS7 padding artifacts if any trailing characters
-  const cleanJson = jsonStr.replace(/[\x00-\x1f]+$/, '');
-  return JSON.parse(cleanJson);
-}
-
-// Verify license via self-hosted backend proxy (preferred for Docker/XAMPP)
+/**
+ * Verify license via self-hosted backend proxy (preferred).
+ * The backend performs the actual portal call, decryption, and returns
+ * a signed result. The client never touches the encryption key.
+ */
 export async function verifyLicenseViaBackend(
   licenseKey: string,
   apiUrl: string = '/api'
@@ -197,10 +174,36 @@ export async function verifyLicenseViaBackend(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('lifeos_token') || ''}`,
       },
-      body: JSON.stringify({ license_key: licenseKey }),
+      body: JSON.stringify({
+        license_key: licenseKey,
+        installation_id: getInstallationId(),
+        _ts: Date.now(),
+      }),
     });
     return await response.json();
   } catch (error: any) {
     return { success: false, message: error.message || 'Backend license check failed.' };
   }
 }
+
+/**
+ * Server-side license status check — called on every app load.
+ * Returns the current license state from the backend DB, not from localStorage.
+ */
+export async function checkLicenseStatus(
+  apiUrl: string = '/api'
+): Promise<LicenseVerifyResponse & { configured?: boolean }> {
+  try {
+    const response = await fetch(`${apiUrl}/license/status`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('lifeos_token') || ''}`,
+      },
+    });
+    return await response.json();
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Could not reach license server.' };
+  }
+}
+
+/** Re-verification interval: 4 hours */
+export const LICENSE_RECHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;

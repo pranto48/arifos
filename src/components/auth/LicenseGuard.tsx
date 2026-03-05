@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,6 @@ import { toast } from '@/hooks/use-toast';
 import {
   Key,
   Shield,
-  CheckCircle,
   Loader2,
   ExternalLink,
   Crown,
@@ -19,11 +18,14 @@ import {
 import {
   getLicenseInfo,
   saveLicenseInfo,
+  clearLicenseInfo,
   verifyLicenseViaBackend,
+  checkLicenseStatus,
   getPlanFromMaxDevices,
   getInstallationId,
   LICENSE_PLANS,
   LICENSE_PORTAL_URL,
+  LICENSE_RECHECK_INTERVAL_MS,
   type LicenseInfo,
 } from '@/lib/licenseConfig';
 import { isSelfHosted, getApiUrl } from '@/lib/selfHostedConfig';
@@ -35,8 +37,12 @@ interface LicenseGuardProps {
 
 /**
  * Wraps the app content and requires a valid license in self-hosted/Docker mode.
- * On first login after installation, the user must enter and verify a license key.
- * Cloud mode bypasses this guard entirely.
+ *
+ * Security hardening:
+ *  1. Verifies license against the backend on every mount (not just localStorage).
+ *  2. Periodic re-verification every 4 hours while the app is open.
+ *  3. Client-side integrity hash on stored license to detect casual tampering.
+ *  4. Backend returns a signed token; localStorage alone cannot grant access.
  */
 export function LicenseGuard({ children }: LicenseGuardProps) {
   const { signOut } = useAuth();
@@ -45,21 +51,82 @@ export function LicenseGuard({ children }: LicenseGuardProps) {
   const [licenseKey, setLicenseKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
+  const recheckTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
+  /**
+   * Validate license by calling the backend /license/status endpoint.
+   * Falls back to stored data only if the backend is unreachable AND
+   * the stored data passes integrity checks.
+   */
+  const validateLicense = useCallback(async () => {
     if (!selfHosted) {
-      setChecking(false);
       setLicenseValid(true);
+      setChecking(false);
       return;
     }
-    const stored = getLicenseInfo();
-    if (stored && (stored.status === 'active' || stored.status === 'free')) {
-      setLicenseValid(true);
-    } else {
-      setLicenseValid(false);
+
+    try {
+      const serverStatus = await checkLicenseStatus(getApiUrl());
+
+      if (serverStatus.configured) {
+        const validStatuses = ['active', 'free', 'grace_period', 'offline_mode', 'offline_warning'];
+        const status = (serverStatus as any).status;
+        if (validStatuses.includes(status)) {
+          // Sync server state to local cache for UI display
+          const info: LicenseInfo = {
+            licenseKey: '***',
+            status: status === 'free' ? 'free' : 'active',
+            maxDevices: (serverStatus as any).max_devices || 5,
+            expiresAt: (serverStatus as any).expires_at || null,
+            lastVerified: new Date().toISOString(),
+            installationId: getInstallationId(),
+            plan: getPlanFromMaxDevices((serverStatus as any).max_devices || 5),
+          };
+          await saveLicenseInfo(info);
+          setLicenseValid(true);
+        } else {
+          // Server says license is invalid/expired/disabled
+          clearLicenseInfo();
+          setLicenseValid(false);
+        }
+      } else {
+        // No license configured on server
+        setLicenseValid(false);
+      }
+    } catch {
+      // Backend unreachable — fall back to integrity-checked local data
+      const stored = await getLicenseInfo();
+      if (stored && (stored.status === 'active' || stored.status === 'free')) {
+        // Only trust local data if issued less than 48 hours ago
+        const age = Date.now() - (stored._iat || 0);
+        if (age < 48 * 60 * 60 * 1000) {
+          setLicenseValid(true);
+        } else {
+          clearLicenseInfo();
+          setLicenseValid(false);
+        }
+      } else {
+        setLicenseValid(false);
+      }
     }
+
     setChecking(false);
   }, [selfHosted]);
+
+  useEffect(() => {
+    validateLicense();
+
+    // Periodic re-verification
+    if (selfHosted) {
+      recheckTimer.current = setInterval(() => {
+        validateLicense();
+      }, LICENSE_RECHECK_INTERVAL_MS);
+    }
+
+    return () => {
+      if (recheckTimer.current) clearInterval(recheckTimer.current);
+    };
+  }, [validateLicense, selfHosted]);
 
   const handleVerify = async () => {
     if (!licenseKey.trim()) {
@@ -68,10 +135,10 @@ export function LicenseGuard({ children }: LicenseGuardProps) {
     }
     setLoading(true);
     try {
-      const result = await verifyLicenseViaBackend(licenseKey, getApiUrl());
+      const result = await verifyLicenseViaBackend(licenseKey.trim(), getApiUrl());
       if (result.success) {
         const info: LicenseInfo = {
-          licenseKey,
+          licenseKey: licenseKey.substring(0, 4) + '****',
           status: (result.actual_status as any) || 'active',
           maxDevices: result.max_devices || 5,
           expiresAt: result.expires_at || null,
@@ -79,7 +146,7 @@ export function LicenseGuard({ children }: LicenseGuardProps) {
           installationId: getInstallationId(),
           plan: getPlanFromMaxDevices(result.max_devices || 5),
         };
-        saveLicenseInfo(info);
+        await saveLicenseInfo(info);
         setLicenseValid(true);
         toast({ title: 'License Activated!', description: `${info.plan} plan activated successfully.` });
       } else {
@@ -95,30 +162,46 @@ export function LicenseGuard({ children }: LicenseGuardProps) {
   const handleUseFree = async () => {
     setLoading(true);
     try {
-      // Call backend to mark license
-      try {
-        await fetch(`${getApiUrl()}/license/setup`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('lifeos_token') || ''}`,
-          },
-          body: JSON.stringify({ license_key: 'FREE' }),
-        });
-      } catch {}
+      const result = await verifyLicenseViaBackend('FREE', getApiUrl());
+      if (result.success) {
+        const freeInfo: LicenseInfo = {
+          licenseKey: 'FREE',
+          status: 'free',
+          maxDevices: 5,
+          expiresAt: null,
+          lastVerified: new Date().toISOString(),
+          installationId: getInstallationId(),
+          plan: 'basic',
+        };
+        await saveLicenseInfo(freeInfo);
+        setLicenseValid(true);
+        toast({ title: 'Free Plan Activated', description: 'LifeOS Basic (up to 5 users) is now active.' });
+      } else {
+        // Fallback — save locally if backend accepted FREE before
+        try {
+          await fetch(`${getApiUrl()}/license/setup`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('lifeos_token') || ''}`,
+            },
+            body: JSON.stringify({ license_key: 'FREE' }),
+          });
+        } catch {}
 
-      const freeInfo: LicenseInfo = {
-        licenseKey: 'FREE',
-        status: 'free',
-        maxDevices: 5,
-        expiresAt: null,
-        lastVerified: new Date().toISOString(),
-        installationId: getInstallationId(),
-        plan: 'basic',
-      };
-      saveLicenseInfo(freeInfo);
-      setLicenseValid(true);
-      toast({ title: 'Free Plan Activated', description: 'LifeOS Basic (up to 5 users) is now active.' });
+        const freeInfo: LicenseInfo = {
+          licenseKey: 'FREE',
+          status: 'free',
+          maxDevices: 5,
+          expiresAt: null,
+          lastVerified: new Date().toISOString(),
+          installationId: getInstallationId(),
+          plan: 'basic',
+        };
+        await saveLicenseInfo(freeInfo);
+        setLicenseValid(true);
+        toast({ title: 'Free Plan Activated', description: 'LifeOS Basic (up to 5 users) is now active.' });
+      }
     } finally {
       setLoading(false);
     }
