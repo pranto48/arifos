@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_notifications: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          is_read: boolean
+          message: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_secrets: {
         Row: {
           created_at: string
@@ -243,6 +279,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      custom_form_fields: {
+        Row: {
+          created_at: string
+          default_value: string | null
+          entity_type: string
+          field_label: string
+          field_name: string
+          field_options: Json | null
+          field_type: string
+          id: string
+          is_active: boolean
+          is_required: boolean
+          placeholder: string | null
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_value?: string | null
+          entity_type: string
+          field_label: string
+          field_name: string
+          field_options?: Json | null
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          placeholder?: string | null
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_value?: string | null
+          entity_type?: string
+          field_label?: string
+          field_name?: string
+          field_options?: Json | null
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          placeholder?: string | null
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       device_categories: {
         Row: {
@@ -817,6 +904,36 @@ export type Database = {
         }
         Relationships: []
       }
+      form_field_config: {
+        Row: {
+          entity_type: string
+          field_name: string
+          id: string
+          is_custom: boolean
+          is_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          entity_type: string
+          field_name: string
+          id?: string
+          is_custom?: boolean
+          is_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          entity_type?: string
+          field_name?: string
+          id?: string
+          is_custom?: boolean
+          is_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       goal_milestones: {
         Row: {
           completed_at: string | null
@@ -866,6 +983,7 @@ export type Database = {
           category: string | null
           created_at: string
           current_amount: number | null
+          custom_fields: Json | null
           description: string | null
           goal_type: string
           id: string
@@ -881,6 +999,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           current_amount?: number | null
+          custom_fields?: Json | null
           description?: string | null
           goal_type?: string
           id?: string
@@ -896,6 +1015,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           current_amount?: number | null
+          custom_fields?: Json | null
           description?: string | null
           goal_type?: string
           id?: string
@@ -1209,6 +1329,7 @@ export type Database = {
         Row: {
           content: string | null
           created_at: string
+          custom_fields: Json | null
           encrypted_content: string | null
           id: string
           is_favorite: boolean | null
@@ -1225,6 +1346,7 @@ export type Database = {
         Insert: {
           content?: string | null
           created_at?: string
+          custom_fields?: Json | null
           encrypted_content?: string | null
           id?: string
           is_favorite?: boolean | null
@@ -1241,6 +1363,7 @@ export type Database = {
         Update: {
           content?: string | null
           created_at?: string
+          custom_fields?: Json | null
           encrypted_content?: string | null
           id?: string
           is_favorite?: boolean | null
@@ -1350,6 +1473,7 @@ export type Database = {
       projects: {
         Row: {
           created_at: string
+          custom_fields: Json | null
           description: string | null
           id: string
           priority: string | null
@@ -1363,6 +1487,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_fields?: Json | null
           description?: string | null
           id?: string
           priority?: string | null
@@ -1376,6 +1501,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_fields?: Json | null
           description?: string | null
           id?: string
           priority?: string | null
@@ -1694,6 +1820,7 @@ export type Database = {
       support_users: {
         Row: {
           created_at: string
+          custom_fields: Json | null
           department_id: string
           designation: string | null
           device_assign_date: string | null
@@ -1717,6 +1844,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_fields?: Json | null
           department_id: string
           designation?: string | null
           device_assign_date?: string | null
@@ -1740,6 +1868,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_fields?: Json | null
           department_id?: string
           designation?: string | null
           device_assign_date?: string | null
@@ -1962,6 +2091,7 @@ export type Database = {
           category_id: string | null
           completed_at: string | null
           created_at: string
+          custom_fields: Json | null
           description: string | null
           due_date: string | null
           due_time: string | null
@@ -1986,6 +2116,7 @@ export type Database = {
           category_id?: string | null
           completed_at?: string | null
           created_at?: string
+          custom_fields?: Json | null
           description?: string | null
           due_date?: string | null
           due_time?: string | null
@@ -2010,6 +2141,7 @@ export type Database = {
           category_id?: string | null
           completed_at?: string | null
           created_at?: string
+          custom_fields?: Json | null
           description?: string | null
           due_date?: string | null
           due_time?: string | null
@@ -2292,6 +2424,7 @@ export type Database = {
           attachment_url: string | null
           category_id: string | null
           created_at: string
+          custom_fields: Json | null
           date: string
           family_member_id: string | null
           id: string
@@ -2311,6 +2444,7 @@ export type Database = {
           attachment_url?: string | null
           category_id?: string | null
           created_at?: string
+          custom_fields?: Json | null
           date?: string
           family_member_id?: string | null
           id?: string
@@ -2330,6 +2464,7 @@ export type Database = {
           attachment_url?: string | null
           category_id?: string | null
           created_at?: string
+          custom_fields?: Json | null
           date?: string
           family_member_id?: string | null
           id?: string
@@ -2577,6 +2712,17 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      notify_role_users: {
+        Args: {
+          _entity_id?: string
+          _entity_type?: string
+          _message: string
+          _role: Database["public"]["Enums"]["app_role"]
+          _title: string
+          _type: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
