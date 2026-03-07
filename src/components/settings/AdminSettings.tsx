@@ -28,6 +28,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { SmtpSettings } from './SmtpSettings';
 import { ResendSettings } from './ResendSettings';
+import { CustomFormFieldManager } from './CustomFormFieldManager';
+import { FormFieldSettings } from './FormFieldSettings';
 
 interface UserRole {
   id: string;
