@@ -61,7 +61,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <GlobalSearch />
                 <DashboardModeSwitcher />
               </div>
-              <QuickAddButton />
+              <div className="flex items-center gap-2">
+                <NotificationBell />
+                <QuickAddButton />
+              </div>
             </header>
 
             {/* Page Content */}

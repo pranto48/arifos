@@ -26,8 +26,9 @@ export function MobileHeader() {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <DashboardModeSwitcher />
+          <NotificationBell />
           <QuickAddButton />
           
           {/* User Profile Sheet */}
