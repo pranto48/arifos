@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { DashboardModeSwitcher } from './DashboardModeSwitcher';
 import { QuickAddButton } from '@/components/quick-add/QuickAddButton';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -25,8 +26,9 @@ export function MobileHeader() {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <DashboardModeSwitcher />
+          <NotificationBell />
           <QuickAddButton />
           
           {/* User Profile Sheet */}

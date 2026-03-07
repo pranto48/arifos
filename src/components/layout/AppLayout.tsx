@@ -9,6 +9,7 @@ import { LicenseGuard } from '@/components/auth/LicenseGuard';
 import { DashboardModeSwitcher } from './DashboardModeSwitcher';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileHeader } from './MobileHeader';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { Loader2 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -60,7 +61,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <GlobalSearch />
                 <DashboardModeSwitcher />
               </div>
-              <QuickAddButton />
+              <div className="flex items-center gap-2">
+                <NotificationBell />
+                <QuickAddButton />
+              </div>
             </header>
 
             {/* Page Content */}

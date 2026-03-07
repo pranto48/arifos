@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
-import { Shield, Users, Key, Loader2, Crown, UserPlus, Trash2, Search, Briefcase, Home, Settings, Calendar, AlertTriangle, Mail, Sparkles } from 'lucide-react';
+import { Shield, Users, Key, Loader2, Crown, UserPlus, Trash2, Search, Briefcase, Home, Settings, Calendar, AlertTriangle, Mail, Sparkles, FormInput, ToggleLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +28,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { SmtpSettings } from './SmtpSettings';
 import { ResendSettings } from './ResendSettings';
+import { CustomFormFieldManager } from './CustomFormFieldManager';
+import { FormFieldSettings } from './FormFieldSettings';
 
 interface UserRole {
   id: string;
@@ -623,7 +625,7 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="general" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
                 <Settings className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">{language === 'bn' ? 'সাধারণ' : 'General'}</span>
@@ -635,6 +637,14 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
               <TabsTrigger value="workspaces" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
                 <Briefcase className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">{language === 'bn' ? 'ওয়ার্কস্পেস' : 'Workspaces'}</span>
+              </TabsTrigger>
+              <TabsTrigger value="custom-fields" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
+                <FormInput className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">{language === 'bn' ? 'কাস্টম ফিল্ড' : 'Fields'}</span>
+              </TabsTrigger>
+              <TabsTrigger value="field-visibility" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
+                <ToggleLeft className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">{language === 'bn' ? 'দৃশ্যমানতা' : 'Visibility'}</span>
               </TabsTrigger>
               <TabsTrigger value="email" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
                 <Mail className="h-3 w-3 md:h-4 md:w-4" />
@@ -691,6 +701,16 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
                   </AlertDescription>
                 </Alert>
               </div>
+            </TabsContent>
+
+            {/* Custom Form Fields */}
+            <TabsContent value="custom-fields" className="space-y-4 mt-4">
+              <CustomFormFieldManager />
+            </TabsContent>
+
+            {/* Field Visibility */}
+            <TabsContent value="field-visibility" className="space-y-4 mt-4">
+              <FormFieldSettings />
             </TabsContent>
 
             {/* Users & Role Management */}

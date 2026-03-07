@@ -1,96 +1,93 @@
 
 
-# Plan: In-App Notifications, Custom Form Fields, and Admin Field Controls
+## Analysis: Why Restored Data Does Not Appear in Docker
 
-This is a large, multi-system feature request. Here is the implementation plan broken into three pillars.
+### Root Cause (Critical Discovery)
 
----
+The restore operation **works correctly** — data IS successfully written to the PostgreSQL database via the backend API (`/api/data/:table/upsert`). The `user_id` is properly remapped on line 706 of DataExport.tsx and again on line 1165 of server.js.
 
-## Feature 1: Pop-Up Notification System (5-second toasts)
+**The real problem**: Every page in the application (Tasks, Notes, Goals, Dashboard, etc.) fetches data using `supabase.from('tasks').select(...)` directly. In Docker mode, the Supabase client points to `http://localhost:9999` — a dummy URL that doesn't exist. This means:
 
-**Goal**: Real-time in-app notifications when key events happen (task follow-up due, new device added, new user added, IP change, new ticket created).
+- Restore writes data to PostgreSQL via `/api/data/:table` — **works**
+- Pages read data via `supabase.from().select()` hitting `localhost:9999` — **fails silently**
+- Result: "restore complete" but nothing shows anywhere
 
-### Database Changes
-- Create `app_notifications` table:
-  - `id`, `user_id` (target), `type` (text: follow_up_due, new_device, new_user, ip_change, new_ticket, etc.), `title`, `message`, `entity_id` (uuid nullable), `is_read` (boolean default false), `created_at`
-  - RLS: users can read/update own notifications; admins can insert for any user
-- Enable realtime on `app_notifications` via `ALTER PUBLICATION supabase_realtime ADD TABLE public.app_notifications`
-- Create database trigger functions to auto-insert notifications:
-  - `AFTER INSERT ON device_inventory` → notify admins/inventory_managers
-  - `AFTER INSERT ON support_users` → notify admins/support_managers
-  - `AFTER INSERT ON support_tickets` → notify admins/support_managers
-  - `AFTER UPDATE ON support_users` (ip_address changed) → notify admins
-  - A scheduled/polling check for tasks with `needs_follow_up = true` and `follow_up_date <= today`
+The error logs confirm this: every single `localhost:9999/rest/v1/...` request fails with `ERR_CONNECTION_REFUSED`.
 
-### Frontend Changes
-- Create `src/hooks/useAppNotifications.ts` — subscribes to realtime `app_notifications` channel, shows `sonner` toast (5-second auto-dismiss) for new inserts, exposes `notifications` list and `markAsRead`
-- Create `src/components/notifications/NotificationBell.tsx` — bell icon in header with unread count badge, dropdown showing recent notifications
-- Integrate `useAppNotifications` hook in `AppLayout.tsx` so toasts fire globally
-- For Docker mode: use polling (every 30s) instead of realtime subscriptions since Supabase realtime is unavailable
+### Scope of the Problem
 
----
+There are **167 `supabase.from()` calls across 9 page files** plus additional calls in hooks and components. Making every single page dual-mode is a massive undertaking that would touch virtually every file in the application.
 
-## Feature 2: Admin Custom Form Fields (for all modules)
+### Proposed Solution: Proxy Supabase REST Calls Through the Backend
 
-**Goal**: Admin can define custom fields for Tasks, Notes, Expenses, Goals, Devices, Projects, etc. These fields appear in forms and power search/filter.
+Instead of rewriting every page, we intercept at the infrastructure level:
 
-### Database Changes
-- Create `custom_form_fields` table (generalizing the existing `ticket_form_fields` pattern):
-  - `id`, `user_id` (creator/admin), `entity_type` (text: task, note, transaction, goal, device_inventory, project, support_user), `field_name`, `field_label`, `field_type` (text, textarea, select, checkbox, date, number), `field_options` (jsonb — for dropdowns), `is_required` (boolean), `is_active` (boolean default true), `placeholder`, `default_value`, `sort_order` (int), `created_at`, `updated_at`
-  - RLS: all authenticated can SELECT active fields; admin can INSERT/UPDATE/DELETE
-- Each entity table already has or will use a `custom_fields` JSONB column to store values. Tables needing a new `custom_fields` column:
-  - `tasks` (add `custom_fields jsonb`)
-  - `notes` (add `custom_fields jsonb`)
-  - `transactions` (add `custom_fields jsonb`)
-  - `goals` (add `custom_fields jsonb`)
-  - `device_inventory` — already has `custom_specs jsonb`, reuse this
-  - `projects` (add `custom_fields jsonb`)
-  - `support_users` (add `custom_fields jsonb`)
+**1. Add a PostgREST-compatible proxy layer to the Docker backend (`docker/backend/server.js`)**
 
-### Frontend Changes
-- Create `src/hooks/useCustomFormFields.ts` — fetches `custom_form_fields` for a given `entity_type`, caches them
-- Create `src/components/shared/CustomFieldsRenderer.tsx` — renders dynamic form fields based on field definitions, returns values as JSONB object
-- Create `src/components/shared/CustomFieldsDisplay.tsx` — read-only display of custom field values
-- Create `src/components/shared/CustomFieldsFilter.tsx` — filter/search UI that reads custom field definitions and filters data by custom_fields JSONB values
-- Integrate into each module's add/edit dialog:
-  - Tasks, Notes, Budget (transactions), Goals, Device Inventory, Projects, Support Users
-  - Add custom fields section below existing form fields
-  - Store values in `custom_fields` JSONB column on save
-- Integrate custom fields into search/filter logic in each page (search across `custom_fields` values)
+Add a route handler for `/rest/v1/:table` that translates Supabase-style REST API calls into direct PostgreSQL queries. This way, when the Supabase client in Docker mode calls `localhost:9999/rest/v1/tasks?select=*&user_id=eq.xxx`, the nginx proxy routes it to the backend which executes the equivalent SQL query.
 
----
+The proxy will handle:
+- `GET /rest/v1/:table` — Parse PostgREST query params (`select`, `eq`, `order`, `limit`, `offset`, `in`, `not.is`, `gte`, `lte`, `like`, `neq`, `or`)
+- `POST /rest/v1/:table` — Insert rows (handle both single and array bodies)
+- `PATCH /rest/v1/:table` — Update rows with filter params
+- `DELETE /rest/v1/:table` — Delete rows with filter params
+- `HEAD /rest/v1/:table` — Return count headers (used by some operations)
 
-## Feature 3: Admin Field Visibility Controls
+Auth will be extracted from the `apikey`/`Authorization` header that the Supabase client sends.
 
-**Goal**: Admin can disable/enable any standard form field or custom field from the admin panel.
+**2. Update the Supabase client URL in Docker builds (`Dockerfile`)**
 
-### Database Changes
-- Create `form_field_config` table:
-  - `id`, `entity_type` (text), `field_name` (text — maps to standard column name or custom field name), `is_enabled` (boolean default true), `is_custom` (boolean default false), `updated_by` (uuid), `updated_at`
-  - RLS: all authenticated can SELECT; admin can INSERT/UPDATE/DELETE
-  - Unique constraint on `(entity_type, field_name)`
+Change `VITE_SUPABASE_URL` from `http://localhost:9999` to an empty string or a relative URL, and configure nginx to proxy `/rest/v1/` requests to the backend.
 
-### Frontend Changes
-- Create `src/hooks/useFormFieldConfig.ts` — fetches enabled/disabled state for all fields of an entity_type
-- Create `src/components/settings/FormFieldSettings.tsx` — admin panel tab/card where admin sees all modules, each module lists standard fields + custom fields with toggle switches
-- Integrate into `AdminSettings.tsx` as a new tab ("Form Fields")
-- Update each module's form to check field visibility before rendering:
-  - Wrap each form field in a conditional `if (fieldConfig.isEnabled('field_name'))`
-  - Hide disabled fields from forms, filters, and exports
+**3. Update nginx proxy config (`nginx.conf`)**
 
----
+Add a proxy rule so `/rest/v1/` requests are forwarded to the backend server alongside the existing `/api/` proxy.
 
-## Implementation Order
+**4. Handle the `functions/v1/` calls**
 
-1. **Database migration** — Create all 3 tables (`app_notifications`, `custom_form_fields`, `form_field_config`), add `custom_fields` JSONB columns to entity tables, create notification triggers, enable realtime
-2. **Notification system** — Hook, bell component, realtime/polling integration, toast display
-3. **Custom form fields** — Hook, renderer, admin manager UI (reuse TicketFormFieldManager pattern), integrate into all module forms
-4. **Field visibility controls** — Hook, admin settings panel, conditional rendering in forms
-5. **Search/filter integration** — Custom fields filter component, integrate into each module's filter bar
+Add a catch-all for `/functions/v1/` that returns graceful no-op responses in Docker mode (these are edge functions that don't exist in self-hosted).
 
-### Technical Notes
-- The existing `ticket_form_fields` / `TicketFormFieldManager` pattern will be the template for the generalized custom fields system
-- Docker compatibility: notification polling fallback, all data stored in standard Postgres tables
-- Custom fields JSONB is searchable via `custom_fields->>'field_name' ILIKE '%query%'` in Supabase queries
-- For Docker mode, the PostgREST proxy already handles JSONB operations
+### Technical Details
+
+**PostgREST query param parser** — the key translations needed:
+
+```text
+?select=*                          → SELECT *
+?select=id,title,status            → SELECT id, title, status
+&user_id=eq.{uuid}                 → WHERE user_id = '{uuid}'
+&status=neq.pending                → WHERE status != 'pending'
+&date=gte.2026-02-01               → WHERE date >= '2026-02-01'
+&order=created_at.desc             → ORDER BY created_at DESC
+&limit=20&offset=0                 → LIMIT 20 OFFSET 0
+&or=(col1.eq.val1,col2.eq.val2)    → WHERE (col1 = 'val1' OR col2 = 'val2')
+&col=in.(val1,val2)                → WHERE col IN ('val1', 'val2')
+&col=not.is.null                   → WHERE col IS NOT NULL
+```
+
+**Auth handling** — The Supabase client sends the anon key as `apikey` header plus the user's JWT in `Authorization: Bearer`. In Docker mode, the JWT is the self-hosted token. We need to:
+- Accept both the dummy anon key and the self-hosted JWT
+- Extract user identity from the self-hosted JWT via `verifyToken()`
+- Scope queries by user_id automatically for data tables
+
+**RPC calls** — Handle `POST /rest/v1/rpc/:function_name` for database functions like `get_support_users_safe`.
+
+### Files to modify
+
+- `docker/backend/server.js` — Add PostgREST-compatible proxy routes (~200 lines)
+- `nginx.conf` — Add `/rest/v1/` and `/functions/v1/` proxy rules
+- `Dockerfile` — Change `VITE_SUPABASE_URL` to point to the app itself (e.g., `http://localhost:80` or use relative URL)
+
+### Why this approach
+
+- **Zero changes to any page or component** — all 167+ `supabase.from()` calls work as-is
+- **Backup, restore, AND normal page rendering** all work
+- **Future-proof** — any new pages automatically work in Docker mode
+- **Single point of maintenance** — the proxy layer in server.js
+
+### Risk mitigation
+
+- The PostgREST query parser doesn't need to be 100% complete — just the subset actually used by the app
+- Unknown query params are safely ignored
+- Tables are still whitelisted for security
+- User scoping is enforced server-side
 
