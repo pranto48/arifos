@@ -703,6 +703,16 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
               </div>
             </TabsContent>
 
+            {/* Custom Form Fields */}
+            <TabsContent value="custom-fields" className="space-y-4 mt-4">
+              <CustomFormFieldManager />
+            </TabsContent>
+
+            {/* Field Visibility */}
+            <TabsContent value="field-visibility" className="space-y-4 mt-4">
+              <FormFieldSettings />
+            </TabsContent>
+
             {/* Users & Role Management */}
             <TabsContent value="users" className="space-y-4 mt-4">
               <div className="flex items-center justify-between mb-2">
