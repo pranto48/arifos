@@ -9,6 +9,7 @@ import { LicenseGuard } from '@/components/auth/LicenseGuard';
 import { DashboardModeSwitcher } from './DashboardModeSwitcher';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileHeader } from './MobileHeader';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { Loader2 } from 'lucide-react';
 
 interface AppLayoutProps {
