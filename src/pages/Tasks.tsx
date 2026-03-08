@@ -646,53 +646,47 @@ export default function Tasks() {
       </div>
 
       {/* Category Filter */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Category:</span>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select category" />
+      <div className="flex flex-wrap items-center gap-2 md:gap-4">
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-[140px] md:w-[180px]">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="uncategorized">Uncategorized</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: cat.color }}
+                  />
+                  {cat.name}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Support User Filter - Office Mode Only */}
+        {mode === 'office' && allSupportUsers.length > 0 && (
+          <Select value={supportUserFilter} onValueChange={setSupportUserFilter}>
+            <SelectTrigger className="w-[140px] md:w-[220px]">
+              <SelectValue placeholder="Support User" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="uncategorized">Uncategorized</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: cat.color }}
-                    />
-                    {cat.name}
+              <SelectItem value="all">All Support Users</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {allSupportUsers.map((su) => (
+                <SelectItem key={su.id} value={su.id}>
+                  <div className="flex flex-col">
+                    <span>{su.name}</span>
+                    <span className="text-xs text-muted-foreground">{su.unit_name} → {su.department_name}</span>
                   </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
-
-        {/* Support User Filter - Office Mode Only */}
-        {mode === 'office' && allSupportUsers.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Support User:</span>
-            <Select value={supportUserFilter} onValueChange={setSupportUserFilter}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Select support user" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Support Users</SelectItem>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {allSupportUsers.map((su) => (
-                  <SelectItem key={su.id} value={su.id}>
-                    <div className="flex flex-col">
-                      <span>{su.name}</span>
-                      <span className="text-xs text-muted-foreground">{su.unit_name} → {su.department_name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         )}
       </div>
 

@@ -190,19 +190,10 @@ export default function Notes() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-bold text-foreground">{t('notes.title')}</h1>
-        <div className="flex items-center gap-4">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              value={search} 
-              onChange={e => setSearch(e.target.value)} 
-              placeholder={t('notes.searchNotes')} 
-              className="pl-9 bg-muted/50" 
-            />
-          </div>
+        <div className="flex items-center gap-2 flex-wrap">
           <ReportActions
             variant="compact"
             headers={['Title', 'Type', 'Tags', 'Pinned', 'Vault', 'Created']}
@@ -216,10 +207,21 @@ export default function Notes() {
             ]}
           />
           <DataExportImportButton preset="notes" />
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" /> {t('notes.newNote')}
+          <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
+            <Plus className="h-4 w-4 mr-1" /> {t('notes.newNote')}
           </Button>
         </div>
+      </div>
+
+      {/* Search Bar - Full width on mobile */}
+      <div className="relative w-full sm:w-64">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input 
+          value={search} 
+          onChange={e => setSearch(e.target.value)} 
+          placeholder={t('notes.searchNotes')} 
+          className="pl-9 bg-muted/50" 
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
