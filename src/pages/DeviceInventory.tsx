@@ -34,6 +34,7 @@ import { DeviceDisposalDialog } from '@/components/device/DeviceDisposalDialog';
 import { AnimatedIcon, LoadingSpinner, PulsingDot } from '@/components/ui/animated-icon';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
 import { ReportActions } from '@/components/shared/ReportActions';
+import { useCustomFormFields } from '@/hooks/useCustomFormFields';
 
 const STATUS_OPTIONS = [
   { value: 'available', label: 'Available', labelBn: 'উপলব্ধ', color: 'bg-green-500/20 text-green-600' },
