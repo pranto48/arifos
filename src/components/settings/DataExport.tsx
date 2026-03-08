@@ -990,6 +990,16 @@ export function DataExport() {
       </Card>
       )}
 
+      {/* Backup Progress */}
+      {backupProgressState && (
+        <BackupRestoreProgress state={backupProgressState} />
+      )}
+
+      {/* Restore Progress */}
+      {restoreProgressState && (
+        <BackupRestoreProgress state={restoreProgressState} />
+      )}
+
       {/* Export & Import Section */}
       <Card className="bg-card border-border">
         <CardHeader>
