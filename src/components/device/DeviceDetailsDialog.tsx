@@ -301,6 +301,80 @@ export function DeviceDetailsDialog({
                 </Card>
               </div>
 
+              {/* Device-Type-Specific Info */}
+              {(() => {
+                const deviceType = getDeviceType(category?.name || null);
+                const typeFields = getFieldsForType(deviceType);
+                const customSpecs = (device.custom_specs || {}) as Record<string, string>;
+                const hasTypeData = typeFields.some(f => customSpecs[f.key]);
+                const TYPE_ICON_MAP: Record<string, React.ElementType> = {
+                  router: Wifi, server: Server, printer: Printer, ups: Zap, cctv: Camera, generic: Settings,
+                };
+                const TypeIcon = TYPE_ICON_MAP[deviceType] || Settings;
+
+                if (deviceType !== 'computer' && deviceType !== 'generic' && hasTypeData) {
+                  return (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <TypeIcon className="h-4 w-4" />
+                          {getTypeLabel(deviceType, language)}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        {typeFields.map((field) => {
+                          const val = customSpecs[field.key];
+                          if (!val) return null;
+                          return (
+                            <div key={field.key}>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  {language === 'bn' ? field.labelBn : field.labelEn}
+                                </span>
+                                <span className={field.isPassword ? 'font-mono text-xs' : ''}>
+                                  {field.isPassword ? '••••••••' : val}
+                                </span>
+                              </div>
+                              <Separator className="mt-2" />
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  );
+                }
+
+                // Show non-type custom specs for any device
+                const nonTypeKeys = Object.entries(customSpecs).filter(
+                  ([key, val]) => val && !typeFields.some(f => f.key === key)
+                );
+                if (nonTypeKeys.length > 0) {
+                  return (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          {language === 'bn' ? 'অতিরিক্ত তথ্য' : 'Additional Info'}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        {nonTypeKeys.map(([key, val]) => (
+                          <div key={key}>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">{key}</span>
+                              <span>{val}</span>
+                            </div>
+                            <Separator className="mt-2" />
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  );
+                }
+
+                return null;
+              })()}
+
               {/* Notes */}
               {device.notes && (
                 <Card>
