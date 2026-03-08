@@ -84,8 +84,10 @@ export default function DeviceInventoryPage() {
   } = useDeviceInventory();
 
   const { supportUsers, departments, units } = useSupportData();
+  const { fields: deviceCustomFields } = useCustomFormFields('device_inventory');
 
-  // Search and filter state
+  // Custom field filter state
+  const [customFieldFilters, setCustomFieldFilters] = useState<Record<string, any>>({});
   const [filters, setFilters] = useState({
     searchQuery: '',
     category: 'all',
