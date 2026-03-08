@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { FieldVisibility } from '@/components/shared/FieldVisibility';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface Transaction {
@@ -833,52 +834,60 @@ export default function Budget() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t('budget.category')}</Label>
-                    <Select value={formData.category_id || "none"} onValueChange={(v) => setFormData(f => ({ ...f, category_id: v === "none" ? "" : v }))}>
-                      <SelectTrigger><SelectValue placeholder={t('budget.select')} /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">{t('common.none')}</SelectItem>
-                        {filteredCategories.map(cat => (
-                          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t('budget.date')}</Label>
-                    <Input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData(f => ({ ...f, date: e.target.value }))}
-                    />
-                  </div>
+                  <FieldVisibility entityType="transaction" fieldName="category_id">
+                    <div className="space-y-2">
+                      <Label>{t('budget.category')}</Label>
+                      <Select value={formData.category_id || "none"} onValueChange={(v) => setFormData(f => ({ ...f, category_id: v === "none" ? "" : v }))}>
+                        <SelectTrigger><SelectValue placeholder={t('budget.select')} /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">{t('common.none')}</SelectItem>
+                          {filteredCategories.map(cat => (
+                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </FieldVisibility>
+                  <FieldVisibility entityType="transaction" fieldName="date">
+                    <div className="space-y-2">
+                      <Label>{t('budget.date')}</Label>
+                      <Input
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData(f => ({ ...f, date: e.target.value }))}
+                      />
+                    </div>
+                  </FieldVisibility>
                 </div>
 
                 {/* Income Source - Only show for income type */}
                 {formData.type === 'income' && (
-                  <div className="space-y-2">
-                    <Label>{t('budget.incomeSource')}</Label>
-                    <Select value={formData.account} onValueChange={(v) => setFormData(f => ({ ...f, account: v }))}>
-                      <SelectTrigger><SelectValue placeholder={t('budget.selectSource')} /></SelectTrigger>
-                      <SelectContent>
-                        {INCOME_SOURCE_KEYS.map(source => (
-                          <SelectItem key={source.value} value={source.value}>{t(source.key as any)}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <FieldVisibility entityType="transaction" fieldName="account">
+                    <div className="space-y-2">
+                      <Label>{t('budget.incomeSource')}</Label>
+                      <Select value={formData.account} onValueChange={(v) => setFormData(f => ({ ...f, account: v }))}>
+                        <SelectTrigger><SelectValue placeholder={t('budget.selectSource')} /></SelectTrigger>
+                        <SelectContent>
+                          {INCOME_SOURCE_KEYS.map(source => (
+                            <SelectItem key={source.value} value={source.value}>{t(source.key as any)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </FieldVisibility>
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t('budget.description')}</Label>
-                    <Input
-                      value={formData.merchant}
-                      onChange={(e) => setFormData(f => ({ ...f, merchant: e.target.value }))}
-                      placeholder={t('budget.whereWhat')}
-                    />
-                  </div>
+                  <FieldVisibility entityType="transaction" fieldName="merchant">
+                    <div className="space-y-2">
+                      <Label>{t('budget.description')}</Label>
+                      <Input
+                        value={formData.merchant}
+                        onChange={(e) => setFormData(f => ({ ...f, merchant: e.target.value }))}
+                        placeholder={t('budget.whereWhat')}
+                      />
+                    </div>
+                  </FieldVisibility>
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1.5">
                       <Users className="h-3.5 w-3.5" />
