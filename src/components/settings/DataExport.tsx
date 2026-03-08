@@ -213,7 +213,7 @@ export function DataExport() {
   };
 
   // ===== Universal v3.0 Fetch =====
-  const fetchAllData = async () => {
+  const fetchAllData = async (onTableProgress?: (table: string, status: 'fetching' | 'done' | 'error', itemCount?: number, error?: string) => void) => {
     const selfHosted = isSelfHosted();
     const tables: Record<string, any[]> = {};
 
@@ -225,9 +225,12 @@ export function DataExport() {
       const chunk = allTables.slice(i, i + CHUNK_SIZE);
       const results = await Promise.all(
         chunk.map(async (table) => {
+          onTableProgress?.(table, 'fetching');
           try {
             if (selfHosted) {
-              return { table, data: await selfHostedApi.selectAll(table) };
+              const data = await selfHostedApi.selectAll(table);
+              onTableProgress?.(table, 'done', data.length);
+              return { table, data };
             } else {
               const hasUserId = TABLES_WITH_USER_ID.has(table);
               let query;
@@ -242,12 +245,15 @@ export function DataExport() {
               const { data, error } = await query;
               if (error) {
                 console.warn(`Failed to fetch ${table}:`, error.message);
+                onTableProgress?.(table, 'error', 0, error.message);
                 return { table, data: [] };
               }
+              onTableProgress?.(table, 'done', (data || []).length);
               return { table, data: data || [] };
             }
-          } catch (err) {
+          } catch (err: any) {
             console.warn(`Failed to fetch ${table}:`, err);
+            onTableProgress?.(table, 'error', 0, err.message);
             return { table, data: [] };
           }
         })
