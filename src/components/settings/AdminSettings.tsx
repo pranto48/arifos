@@ -772,6 +772,10 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
                 <Key className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">{language === 'bn' ? 'ইন্টিগ্রেশন' : 'Integrations'}</span>
               </TabsTrigger>
+              <TabsTrigger value="license" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
+                <Crown className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">{language === 'bn' ? 'লাইসেন্স' : 'License'}</span>
+              </TabsTrigger>
             </TabsList>
 
             {/* General Settings */}
