@@ -357,7 +357,7 @@ export default function Calendar() {
                   exit={{ opacity: 0, y: -20 }}
                   className="space-y-2"
                 >
-                  <div className="grid grid-cols-7 gap-2">
+                  <div className="grid grid-cols-7 gap-1 md:gap-2">
                     {weekDays.map(day => {
                       const dayEvents = getEventsForDate(day);
                       const isSelected = selectedDate && isSameDay(day, selectedDate);
