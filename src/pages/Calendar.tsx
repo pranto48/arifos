@@ -213,13 +213,13 @@ export default function Calendar() {
   const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <CalendarIcon className="h-6 w-6" />
+          <CalendarIcon className="h-5 w-5 md:h-6 md:w-6" />
           {language === 'bn' ? 'ক্যালেন্ডার' : 'Calendar'}
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <ReportActions
             variant="compact"
             headers={['Title', 'Date', 'Type', 'Status/Priority']}
@@ -244,21 +244,21 @@ export default function Calendar() {
       </div>
 
       <Card className="bg-card border-border">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => navigate('prev')}>
+        <CardHeader className="pb-2 md:pb-4 px-3 md:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-1 md:gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate('prev')}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={() => navigate('next')}>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate('next')}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" onClick={goToToday}>
+              <Button variant="ghost" size="sm" onClick={goToToday}>
                 {language === 'bn' ? 'আজ' : 'Today'}
               </Button>
+              <CardTitle className="text-sm md:text-lg ml-1">{headerText}</CardTitle>
             </div>
-            <CardTitle className="text-lg">{headerText}</CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2">
               <Badge variant="outline" className="flex items-center gap-1">
                 <CheckSquare className="h-3 w-3" /> {language === 'bn' ? 'কাজ' : 'Tasks'}
               </Badge>
