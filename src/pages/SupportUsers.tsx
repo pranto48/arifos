@@ -801,6 +801,15 @@ export default function SupportUsers() {
                 </SelectContent>
               </Select>
             )}
+            {supportUserCustomFields.length > 0 && (
+              <div className="w-full">
+                <CustomFieldsFilter
+                  fields={supportUserCustomFields}
+                  filterValues={customFieldFilters}
+                  onFilterChange={setCustomFieldFilters}
+                />
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               <input
                 ref={fileInputRef}
