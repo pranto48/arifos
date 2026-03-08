@@ -42,11 +42,13 @@ import { useAuth } from '@/contexts/AuthContext';
    notes: string | null;
    ram_info: string | null;
    storage_info: string | null;
+   processor_info: string | null;
    monitor_info: string | null;
    has_ups: boolean | null;
    ups_info: string | null;
    webcam_info: string | null;
    headset_info: string | null;
+   custom_specs: Record<string, string> | null;
    category?: { name: string } | null;
    support_user?: {
      name: string;
