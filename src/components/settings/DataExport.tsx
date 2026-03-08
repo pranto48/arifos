@@ -311,10 +311,61 @@ export function DataExport() {
     return tables;
   };
 
+  const createBackupProgressTracker = () => {
+    const tableStates: TableProgress[] = ALL_BACKUP_TABLES.map(t => ({ table: t, status: 'pending' as const }));
+    let processedCount = 0;
+    let totalItems = 0;
+
+    const progressState: BackupRestoreProgressState = {
+      mode: 'backup',
+      phase: 'preparing',
+      tables: tableStates,
+      currentTable: '',
+      processedTables: 0,
+      totalTables: ALL_BACKUP_TABLES.length,
+      processedItems: 0,
+      totalItems: 0,
+      startTime: Date.now(),
+      errors: [],
+    };
+
+    setBackupProgressState({ ...progressState });
+
+    return (table: string, status: 'fetching' | 'done' | 'error', itemCount?: number, error?: string) => {
+      const entry = tableStates.find(t => t.table === table);
+      if (entry) {
+        entry.status = status;
+        entry.itemCount = itemCount;
+        entry.errorMessage = error;
+      }
+      if (status === 'done' || status === 'error') {
+        processedCount++;
+        totalItems += (itemCount || 0);
+      }
+      if (status === 'error' && error) {
+        progressState.errors.push(`${table}: ${error}`);
+      }
+      setBackupProgressState({
+        ...progressState,
+        phase: 'processing',
+        tables: [...tableStates],
+        currentTable: status === 'fetching' ? table : progressState.currentTable,
+        processedTables: processedCount,
+        processedItems: totalItems,
+        totalItems: totalItems,
+        errors: [...progressState.errors],
+      });
+    };
+  };
+
   const runManualBackup = async () => {
     setExporting('manual');
+    const onProgress = createBackupProgressTracker();
     try {
-      const data = await fetchAllData();
+      const data = await fetchAllData(onProgress);
+
+      setBackupProgressState(prev => prev ? { ...prev, phase: 'finalizing' } : null);
+
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -339,12 +390,19 @@ export function DataExport() {
         await loadBackupSchedule();
       }
 
+      setBackupProgressState(prev => prev ? { ...prev, phase: 'complete' } : null);
+
       toast({
         title: language === 'bn' ? 'ব্যাকআপ সম্পন্ন' : 'Backup Complete',
         description: language === 'bn' ? 'ডাটাবেস ব্যাকআপ ডাউনলোড হয়েছে।' : 'Database backup has been downloaded.'
       });
+
+      // Auto-dismiss progress after 5s
+      setTimeout(() => setBackupProgressState(null), 5000);
     } catch (error: any) {
+      setBackupProgressState(prev => prev ? { ...prev, phase: 'error', errors: [...prev.errors, error.message] } : null);
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      setTimeout(() => setBackupProgressState(null), 8000);
     } finally {
       setExporting(null);
     }
