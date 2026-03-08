@@ -30,6 +30,7 @@ import { ResendSettings } from './ResendSettings';
 import { CustomFormFieldManager } from './CustomFormFieldManager';
 import { FormFieldSettings } from './FormFieldSettings';
 import { ModuleSettings } from './ModuleSettings';
+import { RoleManagement } from './RoleManagement';
 import { isSelfHosted, getApiUrl } from '@/lib/selfHostedConfig';
 import {
   getLicenseInfo,
