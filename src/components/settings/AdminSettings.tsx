@@ -792,10 +792,11 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
             {/* Field Visibility */}
             {activeTab === 'field-visibility' && (
               <FormFieldSettings />
-            </TabsContent>
+            )}
 
             {/* Users & Role Management */}
-            <TabsContent value="users" className="space-y-4 mt-4">
+            {activeTab === 'users' && (
+            <div className="space-y-4">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium text-foreground text-sm md:text-base">
                   {language === 'bn' ? 'ইউজার ও রোল ম্যানেজমেন্ট' : 'Users & Role Management'}
