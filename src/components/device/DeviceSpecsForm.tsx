@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, X, Cpu, HardDrive, Monitor, Headphones, Video, Zap, MemoryStick } from 'lucide-react';
+import { Plus, X, Cpu, HardDrive, Monitor, Headphones, Video, Zap, MemoryStick, Wifi, Server, Printer, Camera, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { PasswordField } from '@/components/support/PasswordField';
+import { getDeviceType, getFieldsForType, getTypeLabel, type DeviceType } from './deviceTypeConfig';
 
 const RAM_OPTIONS = [
   { value: '4GB DDR3', label: '4GB DDR3' },
@@ -88,19 +90,15 @@ interface DeviceSpecsFormProps {
   onChange: (specs: DeviceSpecs) => void;
 }
 
-// Categories that show hardware specs
-const COMPUTER_CATEGORIES = [
-  'Desktop',
-  'Desktop Clone PC',
-  'Desktop Clone',
-  'Clone PC',
-  'Laptop',
-  'Notebook',
-  'Computer',
-  'PC',
-  'Workstation',
-  'All-in-One',
-];
+const TYPE_ICONS: Record<DeviceType, React.ElementType> = {
+  computer: Cpu,
+  router: Wifi,
+  server: Server,
+  printer: Printer,
+  ups: Zap,
+  cctv: Camera,
+  generic: Settings,
+};
 
 export function DeviceSpecsForm({ categoryName, specs, onChange }: DeviceSpecsFormProps) {
   const { language } = useLanguage();
@@ -110,21 +108,17 @@ export function DeviceSpecsForm({ categoryName, specs, onChange }: DeviceSpecsFo
   const [customStorage, setCustomStorage] = useState(false);
   const [customProcessor, setCustomProcessor] = useState(false);
 
-  // Initialize custom flags based on existing values not in predefined options
+  const deviceType = getDeviceType(categoryName);
+  const typeFields = getFieldsForType(deviceType);
+
   useEffect(() => {
     if (specs.ram_info && !RAM_OPTIONS.some(o => o.value === specs.ram_info)) setCustomRam(true);
     if (specs.storage_info && !STORAGE_OPTIONS.some(o => o.value === specs.storage_info)) setCustomStorage(true);
     if (specs.processor_info && !PROCESSOR_OPTIONS.some(o => o.value === specs.processor_info)) setCustomProcessor(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Check if this category should show hardware specs
-  const showHardwareSpecs = categoryName && COMPUTER_CATEGORIES.some(
-    cat => categoryName.toLowerCase().includes(cat.toLowerCase())
-  );
-
-  if (!showHardwareSpecs) {
-    return null;
-  }
+  // Show nothing for generic with no category
+  if (deviceType === 'generic' && !categoryName) return null;
 
   const handleAddCustomField = () => {
     if (!newCustomField.trim()) return;
@@ -155,193 +149,236 @@ export function DeviceSpecsForm({ categoryName, specs, onChange }: DeviceSpecsFo
     });
   };
 
+  const handleTypeFieldChange = (key: string, value: string) => {
+    onChange({
+      ...specs,
+      custom_specs: {
+        ...specs.custom_specs,
+        [key]: value,
+      },
+    });
+  };
+
+  const IconComponent = TYPE_ICONS[deviceType];
+
   return (
     <Card className="md:col-span-2 bg-muted/30 border-dashed">
       <CardContent className="p-4 space-y-4">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <Cpu className="h-4 w-4" />
-          {language === 'bn' ? 'হার্ডওয়্যার স্পেসিফিকেশন' : 'Hardware Specifications'}
+          <IconComponent className="h-4 w-4" />
+          {getTypeLabel(deviceType, language)}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* RAM */}
-          <div className="space-y-2">
-            <Label className="text-xs flex items-center gap-1.5">
-              <MemoryStick className="h-3.5 w-3.5" />
-              {language === 'bn' ? 'RAM' : 'RAM'}
-            </Label>
-            <Select
-              value={customRam ? 'custom' : (specs.ram_info || '')}
-              onValueChange={(v) => {
-                if (v === 'custom') {
-                  setCustomRam(true);
-                  onChange({ ...specs, ram_info: '' });
-                } else {
-                  setCustomRam(false);
-                  onChange({ ...specs, ram_info: v });
-                }
-              }}
-            >
-              <SelectTrigger className="text-sm">
-                <SelectValue placeholder={language === 'bn' ? 'RAM নির্বাচন করুন' : 'Select RAM'} />
-              </SelectTrigger>
-              <SelectContent>
-                {RAM_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-                <SelectItem value="custom">{language === 'bn' ? 'কাস্টম...' : 'Custom...'}</SelectItem>
-              </SelectContent>
-            </Select>
-            {customRam && (
-              <Input
-                value={specs.ram_info}
-                onChange={(e) => onChange({ ...specs, ram_info: e.target.value })}
-                placeholder="e.g. 12GB DDR4"
-                className="text-sm"
-              />
-            )}
-          </div>
-
-          {/* Storage */}
-          <div className="space-y-2">
-            <Label className="text-xs flex items-center gap-1.5">
-              <HardDrive className="h-3.5 w-3.5" />
-              {language === 'bn' ? 'স্টোরেজ' : 'Storage'}
-            </Label>
-            <Select
-              value={customStorage ? 'custom' : (specs.storage_info || '')}
-              onValueChange={(v) => {
-                if (v === 'custom') {
-                  setCustomStorage(true);
-                  onChange({ ...specs, storage_info: '' });
-                } else {
-                  setCustomStorage(false);
-                  onChange({ ...specs, storage_info: v });
-                }
-              }}
-            >
-              <SelectTrigger className="text-sm">
-                <SelectValue placeholder={language === 'bn' ? 'স্টোরেজ নির্বাচন করুন' : 'Select Storage'} />
-              </SelectTrigger>
-              <SelectContent>
-                {STORAGE_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-                <SelectItem value="custom">{language === 'bn' ? 'কাস্টম...' : 'Custom...'}</SelectItem>
-              </SelectContent>
-            </Select>
-            {customStorage && (
-              <Input
-                value={specs.storage_info}
-                onChange={(e) => onChange({ ...specs, storage_info: e.target.value })}
-                placeholder="e.g. 256GB SSD + 1TB HDD"
-                className="text-sm"
-              />
-            )}
-          </div>
-
-          {/* Processor */}
-          <div className="space-y-2">
-            <Label className="text-xs flex items-center gap-1.5">
-              <Cpu className="h-3.5 w-3.5" />
-              {language === 'bn' ? 'প্রসেসর' : 'Processor'}
-            </Label>
-            <Select
-              value={customProcessor ? 'custom' : (specs.processor_info || '')}
-              onValueChange={(v) => {
-                if (v === 'custom') {
-                  setCustomProcessor(true);
-                  onChange({ ...specs, processor_info: '' });
-                } else {
-                  setCustomProcessor(false);
-                  onChange({ ...specs, processor_info: v });
-                }
-              }}
-            >
-              <SelectTrigger className="text-sm">
-                <SelectValue placeholder={language === 'bn' ? 'প্রসেসর নির্বাচন করুন' : 'Select Processor'} />
-              </SelectTrigger>
-              <SelectContent>
-                {PROCESSOR_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-                <SelectItem value="custom">{language === 'bn' ? 'কাস্টম...' : 'Custom...'}</SelectItem>
-              </SelectContent>
-            </Select>
-            {customProcessor && (
-              <Input
-                value={specs.processor_info}
-                onChange={(e) => onChange({ ...specs, processor_info: e.target.value })}
-                placeholder="e.g. Intel Core i5-12th Gen"
-                className="text-sm"
-              />
-            )}
-          </div>
-
-          {/* Monitor */}
-          <div className="space-y-2">
-            <Label className="text-xs flex items-center gap-1.5">
-              <Monitor className="h-3.5 w-3.5" />
-              {language === 'bn' ? 'মনিটর' : 'Monitor'}
-            </Label>
-            <Input
-              value={specs.monitor_info}
-              onChange={(e) => onChange({ ...specs, monitor_info: e.target.value })}
-              placeholder={language === 'bn' ? 'Dell 24" FHD' : 'Dell 24" FHD'}
-              className="text-sm"
-            />
-          </div>
-
-          {/* UPS */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
+        {/* Computer hardware specs */}
+        {deviceType === 'computer' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* RAM */}
+            <div className="space-y-2">
               <Label className="text-xs flex items-center gap-1.5">
-                <Zap className="h-3.5 w-3.5" />
-                {language === 'bn' ? 'UPS আছে' : 'Has UPS'}
+                <MemoryStick className="h-3.5 w-3.5" />
+                {language === 'bn' ? 'RAM' : 'RAM'}
               </Label>
-              <Switch
-                checked={specs.has_ups}
-                onCheckedChange={(checked) => onChange({ ...specs, has_ups: checked })}
+              <Select
+                value={customRam ? 'custom' : (specs.ram_info || '')}
+                onValueChange={(v) => {
+                  if (v === 'custom') {
+                    setCustomRam(true);
+                    onChange({ ...specs, ram_info: '' });
+                  } else {
+                    setCustomRam(false);
+                    onChange({ ...specs, ram_info: v });
+                  }
+                }}
+              >
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder={language === 'bn' ? 'RAM নির্বাচন করুন' : 'Select RAM'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {RAM_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                  <SelectItem value="custom">{language === 'bn' ? 'কাস্টম...' : 'Custom...'}</SelectItem>
+                </SelectContent>
+              </Select>
+              {customRam && (
+                <Input
+                  value={specs.ram_info}
+                  onChange={(e) => onChange({ ...specs, ram_info: e.target.value })}
+                  placeholder="e.g. 12GB DDR4"
+                  className="text-sm"
+                />
+              )}
+            </div>
+
+            {/* Storage */}
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1.5">
+                <HardDrive className="h-3.5 w-3.5" />
+                {language === 'bn' ? 'স্টোরেজ' : 'Storage'}
+              </Label>
+              <Select
+                value={customStorage ? 'custom' : (specs.storage_info || '')}
+                onValueChange={(v) => {
+                  if (v === 'custom') {
+                    setCustomStorage(true);
+                    onChange({ ...specs, storage_info: '' });
+                  } else {
+                    setCustomStorage(false);
+                    onChange({ ...specs, storage_info: v });
+                  }
+                }}
+              >
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder={language === 'bn' ? 'স্টোরেজ নির্বাচন করুন' : 'Select Storage'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {STORAGE_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                  <SelectItem value="custom">{language === 'bn' ? 'কাস্টম...' : 'Custom...'}</SelectItem>
+                </SelectContent>
+              </Select>
+              {customStorage && (
+                <Input
+                  value={specs.storage_info}
+                  onChange={(e) => onChange({ ...specs, storage_info: e.target.value })}
+                  placeholder="e.g. 256GB SSD + 1TB HDD"
+                  className="text-sm"
+                />
+              )}
+            </div>
+
+            {/* Processor */}
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1.5">
+                <Cpu className="h-3.5 w-3.5" />
+                {language === 'bn' ? 'প্রসেসর' : 'Processor'}
+              </Label>
+              <Select
+                value={customProcessor ? 'custom' : (specs.processor_info || '')}
+                onValueChange={(v) => {
+                  if (v === 'custom') {
+                    setCustomProcessor(true);
+                    onChange({ ...specs, processor_info: '' });
+                  } else {
+                    setCustomProcessor(false);
+                    onChange({ ...specs, processor_info: v });
+                  }
+                }}
+              >
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder={language === 'bn' ? 'প্রসেসর নির্বাচন করুন' : 'Select Processor'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROCESSOR_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                  <SelectItem value="custom">{language === 'bn' ? 'কাস্টম...' : 'Custom...'}</SelectItem>
+                </SelectContent>
+              </Select>
+              {customProcessor && (
+                <Input
+                  value={specs.processor_info}
+                  onChange={(e) => onChange({ ...specs, processor_info: e.target.value })}
+                  placeholder="e.g. Intel Core i5-12th Gen"
+                  className="text-sm"
+                />
+              )}
+            </div>
+
+            {/* Monitor */}
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1.5">
+                <Monitor className="h-3.5 w-3.5" />
+                {language === 'bn' ? 'মনিটর' : 'Monitor'}
+              </Label>
+              <Input
+                value={specs.monitor_info}
+                onChange={(e) => onChange({ ...specs, monitor_info: e.target.value })}
+                placeholder={language === 'bn' ? 'Dell 24" FHD' : 'Dell 24" FHD'}
+                className="text-sm"
               />
             </div>
-            {specs.has_ups && (
+
+            {/* UPS */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <Zap className="h-3.5 w-3.5" />
+                  {language === 'bn' ? 'UPS আছে' : 'Has UPS'}
+                </Label>
+                <Switch
+                  checked={specs.has_ups}
+                  onCheckedChange={(checked) => onChange({ ...specs, has_ups: checked })}
+                />
+              </div>
+              {specs.has_ups && (
+                <Input
+                  value={specs.ups_info}
+                  onChange={(e) => onChange({ ...specs, ups_info: e.target.value })}
+                  placeholder={language === 'bn' ? 'APC 650VA' : 'APC 650VA'}
+                  className="text-sm"
+                />
+              )}
+            </div>
+
+            {/* Webcam */}
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1.5">
+                <Video className="h-3.5 w-3.5" />
+                {language === 'bn' ? 'ওয়েবক্যাম' : 'Webcam'}
+              </Label>
               <Input
-                value={specs.ups_info}
-                onChange={(e) => onChange({ ...specs, ups_info: e.target.value })}
-                placeholder={language === 'bn' ? 'APC 650VA' : 'APC 650VA'}
+                value={specs.webcam_info}
+                onChange={(e) => onChange({ ...specs, webcam_info: e.target.value })}
+                placeholder={language === 'bn' ? 'Logitech C920' : 'Logitech C920'}
                 className="text-sm"
               />
-            )}
-          </div>
+            </div>
 
-          {/* Webcam */}
-          <div className="space-y-2">
-            <Label className="text-xs flex items-center gap-1.5">
-              <Video className="h-3.5 w-3.5" />
-              {language === 'bn' ? 'ওয়েবক্যাম' : 'Webcam'}
-            </Label>
-            <Input
-              value={specs.webcam_info}
-              onChange={(e) => onChange({ ...specs, webcam_info: e.target.value })}
-              placeholder={language === 'bn' ? 'Logitech C920' : 'Logitech C920'}
-              className="text-sm"
-            />
+            {/* Headset */}
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1.5">
+                <Headphones className="h-3.5 w-3.5" />
+                {language === 'bn' ? 'হেডসেট' : 'Headset'}
+              </Label>
+              <Input
+                value={specs.headset_info}
+                onChange={(e) => onChange({ ...specs, headset_info: e.target.value })}
+                placeholder={language === 'bn' ? 'Jabra Evolve2 40' : 'Jabra Evolve2 40'}
+                className="text-sm"
+              />
+            </div>
           </div>
+        )}
 
-          {/* Headset */}
-          <div className="space-y-2">
-            <Label className="text-xs flex items-center gap-1.5">
-              <Headphones className="h-3.5 w-3.5" />
-              {language === 'bn' ? 'হেডসেট' : 'Headset'}
-            </Label>
-            <Input
-              value={specs.headset_info}
-              onChange={(e) => onChange({ ...specs, headset_info: e.target.value })}
-              placeholder={language === 'bn' ? 'Jabra Evolve2 40' : 'Jabra Evolve2 40'}
-              className="text-sm"
-            />
+        {/* Device-type-specific fields (Router, Server, Printer, UPS, CCTV) */}
+        {deviceType !== 'computer' && typeFields.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {typeFields.map((field) => (
+              <div key={field.key} className="space-y-2">
+                <Label className="text-xs">
+                  {language === 'bn' ? field.labelBn : field.labelEn}
+                </Label>
+                {field.isPassword ? (
+                  <PasswordField
+                    value={specs.custom_specs?.[field.key] || ''}
+                    onChange={(val) => handleTypeFieldChange(field.key, val)}
+                    placeholder={field.placeholder}
+                    language={language as 'en' | 'bn'}
+                  />
+                ) : (
+                  <Input
+                    value={specs.custom_specs?.[field.key] || ''}
+                    onChange={(e) => handleTypeFieldChange(field.key, e.target.value)}
+                    placeholder={field.placeholder}
+                    className="text-sm"
+                  />
+                )}
+              </div>
+            ))}
           </div>
-        </div>
+        )}
 
         {/* Custom Fields */}
         <div className="space-y-3 pt-2 border-t border-dashed">
@@ -349,8 +386,9 @@ export function DeviceSpecsForm({ categoryName, specs, onChange }: DeviceSpecsFo
             {language === 'bn' ? 'কাস্টম ফিল্ড' : 'Custom Fields'}
           </Label>
 
-          {/* Existing custom fields */}
-          {Object.entries(specs.custom_specs || {}).map(([key, value]) => (
+          {Object.entries(specs.custom_specs || {})
+            .filter(([key]) => !typeFields.some(f => f.key === key))
+            .map(([key, value]) => (
             <div key={key} className="flex items-center gap-2">
               <Input
                 value={key}
@@ -374,7 +412,6 @@ export function DeviceSpecsForm({ categoryName, specs, onChange }: DeviceSpecsFo
             </div>
           ))}
 
-          {/* Add new custom field */}
           <div className="flex items-center gap-2">
             <Input
               value={newCustomField}
