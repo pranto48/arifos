@@ -339,14 +339,29 @@ export function DeviceFilters({
     return (
       <div className="space-y-2">
         <div className="flex gap-2">
-          <div className="relative flex-1">
+          <div className="relative flex-1" ref={searchRef}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={language === 'bn' ? 'ডিভাইস খুঁজুন...' : 'Search devices...'}
               value={filters.searchQuery}
-              onChange={(e) => updateFilter('searchQuery', e.target.value)}
+              onChange={(e) => { updateFilter('searchQuery', e.target.value); setShowSuggestions(true); }}
+              onFocus={() => setShowSuggestions(true)}
               className="pl-9 h-10 text-sm"
             />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                {suggestions.map(s => (
+                  <button
+                    key={s.id}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between"
+                    onMouseDown={(e) => { e.preventDefault(); updateFilter('searchQuery', s.device_name); setShowSuggestions(false); }}
+                  >
+                    <span className="truncate font-medium">{s.device_name}</span>
+                    {s.device_number && <span className="text-xs text-muted-foreground ml-2 shrink-0">#{s.device_number}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <SheetTrigger asChild>
