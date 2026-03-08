@@ -1278,10 +1278,12 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
                   </div>
                 </div>
               </div>
-            </TabsContent>
+            </div>
+            )}
 
             {/* Integrations Settings */}
-            <TabsContent value="integrations" className="space-y-4 mt-4">
+            {activeTab === 'integrations' && (
+            <div className="space-y-4">
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
