@@ -787,10 +787,10 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
             {/* Custom Form Fields */}
             {activeTab === 'custom-fields' && (
               <CustomFormFieldManager />
-            </TabsContent>
+            )}
 
             {/* Field Visibility */}
-            <TabsContent value="field-visibility" className="space-y-4 mt-4">
+            {activeTab === 'field-visibility' && (
               <FormFieldSettings />
             </TabsContent>
 
