@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays, addWeeks, addMonths, startOfDay } from 'date-fns';
 import { RestoreComparisonDialog } from './RestoreComparisonDialog';
+import { BackupRestoreProgress, type BackupRestoreProgressState, type TableProgress } from './BackupRestoreProgress';
 
 interface BackupSchedule {
   id: string;
@@ -115,6 +116,8 @@ export function DataExport() {
   const restoreInputRef = useRef<HTMLInputElement>(null);
   const [isActive, setIsActive] = useState(false);
   const [restoreProgress, setRestoreProgress] = useState<{ current: number; total: number; currentTable: string } | null>(null);
+  const [backupProgressState, setBackupProgressState] = useState<BackupRestoreProgressState | null>(null);
+  const [restoreProgressState, setRestoreProgressState] = useState<BackupRestoreProgressState | null>(null);
   const { hasRole: isAdmin } = useIsAdmin();
 
   useEffect(() => {
@@ -210,7 +213,7 @@ export function DataExport() {
   };
 
   // ===== Universal v3.0 Fetch =====
-  const fetchAllData = async () => {
+  const fetchAllData = async (onTableProgress?: (table: string, status: 'fetching' | 'done' | 'error', itemCount?: number, error?: string) => void) => {
     const selfHosted = isSelfHosted();
     const tables: Record<string, any[]> = {};
 
@@ -222,9 +225,12 @@ export function DataExport() {
       const chunk = allTables.slice(i, i + CHUNK_SIZE);
       const results = await Promise.all(
         chunk.map(async (table) => {
+          onTableProgress?.(table, 'fetching');
           try {
             if (selfHosted) {
-              return { table, data: await selfHostedApi.selectAll(table) };
+              const data = await selfHostedApi.selectAll(table);
+              onTableProgress?.(table, 'done', data.length);
+              return { table, data };
             } else {
               const hasUserId = TABLES_WITH_USER_ID.has(table);
               let query;
@@ -239,12 +245,15 @@ export function DataExport() {
               const { data, error } = await query;
               if (error) {
                 console.warn(`Failed to fetch ${table}:`, error.message);
+                onTableProgress?.(table, 'error', 0, error.message);
                 return { table, data: [] };
               }
+              onTableProgress?.(table, 'done', (data || []).length);
               return { table, data: data || [] };
             }
-          } catch (err) {
+          } catch (err: any) {
             console.warn(`Failed to fetch ${table}:`, err);
+            onTableProgress?.(table, 'error', 0, err.message);
             return { table, data: [] };
           }
         })
@@ -302,10 +311,61 @@ export function DataExport() {
     return tables;
   };
 
+  const createBackupProgressTracker = () => {
+    const tableStates: TableProgress[] = ALL_BACKUP_TABLES.map(t => ({ table: t, status: 'pending' as const }));
+    let processedCount = 0;
+    let totalItems = 0;
+
+    const progressState: BackupRestoreProgressState = {
+      mode: 'backup',
+      phase: 'preparing',
+      tables: tableStates,
+      currentTable: '',
+      processedTables: 0,
+      totalTables: ALL_BACKUP_TABLES.length,
+      processedItems: 0,
+      totalItems: 0,
+      startTime: Date.now(),
+      errors: [],
+    };
+
+    setBackupProgressState({ ...progressState });
+
+    return (table: string, status: 'fetching' | 'done' | 'error', itemCount?: number, error?: string) => {
+      const entry = tableStates.find(t => t.table === table);
+      if (entry) {
+        entry.status = status;
+        entry.itemCount = itemCount;
+        entry.errorMessage = error;
+      }
+      if (status === 'done' || status === 'error') {
+        processedCount++;
+        totalItems += (itemCount || 0);
+      }
+      if (status === 'error' && error) {
+        progressState.errors.push(`${table}: ${error}`);
+      }
+      setBackupProgressState({
+        ...progressState,
+        phase: 'processing',
+        tables: [...tableStates],
+        currentTable: status === 'fetching' ? table : progressState.currentTable,
+        processedTables: processedCount,
+        processedItems: totalItems,
+        totalItems: totalItems,
+        errors: [...progressState.errors],
+      });
+    };
+  };
+
   const runManualBackup = async () => {
     setExporting('manual');
+    const onProgress = createBackupProgressTracker();
     try {
-      const data = await fetchAllData();
+      const data = await fetchAllData(onProgress);
+
+      setBackupProgressState(prev => prev ? { ...prev, phase: 'finalizing' } : null);
+
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -330,12 +390,19 @@ export function DataExport() {
         await loadBackupSchedule();
       }
 
+      setBackupProgressState(prev => prev ? { ...prev, phase: 'complete' } : null);
+
       toast({
         title: language === 'bn' ? 'ব্যাকআপ সম্পন্ন' : 'Backup Complete',
         description: language === 'bn' ? 'ডাটাবেস ব্যাকআপ ডাউনলোড হয়েছে।' : 'Database backup has been downloaded.'
       });
+
+      // Auto-dismiss progress after 5s
+      setTimeout(() => setBackupProgressState(null), 5000);
     } catch (error: any) {
+      setBackupProgressState(prev => prev ? { ...prev, phase: 'error', errors: [...prev.errors, error.message] } : null);
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      setTimeout(() => setBackupProgressState(null), 8000);
     } finally {
       setExporting(null);
     }
@@ -581,6 +648,29 @@ export function DataExport() {
     setRestoring(true);
     setRestoreProgress(null);
 
+    // Initialize restore progress state
+    const tablesToProcess = RESTORE_ORDER.filter(t => selectedTypes.includes(t));
+    const tableStates: TableProgress[] = tablesToProcess.map(t => ({ table: t, status: 'pending' as const }));
+    const errors: string[] = [];
+    const startTime = Date.now();
+
+    const updateRestoreProgress = (updates: Partial<BackupRestoreProgressState>) => {
+      setRestoreProgressState(prev => prev ? { ...prev, ...updates, tables: [...tableStates], errors: [...errors] } : null);
+    };
+
+    setRestoreProgressState({
+      mode: 'restore',
+      phase: 'preparing',
+      tables: [...tableStates],
+      currentTable: '',
+      processedTables: 0,
+      totalTables: tablesToProcess.length,
+      processedItems: 0,
+      totalItems: 0,
+      startTime,
+      errors: [],
+    });
+
     try {
       const tables = normalizeBackupData(pendingRestoreData);
       let restored = 0;
@@ -593,7 +683,6 @@ export function DataExport() {
           if (TABLES_WITH_USER_ID.has(table)) {
             await supabase.from(table as any).delete().eq('user_id', user.id);
           } else {
-            // For global tables, delete all (admin only)
             await supabase.from(table as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
           }
         }
@@ -608,6 +697,8 @@ export function DataExport() {
           await q;
         }
       };
+
+      updateRestoreProgress({ phase: 'processing' });
 
       // Pre-cleanup: handle dependent data before deleting parents
       if (selectedTypes.includes('tasks')) {
@@ -691,27 +782,30 @@ export function DataExport() {
       }
 
       // Count total items to restore for progress
-      const tablesToRestore = RESTORE_ORDER.filter(t => selectedTypes.includes(t) && tables[t]?.length);
-      const totalItems = tablesToRestore.reduce((sum, t) => sum + (tables[t]?.length || 0), 0);
+      const restorableTables = RESTORE_ORDER.filter(t => selectedTypes.includes(t) && tables[t]?.length);
+      const totalItems = restorableTables.reduce((sum, t) => sum + (tables[t]?.length || 0), 0);
       let processedItems = 0;
+      let processedTableCount = 0;
+
+      updateRestoreProgress({ totalItems });
 
       // Restore in dependency order (parents first)
       for (const table of RESTORE_ORDER) {
         if (!selectedTypes.includes(table) || !tables[table]?.length) continue;
 
+        const entry = tableStates.find(t => t.table === table);
+        if (entry) entry.status = 'fetching';
+
         setRestoreProgress({ current: processedItems, total: totalItems, currentTable: table });
+        updateRestoreProgress({ currentTable: table, processedTables: processedTableCount, processedItems });
 
         const items = tables[table].map((item: any) => {
           const cleaned = { ...item };
-          // Remap user_id for all tables that have it
           if (TABLES_WITH_USER_ID.has(table)) {
             cleaned.user_id = user.id;
           }
-          // Strip generated/computed fields
           for (const field of STRIP_FIELDS) delete cleaned[field];
-          // Strip ticket_number (regenerated by trigger)
           if (table === 'support_tickets') delete cleaned.ticket_number;
-          // Handle vault notes
           if (table === 'notes' && item.is_vault) cleaned.content = null;
           return cleaned;
         });
@@ -723,19 +817,28 @@ export function DataExport() {
             const { error } = await supabase.from(table as any).upsert(items as any, { onConflict: 'id' });
             if (error) {
               console.error(`Failed to restore ${table}:`, error);
+              if (entry) { entry.status = 'error'; entry.errorMessage = error.message; }
+              errors.push(`${table}: ${error.message}`);
             } else {
               restored += items.length;
+              if (entry) { entry.status = 'done'; entry.itemCount = items.length; }
             }
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error(`Failed to restore ${table}:`, err);
+          if (entry) { entry.status = 'error'; entry.errorMessage = err.message; }
+          errors.push(`${table}: ${err.message}`);
         }
         processedItems += items.length;
+        processedTableCount++;
+        updateRestoreProgress({ processedTables: processedTableCount, processedItems });
       }
 
       setRestoreProgress(null);
       setRestoreDialogOpen(false);
       setPendingRestoreData(null);
+
+      setRestoreProgressState(prev => prev ? { ...prev, phase: 'complete', processedTables: processedTableCount, processedItems, tables: [...tableStates], errors: [...errors] } : null);
 
       toast({
         title: language === 'bn' ? 'পুনরুদ্ধার সম্পন্ন' : 'Restore Complete',
@@ -744,10 +847,12 @@ export function DataExport() {
           : `${restored} items restored successfully. Reloading page...`
       });
 
-      setTimeout(() => window.location.reload(), 1500);
+      setTimeout(() => window.location.reload(), 3000);
     } catch (error: any) {
       console.error('Restore failed:', error);
+      setRestoreProgressState(prev => prev ? { ...prev, phase: 'error', errors: [...prev.errors, error.message] } : null);
       toast({ title: 'Error', description: error.message || 'Failed to restore data', variant: 'destructive' });
+      setTimeout(() => setRestoreProgressState(null), 8000);
     } finally {
       setRestoring(false);
       setRestoreProgress(null);
@@ -883,6 +988,16 @@ export function DataExport() {
           </div>
         </CardContent>
       </Card>
+      )}
+
+      {/* Backup Progress */}
+      {backupProgressState && (
+        <BackupRestoreProgress state={backupProgressState} />
+      )}
+
+      {/* Restore Progress */}
+      {restoreProgressState && (
+        <BackupRestoreProgress state={restoreProgressState} />
       )}
 
       {/* Export & Import Section */}
