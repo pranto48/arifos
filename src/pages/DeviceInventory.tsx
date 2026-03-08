@@ -752,6 +752,9 @@ export default function DeviceInventoryPage() {
             suppliers={suppliers}
             statusOptions={STATUS_OPTIONS}
             devices={devices}
+            customFields={deviceCustomFields}
+            customFieldFilters={customFieldFilters}
+            onCustomFieldFiltersChange={setCustomFieldFilters}
           />
         </CardContent>
       </Card>
