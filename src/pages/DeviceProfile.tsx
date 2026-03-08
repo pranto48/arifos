@@ -48,7 +48,7 @@ import { useAuth } from '@/contexts/AuthContext';
    ups_info: string | null;
    webcam_info: string | null;
    headset_info: string | null;
-   custom_specs: Record<string, string> | null;
+   custom_specs: Record<string, string> | any;
    category?: { name: string } | null;
    support_user?: {
      name: string;
