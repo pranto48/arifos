@@ -1384,6 +1384,213 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
                 </p>
               </div>
             </TabsContent>
+
+            {/* License Information */}
+            <TabsContent value="license" className="space-y-4 mt-4">
+              {loadingLicense ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Current License Info */}
+                  {licenseInfo && (
+                    <div className="p-5 rounded-xl border border-border bg-card space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {getLicensePlanIcon(licenseInfo.plan)}
+                          <div>
+                            <h3 className="font-semibold text-foreground capitalize">
+                              {licenseInfo.plan} {language === 'bn' ? 'প্ল্যান' : 'Plan'}
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                              {language === 'bn' ? 'সর্বোচ্চ' : 'Max'}{' '}
+                              {licenseInfo.maxDevices >= 99999 ? (language === 'bn' ? 'আনলিমিটেড' : 'Unlimited') : licenseInfo.maxDevices}{' '}
+                              {language === 'bn' ? 'ইউজার' : 'users'}
+                            </p>
+                          </div>
+                        </div>
+                        {getLicenseStatusBadge(licenseInfo.status)}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground text-xs">{language === 'bn' ? 'লাইসেন্স কী' : 'License Key'}</p>
+                          <p className="font-mono text-foreground text-xs">
+                            {licenseInfo.licenseKey === 'FREE' ? 'FREE' : `${licenseInfo.licenseKey.slice(0, 8)}...`}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">{language === 'bn' ? 'মেয়াদ শেষ' : 'Expires'}</p>
+                          <p className="text-foreground">
+                            {licenseInfo.expiresAt
+                              ? new Date(licenseInfo.expiresAt).toLocaleDateString()
+                              : (language === 'bn' ? 'কখনো না' : 'Never')}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">{language === 'bn' ? 'ইনস্টলেশন আইডি' : 'Installation ID'}</p>
+                          <p className="font-mono text-foreground text-xs truncate">{licenseInfo.installationId.slice(0, 24)}...</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">{language === 'bn' ? 'শেষ যাচাই' : 'Last Verified'}</p>
+                          <p className="text-foreground">{new Date(licenseInfo.lastVerified).toLocaleString()}</p>
+                        </div>
+                      </div>
+
+                      {/* Expiry Warning */}
+                      {licenseInfo.expiresAt && licenseInfo.status !== 'free' && (() => {
+                        const daysLeft = Math.ceil((new Date(licenseInfo.expiresAt!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                        if (daysLeft <= 30 && daysLeft > 0) {
+                          return (
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-sm">
+                              <Clock className="h-4 w-4 text-yellow-500 flex-shrink-0" />
+                              <span className="text-foreground">
+                                {language === 'bn'
+                                  ? `লাইসেন্সের মেয়াদ ${daysLeft} দিনে শেষ হবে।`
+                                  : `License expires in ${daysLeft} days.`}
+                              </span>
+                            </div>
+                          );
+                        }
+                        if (daysLeft <= 0) {
+                          return (
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
+                              <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
+                              <span className="text-destructive">
+                                {language === 'bn'
+                                  ? `লাইসেন্সের মেয়াদ ${Math.abs(daysLeft)} দিন আগে শেষ হয়েছে!`
+                                  : `License expired ${Math.abs(daysLeft)} days ago!`}
+                              </span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={handleLicenseRefresh} disabled={loadingLicense}>
+                          {loadingLicense ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+                          {language === 'bn' ? 'পুনরায় যাচাই' : 'Re-verify'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`${LICENSE_PORTAL_URL}/products.php`, '_blank')}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          {language === 'bn' ? 'পোর্টাল' : 'Portal'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {!licenseInfo && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Shield className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                      <p>{language === 'bn' ? 'কোনো লাইসেন্স তথ্য পাওয়া যায়নি।' : 'No license information found.'}</p>
+                    </div>
+                  )}
+
+                  {/* Server Status */}
+                  {licenseServerStatus && (
+                    <div className="p-4 rounded-lg border border-border bg-muted/50 space-y-2">
+                      <h4 className="font-medium text-sm text-foreground flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        {language === 'bn' ? 'সার্ভার স্ট্যাটাস' : 'Server Status'}
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <p className="text-muted-foreground">{language === 'bn' ? 'কনফিগার করা' : 'Configured'}</p>
+                          <p className="font-medium text-foreground">{licenseServerStatus.configured ? '✅ Yes' : '❌ No'}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">{language === 'bn' ? 'স্ট্যাটাস' : 'Status'}</p>
+                          <p className="font-medium text-foreground capitalize">{(licenseServerStatus as any).status || 'Unknown'}</p>
+                        </div>
+                        {(licenseServerStatus as any).max_devices && (
+                          <div>
+                            <p className="text-muted-foreground">{language === 'bn' ? 'সর্বোচ্চ ডিভাইস' : 'Max Devices'}</p>
+                            <p className="font-medium text-foreground">{(licenseServerStatus as any).max_devices}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Change / Import License */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Key className="w-4 h-4 text-primary" />
+                      <h4 className="font-medium text-foreground">
+                        {language === 'bn' ? 'লাইসেন্স কী পরিবর্তন / ইমপোর্ট' : 'Change / Import License Key'}
+                      </h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'bn'
+                        ? 'নতুন লাইসেন্স কী প্রবেশ করুন।'
+                        : 'Enter a new license key to activate or change your plan.'}
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        value={licenseKeyInput}
+                        onChange={(e) => setLicenseKeyInput(e.target.value)}
+                        placeholder="LIFEOS-XXXX-XXXX-XXXX-XXXX"
+                        className="font-mono flex-1"
+                        onKeyDown={(e) => e.key === 'Enter' && handleLicenseVerify()}
+                      />
+                      <Button onClick={handleLicenseVerify} disabled={verifyingLicense || !licenseKeyInput.trim()}>
+                        {verifyingLicense ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Plan Comparison */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-foreground text-sm">{language === 'bn' ? 'উপলব্ধ প্ল্যান' : 'Available Plans'}</h4>
+                    <div className="grid gap-2">
+                      {LICENSE_PLANS.map((plan) => (
+                        <div
+                          key={plan.id}
+                          className={`p-3 rounded-lg border transition-all ${
+                            licenseInfo?.plan === plan.id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border bg-card/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {getLicensePlanIcon(plan.id)}
+                              <div>
+                                <p className="text-sm font-medium text-foreground">{plan.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {plan.maxDevices >= 99999 ? (language === 'bn' ? 'আনলিমিটেড' : 'Unlimited') : plan.maxDevices} {language === 'bn' ? 'ইউজার' : 'users'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-primary">{plan.price}</span>
+                              {licenseInfo?.plan === plan.id && (
+                                <Badge variant="secondary" className="text-xs">{language === 'bn' ? 'বর্তমান' : 'Current'}</Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => window.open(`${LICENSE_PORTAL_URL}/products.php`, '_blank')}
+                    >
+                      {language === 'bn' ? 'লাইসেন্স কিনুন' : 'Purchase License'}
+                      <ExternalLink className="w-3 h-3 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
