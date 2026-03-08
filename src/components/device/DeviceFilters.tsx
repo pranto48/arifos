@@ -11,6 +11,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { CustomFieldsFilter } from '@/components/shared/CustomFieldsFilter';
+import type { CustomFormField } from '@/hooks/useCustomFormFields';
 
 interface FilterState {
   searchQuery: string;
