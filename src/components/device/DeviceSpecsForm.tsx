@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, X, Cpu, HardDrive, Monitor, Headphones, Video, Zap, MemoryStick, Wifi, Server, Printer, Camera, Settings } from 'lucide-react';
+import { Plus, X, Cpu, HardDrive, Monitor, Headphones, Video, Zap, MemoryStick, Wifi, Server, Printer, Camera, Settings, Network } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
