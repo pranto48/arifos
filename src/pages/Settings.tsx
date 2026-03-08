@@ -36,7 +36,29 @@ export default function Settings() {
     setMobileNavOpen(false);
   };
 
+  // Map admin sub-categories to their tab value for AdminSettings
+  const getAdminTab = (): string | null => {
+    const adminTabMap: Record<string, string> = {
+      'admin-general': 'general',
+      'admin-modules': 'modules',
+      'admin-users': 'users',
+      'admin-workspaces': 'workspaces',
+      'admin-fields': 'custom-fields',
+      'admin-visibility': 'field-visibility',
+      'admin-email': 'email',
+      'admin-security': 'security',
+      'admin-integrations': 'integrations',
+      'admin-license': 'license',
+    };
+    return adminTabMap[activeCategory] || null;
+  };
+
   const renderContent = () => {
+    const adminTab = getAdminTab();
+    if (adminTab) {
+      return <AdminSettings activeTab={adminTab} onAdminStatusChange={() => recheckRoles()} />;
+    }
+
     switch (activeCategory) {
       case 'profile':
         return <ProfileSettings />;
@@ -65,14 +87,14 @@ export default function Settings() {
       case 'license':
         return <LicenseSettings />;
       case 'admin':
-        return <AdminSettings onAdminStatusChange={() => recheckRoles()} />;
+        return <AdminSettings activeTab="general" onAdminStatusChange={() => recheckRoles()} />;
       default:
         return <ProfileSettings />;
     }
   };
 
   const getCategoryTitle = () => {
-    const titles: Record<SettingsCategory, { en: string; bn: string }> = {
+    const titles: Record<string, { en: string; bn: string }> = {
       profile: { en: 'Profile', bn: 'প্রোফাইল' },
       language: { en: 'Language', bn: 'ভাষা' },
       preferences: { en: 'Preferences', bn: 'পছন্দসমূহ' },
@@ -87,8 +109,19 @@ export default function Settings() {
       backup: { en: 'Backup & Restore', bn: 'ব্যাকআপ ও রিস্টোর' },
       license: { en: 'License', bn: 'লাইসেন্স' },
       admin: { en: 'Admin Panel', bn: 'এডমিন প্যানেল' },
+      'admin-general': { en: 'Admin — General', bn: 'এডমিন — সাধারণ' },
+      'admin-modules': { en: 'Admin — Modules', bn: 'এডমিন — মডিউল' },
+      'admin-users': { en: 'Admin — Users & Roles', bn: 'এডমিন — ইউজার ও রোল' },
+      'admin-workspaces': { en: 'Admin — Workspaces', bn: 'এডমিন — ওয়ার্কস্পেস' },
+      'admin-fields': { en: 'Admin — Custom Fields', bn: 'এডমিন — কাস্টম ফিল্ড' },
+      'admin-visibility': { en: 'Admin — Field Visibility', bn: 'এডমিন — দৃশ্যমানতা' },
+      'admin-email': { en: 'Admin — Email Config', bn: 'এডমিন — ইমেইল কনফিগ' },
+      'admin-security': { en: 'Admin — Security', bn: 'এডমিন — সিকিউরিটি' },
+      'admin-integrations': { en: 'Admin — Integrations', bn: 'এডমিন — ইন্টিগ্রেশন' },
+      'admin-license': { en: 'Admin — License', bn: 'এডমিন — লাইসেন্স' },
     };
-    return language === 'bn' ? titles[activeCategory].bn : titles[activeCategory].en;
+    const title = titles[activeCategory] || titles.profile;
+    return language === 'bn' ? title.bn : title.en;
   };
 
   return (
