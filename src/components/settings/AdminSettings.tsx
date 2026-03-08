@@ -157,6 +157,95 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
     }
   };
 
+  const loadLicenseInfo = async () => {
+    setLoadingLicense(true);
+    try {
+      const stored = await getLicenseInfo();
+      setLicenseInfo(stored);
+
+      if (isSelfHosted()) {
+        try {
+          const status = await checkLicenseStatus(getApiUrl());
+          setLicenseServerStatus(status);
+        } catch {}
+      }
+    } catch (error) {
+      console.error('Failed to load license info:', error);
+    } finally {
+      setLoadingLicense(false);
+    }
+  };
+
+  const handleLicenseVerify = async () => {
+    if (!licenseKeyInput.trim()) return;
+    setVerifyingLicense(true);
+    try {
+      const result = await verifyLicenseViaBackend(licenseKeyInput.trim(), getApiUrl());
+      if (result.success) {
+        const info: LicenseInfo = {
+          licenseKey: licenseKeyInput.substring(0, 4) + '****',
+          status: (result.actual_status as any) || 'active',
+          maxDevices: result.max_devices || 5,
+          expiresAt: result.expires_at || null,
+          lastVerified: new Date().toISOString(),
+          installationId: getInstallationId(),
+          plan: getPlanFromMaxDevices(result.max_devices || 5),
+        };
+        await saveLicenseInfo(info);
+        setLicenseInfo(info);
+        setLicenseKeyInput('');
+        toast({ title: language === 'bn' ? 'লাইসেন্স যাচাই সফল' : 'License Verified!', description: result.message });
+        await loadLicenseInfo();
+      } else {
+        toast({ title: language === 'bn' ? 'যাচাই ব্যর্থ' : 'Verification Failed', description: result.message, variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setVerifyingLicense(false);
+    }
+  };
+
+  const handleLicenseRefresh = async () => {
+    setLoadingLicense(true);
+    try {
+      if (licenseInfo?.licenseKey && licenseInfo.licenseKey !== 'FREE' && licenseInfo.licenseKey !== '***') {
+        const result = await verifyLicenseViaBackend(licenseInfo.licenseKey, getApiUrl());
+        if (result.success) {
+          toast({ title: language === 'bn' ? 'লাইসেন্স রিফ্রেশ হয়েছে' : 'License Refreshed', description: result.message });
+        }
+      }
+      await loadLicenseInfo();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoadingLicense(false);
+    }
+  };
+
+  const getLicensePlanIcon = (plan: string) => {
+    switch (plan) {
+      case 'professional': return <Crown className="w-5 h-5 text-yellow-400" />;
+      case 'standard': return <Zap className="w-5 h-5 text-blue-400" />;
+      default: return <Star className="w-5 h-5 text-muted-foreground" />;
+    }
+  };
+
+  const getLicenseStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-green-500/20 text-green-500 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" /> Active</Badge>;
+      case 'free':
+        return <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/30"><Star className="w-3 h-3 mr-1" /> Free</Badge>;
+      case 'expired':
+        return <Badge className="bg-destructive/20 text-destructive border-destructive/30"><XCircle className="w-3 h-3 mr-1" /> Expired</Badge>;
+      case 'revoked':
+        return <Badge className="bg-destructive/20 text-destructive border-destructive/30"><XCircle className="w-3 h-3 mr-1" /> Revoked</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
   const loadAppSettings = async () => {
     try {
       const { data } = await supabase
