@@ -782,10 +782,10 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
             {/* Module Management */}
             {activeTab === 'modules' && (
               <ModuleSettings />
-            </TabsContent>
+            )}
 
             {/* Custom Form Fields */}
-            <TabsContent value="custom-fields" className="space-y-4 mt-4">
+            {activeTab === 'custom-fields' && (
               <CustomFormFieldManager />
             </TabsContent>
 
