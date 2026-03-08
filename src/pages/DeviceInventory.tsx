@@ -639,34 +639,32 @@ export default function DeviceInventoryPage() {
             {language === 'bn' ? 'আপনার সকল ডিভাইস পরিচালনা করুন' : 'Manage all your devices'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <DataExportImportButton preset="devices" />
+          <ReportActions
+            variant="compact"
+            headers={reportHeaders}
+            rows={reportRows}
+            filename={`device-inventory-${format(new Date(), 'yyyy-MM-dd')}`}
+            title="Device Inventory Report"
+            subtitle={`${filteredDevices.length} devices`}
+            summaryCards={[
+              { label: 'Total', value: stats.total },
+              { label: 'Available', value: stats.available },
+              { label: 'Assigned', value: stats.assigned },
+              { label: 'Maintenance', value: stats.maintenance },
+            ]}
+          />
           {isAdmin && (
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button size="sm" onClick={() => openDeviceDialog()} className="hover-glow">
-                <Plus className="h-4 w-4 mr-1" />
-                {language === 'bn' ? 'ডিভাইস যোগ' : 'Add Device'}
-              </Button>
-            </motion.div>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <MoreVertical className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">{language === 'bn' ? 'আরো' : 'More'}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => document.getElementById('device-report-trigger')?.click()}>
-                <Download className="h-4 w-4 mr-2" />
-                {language === 'bn' ? 'রিপোর্ট' : 'Report / Export'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => document.getElementById('device-import-trigger')?.click()}>
-                <FileText className="h-4 w-4 mr-2" />
-                {language === 'bn' ? 'ইম্পোর্ট / এক্সপোর্ট' : 'Import / Export Data'}
-              </DropdownMenuItem>
-              {isAdmin && (
-                <>
-                  <DropdownMenuSeparator />
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <MoreVertical className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">{language === 'bn' ? 'পরিচালনা' : 'Manage'}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => setBulkAssignDialog(true)}>
                     <Users className="h-4 w-4 mr-2" />
                     {language === 'bn' ? 'ব্যাচ বরাদ্দ' : 'Bulk Assign'}
@@ -679,31 +677,14 @@ export default function DeviceInventoryPage() {
                     <Tag className="h-4 w-4 mr-2" />
                     {language === 'bn' ? 'ক্যাটাগরি পরিচালনা' : 'Manage Categories'}
                   </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <div className="hidden">
-            <div id="device-report-trigger">
-              <ReportActions
-                variant="compact"
-                headers={reportHeaders}
-                rows={reportRows}
-                filename={`device-inventory-${format(new Date(), 'yyyy-MM-dd')}`}
-                title="Device Inventory Report"
-                subtitle={`${filteredDevices.length} devices`}
-                summaryCards={[
-                  { label: 'Total', value: stats.total },
-                  { label: 'Available', value: stats.available },
-                  { label: 'Assigned', value: stats.assigned },
-                  { label: 'Maintenance', value: stats.maintenance },
-                ]}
-              />
-            </div>
-            <div id="device-import-trigger">
-              <DataExportImportButton preset="devices" />
-            </div>
-          </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button size="sm" onClick={() => openDeviceDialog()}>
+                <Plus className="h-4 w-4 mr-1" />
+                {language === 'bn' ? 'ডিভাইস যোগ' : 'Add'}
+              </Button>
+            </>
+          )}
         </div>
       </motion.div>
 
