@@ -126,12 +126,14 @@ export function DeviceFilters({
     onFiltersChange(newFilters);
   };
 
+  const customFieldFilterCount = Object.keys(customFieldFilters).length;
+
   const activeFilterCount = Object.entries(filters).filter(
     ([key, value]) => key !== 'searchQuery' && value !== 'all' && value !== ''
-  ).length;
+  ).length + customFieldFilterCount;
 
   const advancedFilterCount = ['unitLocation', 'department', 'supportUser', 'supplier', 'ramType', 'storageType', 'processorGen']
-    .filter(key => filters[key as keyof FilterState] !== 'all').length;
+    .filter(key => filters[key as keyof FilterState] !== 'all').length + customFieldFilterCount;
 
   const clearAllFilters = () => {
     onFiltersChange({
