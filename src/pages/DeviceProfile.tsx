@@ -5,8 +5,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
    HardDrive, Calendar, DollarSign, User, Tag, 
    Package, FileText, AlertTriangle, CheckCircle, Clock,
   Wrench, ArrowRightLeft, Building2, Users, ArrowLeft, Lock,
-  Loader2, AlertCircle, LogIn, Ticket
+  Loader2, AlertCircle, LogIn, Ticket, Wifi, Server, Printer, Zap, Camera, Network, Settings
  } from 'lucide-react';
+import { getDeviceType, getFieldsForType, getTypeLabel, type DeviceType as DevType } from '@/components/device/deviceTypeConfig';
  import { Badge } from '@/components/ui/badge';
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  import { Separator } from '@/components/ui/separator';
