@@ -846,12 +846,22 @@ export default function DeviceInventoryPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              {/* View Section */}
                               <DropdownMenuItem onClick={() => setDetailsDialog({ open: true, device })}>
                                 <Eye className="h-4 w-4 mr-2" />
                                 {language === 'bn' ? 'বিস্তারিত দেখুন' : 'View Details'}
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openServiceDialog(device)}>
+                                <Wrench className="h-4 w-4 mr-2" />
+                                {language === 'bn' ? 'সার্ভিস ইতিহাস' : 'Service History'}
+                              </DropdownMenuItem>
                               {isAdmin && (
                                 <>
+                                  <DropdownMenuSeparator />
+                                  {/* Manage Section */}
+                                  <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                    {language === 'bn' ? 'পরিচালনা' : 'Manage'}
+                                  </div>
                                   <DropdownMenuItem onClick={() => openDeviceDialog(device)}>
                                     <Pencil className="h-4 w-4 mr-2" />
                                     {language === 'bn' ? 'সম্পাদনা' : 'Edit'}
@@ -860,15 +870,11 @@ export default function DeviceInventoryPage() {
                                     <User className="h-4 w-4 mr-2" />
                                     {language === 'bn' ? 'দ্রুত বরাদ্দ' : 'Quick Assign'}
                                   </DropdownMenuItem>
-                                </>
-                              )}
-                              <DropdownMenuItem onClick={() => openServiceDialog(device)}>
-                                <Wrench className="h-4 w-4 mr-2" />
-                                {language === 'bn' ? 'সার্ভিস ইতিহাস' : 'Service History'}
-                              </DropdownMenuItem>
-                              {isAdmin && (
-                                <>
                                   <DropdownMenuSeparator />
+                                  {/* Danger Section */}
+                                  <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                    {language === 'bn' ? 'বিপজ্জনক' : 'Danger'}
+                                  </div>
                                   <DropdownMenuItem 
                                     onClick={() => setDisposalDialog({ open: true, device })}
                                     className="text-orange-600 focus:text-orange-600"
@@ -910,244 +916,267 @@ export default function DeviceInventoryPage() {
             </DialogTitle>
           </DialogHeader>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Device Name */}
-            <div className="space-y-2">
-              <Label className="text-xs">{language === 'bn' ? 'ডিভাইসের নাম' : 'Device Name'} *</Label>
-              <Input
-                value={deviceForm.device_name}
-                onChange={(e) => setDeviceForm({ ...deviceForm, device_name: e.target.value })}
-                placeholder={language === 'bn' ? 'ল্যাপটপ HP ProBook 450' : 'Laptop HP ProBook 450'}
-                className="text-sm"
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="w-full grid grid-cols-4 mb-4">
+              <TabsTrigger value="basic" className="text-xs">
+                {language === 'bn' ? 'মৌলিক তথ্য' : 'Basic Info'}
+              </TabsTrigger>
+              <TabsTrigger value="purchase" className="text-xs">
+                {language === 'bn' ? 'ক্রয় তথ্য' : 'Purchase'}
+              </TabsTrigger>
+              <TabsTrigger value="assignment" className="text-xs">
+                {language === 'bn' ? 'বরাদ্দ' : 'Assignment'}
+              </TabsTrigger>
+              <TabsTrigger value="specs" className="text-xs">
+                {language === 'bn' ? 'স্পেসিফিকেশন' : 'Specs'}
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Basic Info Tab */}
+            <TabsContent value="basic" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs">{language === 'bn' ? 'ডিভাইসের নাম' : 'Device Name'} *</Label>
+                  <Input
+                    value={deviceForm.device_name}
+                    onChange={(e) => setDeviceForm({ ...deviceForm, device_name: e.target.value })}
+                    placeholder={language === 'bn' ? 'ল্যাপটপ HP ProBook 450' : 'Laptop HP ProBook 450'}
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">
+                    {language === 'bn' ? 'ডিভাইস নম্বর' : 'Device Number'}
+                    <span className="text-muted-foreground ml-1">
+                      ({language === 'bn' ? 'QR লিঙ্কের জন্য আবশ্যক' : 'Required for QR link'})
+                    </span>
+                  </Label>
+                  <Input
+                    value={deviceForm.device_number}
+                    onChange={(e) => setDeviceForm({ ...deviceForm, device_number: e.target.value.toUpperCase() })}
+                    placeholder={language === 'bn' ? 'DEV-001' : 'DEV-001'}
+                    className={`text-sm font-mono ${
+                      deviceForm.device_number.trim() && 
+                      devices.some(d => 
+                        d.device_number?.toLowerCase() === deviceForm.device_number.trim().toLowerCase() &&
+                        d.id !== deviceDialog.editing?.id
+                      ) ? 'border-destructive focus-visible:ring-destructive' : ''
+                    }`}
+                  />
+                  {deviceForm.device_number.trim() && 
+                    devices.some(d => 
+                      d.device_number?.toLowerCase() === deviceForm.device_number.trim().toLowerCase() &&
+                      d.id !== deviceDialog.editing?.id
+                    ) && (
+                    <p className="text-xs text-destructive">
+                      {language === 'bn' ? 'এই নম্বর ইতিমধ্যে ব্যবহৃত' : 'This number is already in use'}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">{language === 'bn' ? 'সিরিয়াল নম্বর' : 'Serial Number'}</Label>
+                  <Input
+                    value={deviceForm.serial_number}
+                    onChange={(e) => setDeviceForm({ ...deviceForm, serial_number: e.target.value })}
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</Label>
+                  <Select value={deviceForm.category_id} onValueChange={(v) => setDeviceForm({ ...deviceForm, category_id: v })}>
+                    <SelectTrigger className="text-sm">
+                      <SelectValue placeholder={language === 'bn' ? 'ক্যাটাগরি নির্বাচন করুন' : 'Select category'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">{language === 'bn' ? 'স্ট্যাটাস' : 'Status'}</Label>
+                  <Select value={deviceForm.status} onValueChange={(v) => setDeviceForm({ ...deviceForm, status: v })}>
+                    <SelectTrigger className="text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(status => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {language === 'bn' ? status.labelBn : status.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-xs">{language === 'bn' ? 'নোট' : 'Notes'}</Label>
+                  <Textarea
+                    value={deviceForm.notes}
+                    onChange={(e) => setDeviceForm({ ...deviceForm, notes: e.target.value })}
+                    className="text-sm"
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Purchase Tab */}
+            <TabsContent value="purchase" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs">{language === 'bn' ? 'ক্রয়ের তারিখ' : 'Purchase Date'}</Label>
+                  <Input
+                    type="date"
+                    value={deviceForm.purchase_date}
+                    onChange={(e) => setDeviceForm({ ...deviceForm, purchase_date: e.target.value })}
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">{language === 'bn' ? 'ডেলিভারি তারিখ' : 'Delivery Date'}</Label>
+                  <Input
+                    type="date"
+                    value={deviceForm.delivery_date}
+                    onChange={(e) => setDeviceForm({ ...deviceForm, delivery_date: e.target.value })}
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">{language === 'bn' ? 'সরবরাহকারী' : 'Supplier'}</Label>
+                  <Select
+                    value={deviceForm.supplier_id || "none"}
+                    onValueChange={(value) => setDeviceForm({ ...deviceForm, supplier_id: value === "none" ? "" : value })}
+                  >
+                    <SelectTrigger className="text-sm">
+                      <SelectValue placeholder={language === 'bn' ? 'সরবরাহকারী নির্বাচন করুন' : 'Select supplier'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        {language === 'bn' ? 'কোনো সরবরাহকারী নেই' : 'No supplier'}
+                      </SelectItem>
+                      {suppliers.filter(s => s.is_active).map((supplier) => (
+                        <SelectItem key={supplier.id} value={supplier.id}>
+                          {supplier.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">{language === 'bn' ? 'মূল্য (৳)' : 'Price (৳)'}</Label>
+                  <Input
+                    type="number"
+                    value={deviceForm.price}
+                    onChange={(e) => setDeviceForm({ ...deviceForm, price: e.target.value })}
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">{language === 'bn' ? 'রিকুইজিশন নম্বর' : 'Requisition Number'}</Label>
+                  <Input
+                    value={deviceForm.requisition_number}
+                    onChange={(e) => setDeviceForm({ ...deviceForm, requisition_number: e.target.value })}
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">{language === 'bn' ? 'BOD নম্বর' : 'BOD Number'}</Label>
+                  <Input
+                    value={deviceForm.bod_number}
+                    onChange={(e) => setDeviceForm({ ...deviceForm, bod_number: e.target.value })}
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">{language === 'bn' ? 'ওয়ারেন্টি তারিখ' : 'Warranty Date'}</Label>
+                  <Input
+                    type="date"
+                    value={deviceForm.warranty_date}
+                    onChange={(e) => setDeviceForm({ ...deviceForm, warranty_date: e.target.value })}
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-xs">{language === 'bn' ? 'বিল বিবরণ' : 'Bill Details'}</Label>
+                  <Textarea
+                    value={deviceForm.bill_details}
+                    onChange={(e) => setDeviceForm({ ...deviceForm, bill_details: e.target.value })}
+                    placeholder={language === 'bn' ? 'বিল নম্বর, তারিখ ইত্যাদি' : 'Bill number, date, etc.'}
+                    className="text-sm"
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Assignment Tab */}
+            <TabsContent value="assignment" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CascadingAssignment
+                  units={units}
+                  departments={departments}
+                  supportUsers={supportUsers}
+                  selectedUserId={deviceForm.support_user_id}
+                  onUserChange={(userId) => setDeviceForm({ ...deviceForm, support_user_id: userId })}
+                />
+
+                <div className="space-y-2">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <Building2 className="h-3.5 w-3.5" />
+                    {language === 'bn' ? 'ইউনিট লোকেশন (ফিজিক্যাল)' : 'Unit Location (Physical)'}
+                  </Label>
+                  <Select value={deviceForm.unit_id || "none"} onValueChange={(v) => setDeviceForm({ ...deviceForm, unit_id: v === "none" ? "" : v })}>
+                    <SelectTrigger className="text-sm">
+                      <SelectValue placeholder={language === 'bn' ? 'ইউনিট নির্বাচন করুন' : 'Select unit'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{language === 'bn' ? 'নির্বাচন করুন' : 'Select'}</SelectItem>
+                      {units.map(unit => (
+                        <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Specs Tab */}
+            <TabsContent value="specs" className="space-y-4">
+              <DeviceSpecsForm
+                categoryName={categories.find(c => c.id === deviceForm.category_id)?.name || null}
+                specs={{
+                  ram_info: deviceForm.ram_info,
+                  storage_info: deviceForm.storage_info,
+                  processor_info: deviceForm.processor_info,
+                  has_ups: deviceForm.has_ups,
+                  ups_info: deviceForm.ups_info,
+                  monitor_info: deviceForm.monitor_info,
+                  webcam_info: deviceForm.webcam_info,
+                  headset_info: deviceForm.headset_info,
+                  custom_specs: deviceForm.custom_specs,
+                }}
+                onChange={(specs) => setDeviceForm({ ...deviceForm, ...specs })}
               />
-            </div>
-
-            {/* Device Number */}
-            <div className="space-y-2">
-               <Label className="text-xs">
-                 {language === 'bn' ? 'ডিভাইস নম্বর' : 'Device Number'}
-                 <span className="text-muted-foreground ml-1">
-                   ({language === 'bn' ? 'QR লিঙ্কের জন্য আবশ্যক' : 'Required for QR link'})
-                 </span>
-               </Label>
-              <Input
-                value={deviceForm.device_number}
-                 onChange={(e) => setDeviceForm({ ...deviceForm, device_number: e.target.value.toUpperCase() })}
-                placeholder={language === 'bn' ? 'DEV-001' : 'DEV-001'}
-                 className={`text-sm font-mono ${
-                   deviceForm.device_number.trim() && 
-                   devices.some(d => 
-                     d.device_number?.toLowerCase() === deviceForm.device_number.trim().toLowerCase() &&
-                     d.id !== deviceDialog.editing?.id
-                   ) ? 'border-destructive focus-visible:ring-destructive' : ''
-                 }`}
-              />
-               {deviceForm.device_number.trim() && 
-                devices.some(d => 
-                  d.device_number?.toLowerCase() === deviceForm.device_number.trim().toLowerCase() &&
-                  d.id !== deviceDialog.editing?.id
-                ) && (
-                 <p className="text-xs text-destructive">
-                   {language === 'bn' ? 'এই নম্বর ইতিমধ্যে ব্যবহৃত' : 'This number is already in use'}
-                 </p>
-               )}
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">{language === 'bn' ? 'সিরিয়াল নম্বর' : 'Serial Number'}</Label>
-              <Input
-                value={deviceForm.serial_number}
-                onChange={(e) => setDeviceForm({ ...deviceForm, serial_number: e.target.value })}
-                className="text-sm"
-              />
-            </div>
-
-            {/* Category */}
-            <div className="space-y-2">
-              <Label className="text-xs">{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</Label>
-              <Select value={deviceForm.category_id} onValueChange={(v) => setDeviceForm({ ...deviceForm, category_id: v })}>
-                <SelectTrigger className="text-sm">
-                  <SelectValue placeholder={language === 'bn' ? 'ক্যাটাগরি নির্বাচন করুন' : 'Select category'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(cat => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Status */}
-            <div className="space-y-2">
-              <Label className="text-xs">{language === 'bn' ? 'স্ট্যাটাস' : 'Status'}</Label>
-              <Select value={deviceForm.status} onValueChange={(v) => setDeviceForm({ ...deviceForm, status: v })}>
-                <SelectTrigger className="text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map(status => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {language === 'bn' ? status.labelBn : status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Cascading Assignment: Unit > Department > User */}
-            <CascadingAssignment
-              units={units}
-              departments={departments}
-              supportUsers={supportUsers}
-              selectedUserId={deviceForm.support_user_id}
-              onUserChange={(userId) => setDeviceForm({ ...deviceForm, support_user_id: userId })}
-            />
-
-            {/* Unit Location (Physical Location) */}
-            <div className="space-y-2">
-              <Label className="text-xs flex items-center gap-1.5">
-                <Building2 className="h-3.5 w-3.5" />
-                {language === 'bn' ? 'ইউনিট লোকেশন (ফিজিক্যাল)' : 'Unit Location (Physical)'}
-              </Label>
-              <Select value={deviceForm.unit_id || "none"} onValueChange={(v) => setDeviceForm({ ...deviceForm, unit_id: v === "none" ? "" : v })}>
-                <SelectTrigger className="text-sm">
-                  <SelectValue placeholder={language === 'bn' ? 'ইউনিট নির্বাচন করুন' : 'Select unit'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{language === 'bn' ? 'নির্বাচন করুন' : 'Select'}</SelectItem>
-                  {units.map(unit => (
-                    <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Purchase Date */}
-            <div className="space-y-2">
-              <Label className="text-xs">{language === 'bn' ? 'ক্রয়ের তারিখ' : 'Purchase Date'}</Label>
-              <Input
-                type="date"
-                value={deviceForm.purchase_date}
-                onChange={(e) => setDeviceForm({ ...deviceForm, purchase_date: e.target.value })}
-                className="text-sm"
-              />
-            </div>
-
-            {/* Delivery Date */}
-            <div className="space-y-2">
-              <Label className="text-xs">{language === 'bn' ? 'ডেলিভারি তারিখ' : 'Delivery Date'}</Label>
-              <Input
-                type="date"
-                value={deviceForm.delivery_date}
-                onChange={(e) => setDeviceForm({ ...deviceForm, delivery_date: e.target.value })}
-                className="text-sm"
-              />
-            </div>
-
-            {/* Supplier */}
-            <div className="space-y-2">
-              <Label className="text-xs">{language === 'bn' ? 'সরবরাহকারী' : 'Supplier'}</Label>
-              <Select
-                value={deviceForm.supplier_id || "none"}
-                onValueChange={(value) => setDeviceForm({ ...deviceForm, supplier_id: value === "none" ? "" : value })}
-              >
-                <SelectTrigger className="text-sm">
-                  <SelectValue placeholder={language === 'bn' ? 'সরবরাহকারী নির্বাচন করুন' : 'Select supplier'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">
-                    {language === 'bn' ? 'কোনো সরবরাহকারী নেই' : 'No supplier'}
-                  </SelectItem>
-                  {suppliers.filter(s => s.is_active).map((supplier) => (
-                    <SelectItem key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Requisition Number */}
-            <div className="space-y-2">
-              <Label className="text-xs">{language === 'bn' ? 'রিকুইজিশন নম্বর' : 'Requisition Number'}</Label>
-              <Input
-                value={deviceForm.requisition_number}
-                onChange={(e) => setDeviceForm({ ...deviceForm, requisition_number: e.target.value })}
-                className="text-sm"
-              />
-            </div>
-
-            {/* BOD Number */}
-            <div className="space-y-2">
-              <Label className="text-xs">{language === 'bn' ? 'BOD নম্বর' : 'BOD Number'}</Label>
-              <Input
-                value={deviceForm.bod_number}
-                onChange={(e) => setDeviceForm({ ...deviceForm, bod_number: e.target.value })}
-                className="text-sm"
-              />
-            </div>
-
-            {/* Warranty Date */}
-            <div className="space-y-2">
-              <Label className="text-xs">{language === 'bn' ? 'ওয়ারেন্টি তারিখ' : 'Warranty Date'}</Label>
-              <Input
-                type="date"
-                value={deviceForm.warranty_date}
-                onChange={(e) => setDeviceForm({ ...deviceForm, warranty_date: e.target.value })}
-                className="text-sm"
-              />
-            </div>
-
-            {/* Price */}
-            <div className="space-y-2">
-              <Label className="text-xs">{language === 'bn' ? 'মূল্য (৳)' : 'Price (৳)'}</Label>
-              <Input
-                type="number"
-                value={deviceForm.price}
-                onChange={(e) => setDeviceForm({ ...deviceForm, price: e.target.value })}
-                className="text-sm"
-              />
-            </div>
-
-            {/* Bill Details */}
-            <div className="space-y-2 md:col-span-2">
-              <Label className="text-xs">{language === 'bn' ? 'বিল বিবরণ' : 'Bill Details'}</Label>
-              <Textarea
-                value={deviceForm.bill_details}
-                onChange={(e) => setDeviceForm({ ...deviceForm, bill_details: e.target.value })}
-                placeholder={language === 'bn' ? 'বিল নম্বর, তারিখ ইত্যাদি' : 'Bill number, date, etc.'}
-                className="text-sm"
-                rows={2}
-              />
-            </div>
-
-            {/* Device Specifications (conditional based on category) */}
-            <DeviceSpecsForm
-              categoryName={categories.find(c => c.id === deviceForm.category_id)?.name || null}
-              specs={{
-                ram_info: deviceForm.ram_info,
-                storage_info: deviceForm.storage_info,
-                processor_info: deviceForm.processor_info,
-                has_ups: deviceForm.has_ups,
-                ups_info: deviceForm.ups_info,
-                monitor_info: deviceForm.monitor_info,
-                webcam_info: deviceForm.webcam_info,
-                headset_info: deviceForm.headset_info,
-                custom_specs: deviceForm.custom_specs,
-              }}
-              onChange={(specs) => setDeviceForm({ ...deviceForm, ...specs })}
-            />
-
-            {/* Notes */}
-            <div className="space-y-2 md:col-span-2">
-              <Label className="text-xs">{language === 'bn' ? 'নোট' : 'Notes'}</Label>
-              <Textarea
-                value={deviceForm.notes}
-                onChange={(e) => setDeviceForm({ ...deviceForm, notes: e.target.value })}
-                className="text-sm"
-                rows={2}
-              />
-            </div>
-          </div>
+              {!categories.find(c => c.id === deviceForm.category_id) && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {language === 'bn' ? 'প্রথমে "মৌলিক তথ্য" ট্যাব থেকে ক্যাটাগরি নির্বাচন করুন' : 'Please select a category from "Basic Info" tab first'}
+                </p>
+              )}
+            </TabsContent>
+          </Tabs>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeviceDialog({ open: false, editing: null })}>
