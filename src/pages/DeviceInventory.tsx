@@ -34,6 +34,7 @@ import { DeviceDisposalDialog } from '@/components/device/DeviceDisposalDialog';
 import { AnimatedIcon, LoadingSpinner, PulsingDot } from '@/components/ui/animated-icon';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
 import { ReportActions } from '@/components/shared/ReportActions';
+import { useCustomFormFields } from '@/hooks/useCustomFormFields';
 
 const STATUS_OPTIONS = [
   { value: 'available', label: 'Available', labelBn: 'উপলব্ধ', color: 'bg-green-500/20 text-green-600' },
@@ -83,8 +84,10 @@ export default function DeviceInventoryPage() {
   } = useDeviceInventory();
 
   const { supportUsers, departments, units } = useSupportData();
+  const { fields: deviceCustomFields } = useCustomFormFields('device_inventory');
 
-  // Search and filter state
+  // Custom field filter state
+  const [customFieldFilters, setCustomFieldFilters] = useState<Record<string, any>>({});
   const [filters, setFilters] = useState({
     searchQuery: '',
     category: 'all',
@@ -266,9 +269,23 @@ export default function DeviceInventoryPage() {
         if (!user || user.department_id !== filters.department) return false;
       }
 
+      // Custom field filters (stored in custom_specs)
+      if (Object.keys(customFieldFilters).length > 0) {
+        const specs: Record<string, any> = device.custom_specs || {};
+        const matches = Object.entries(customFieldFilters).every(([key, value]) => {
+          const fieldValue = specs[key];
+          if (typeof value === 'boolean') return String(fieldValue) === String(value);
+          if (typeof value === 'string') {
+            return String(fieldValue || '').toLowerCase().includes(value.toLowerCase());
+          }
+          return fieldValue === value;
+        });
+        if (!matches) return false;
+      }
+
       return true;
     });
-  }, [devices, filters, supportUsers, suppliers]);
+  }, [devices, filters, supportUsers, suppliers, customFieldFilters]);
 
   // Check warranty status
   const getWarrantyStatus = (warrantyDate: string | null) => {
@@ -735,6 +752,9 @@ export default function DeviceInventoryPage() {
             suppliers={suppliers}
             statusOptions={STATUS_OPTIONS}
             devices={devices}
+            customFields={deviceCustomFields}
+            customFieldFilters={customFieldFilters}
+            onCustomFieldFiltersChange={setCustomFieldFilters}
           />
         </CardContent>
       </Card>

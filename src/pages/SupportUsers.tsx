@@ -24,6 +24,8 @@ import { useDeviceInventory } from '@/hooks/useDeviceInventory';
 import { useAuth } from '@/contexts/AuthContext';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
 import { ReportActions } from '@/components/shared/ReportActions';
+import { useCustomFormFields } from '@/hooks/useCustomFormFields';
+import { CustomFieldsFilter, filterByCustomFields } from '@/components/shared/CustomFieldsFilter';
 
 interface SupportUserTask {
   id: string;
@@ -65,6 +67,8 @@ export default function SupportUsers() {
   const [filterUnit, setFilterUnit] = useState<string>('all');
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [filterExtension, setFilterExtension] = useState<string>('all');
+  const [customFieldFilters, setCustomFieldFilters] = useState<Record<string, any>>({});
+  const { fields: supportUserCustomFields } = useCustomFormFields('support_user');
 
   // Dialog states
   const [unitDialog, setUnitDialog] = useState<{ open: boolean; editing: SupportUnit | null }>({ open: false, editing: null });
@@ -251,6 +255,20 @@ export default function SupportUsers() {
     // Extension number filter
     if (filterExtension !== 'all') {
       if (user.extension_number !== filterExtension) return false;
+    }
+
+    // Custom field filters
+    if (Object.keys(customFieldFilters).length > 0) {
+      const cf: Record<string, any> = (user as any).custom_fields || {};
+      const matches = Object.entries(customFieldFilters).every(([key, value]) => {
+        const fieldValue = cf[key];
+        if (typeof value === 'boolean') return fieldValue === value;
+        if (typeof value === 'string') {
+          return String(fieldValue || '').toLowerCase().includes(value.toLowerCase());
+        }
+        return fieldValue === value;
+      });
+      if (!matches) return false;
     }
 
     return true;
@@ -782,6 +800,15 @@ export default function SupportUsers() {
                   ))}
                 </SelectContent>
               </Select>
+            )}
+            {supportUserCustomFields.length > 0 && (
+              <div className="w-full">
+                <CustomFieldsFilter
+                  fields={supportUserCustomFields}
+                  filterValues={customFieldFilters}
+                  onFilterChange={setCustomFieldFilters}
+                />
+              </div>
             )}
             <div className="flex flex-wrap gap-2">
               <input

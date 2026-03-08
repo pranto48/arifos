@@ -11,6 +11,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { CustomFieldsFilter } from '@/components/shared/CustomFieldsFilter';
+import type { CustomFormField } from '@/hooks/useCustomFormFields';
 
 interface FilterState {
   searchQuery: string;
@@ -48,6 +50,9 @@ interface DeviceFiltersProps {
   suppliers: DeviceSupplier[];
   statusOptions: { value: string; label: string; labelBn: string }[];
   devices?: DeviceSuggestion[];
+  customFields?: CustomFormField[];
+  customFieldFilters?: Record<string, any>;
+  onCustomFieldFiltersChange?: (values: Record<string, any>) => void;
 }
 
 export function DeviceFilters({
@@ -60,6 +65,9 @@ export function DeviceFilters({
   suppliers,
   statusOptions,
   devices = [],
+  customFields = [],
+  customFieldFilters = {},
+  onCustomFieldFiltersChange,
 }: DeviceFiltersProps) {
   const { language } = useLanguage();
   const isMobile = useIsMobile();
@@ -118,12 +126,14 @@ export function DeviceFilters({
     onFiltersChange(newFilters);
   };
 
+  const customFieldFilterCount = Object.keys(customFieldFilters).length;
+
   const activeFilterCount = Object.entries(filters).filter(
     ([key, value]) => key !== 'searchQuery' && value !== 'all' && value !== ''
-  ).length;
+  ).length + customFieldFilterCount;
 
   const advancedFilterCount = ['unitLocation', 'department', 'supportUser', 'supplier', 'ramType', 'storageType', 'processorGen']
-    .filter(key => filters[key as keyof FilterState] !== 'all').length;
+    .filter(key => filters[key as keyof FilterState] !== 'all').length + customFieldFilterCount;
 
   const clearAllFilters = () => {
     onFiltersChange({
@@ -138,6 +148,7 @@ export function DeviceFilters({
       storageType: 'all',
       processorGen: 'all',
     });
+    onCustomFieldFiltersChange?.({});
   };
 
   const RAM_TYPES = [
@@ -332,6 +343,17 @@ export function DeviceFilters({
           </Select>
         </div>
       </div>
+
+      {/* Custom Fields Filter */}
+      {customFields.length > 0 && onCustomFieldFiltersChange && (
+        <div>
+          <CustomFieldsFilter
+            fields={customFields}
+            filterValues={customFieldFilters}
+            onFilterChange={onCustomFieldFiltersChange}
+          />
+        </div>
+      )}
     </motion.div>
   );
 
