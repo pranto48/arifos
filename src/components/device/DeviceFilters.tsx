@@ -148,6 +148,7 @@ export function DeviceFilters({
       storageType: 'all',
       processorGen: 'all',
     });
+    onCustomFieldFiltersChange?.({});
   };
 
   const RAM_TYPES = [
