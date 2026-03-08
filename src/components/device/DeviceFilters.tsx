@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
-import { Search, Filter, Building2, Users, Truck, Tag, Activity, X, Cpu, MemoryStick, HardDrive } from 'lucide-react';
+import { Search, Filter, Building2, Users, Truck, Tag, Activity, X, Cpu, MemoryStick, HardDrive, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -54,9 +55,8 @@ export function DeviceFilters({
   const { language } = useLanguage();
   const isMobile = useIsMobile();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
-  // Cascading filter logic
   const filteredDepartments = useMemo(() => {
     if (filters.unitLocation === 'all') return departments;
     return departments.filter(d => d.unit_id === filters.unitLocation);
@@ -75,21 +75,21 @@ export function DeviceFilters({
 
   const updateFilter = (key: keyof FilterState, value: string) => {
     const newFilters = { ...filters, [key]: value };
-    
-    // Reset cascading filters when parent changes
     if (key === 'unitLocation') {
       newFilters.department = 'all';
       newFilters.supportUser = 'all';
     } else if (key === 'department') {
       newFilters.supportUser = 'all';
     }
-    
     onFiltersChange(newFilters);
   };
 
   const activeFilterCount = Object.entries(filters).filter(
     ([key, value]) => key !== 'searchQuery' && value !== 'all' && value !== ''
   ).length;
+
+  const advancedFilterCount = ['unitLocation', 'department', 'supportUser', 'supplier', 'ramType', 'storageType', 'processorGen']
+    .filter(key => filters[key as keyof FilterState] !== 'all').length;
 
   const clearAllFilters = () => {
     onFiltersChange({
@@ -136,225 +136,174 @@ export function DeviceFilters({
     { value: 'apple_m4', label: 'Apple M4' },
   ];
 
-  const FilterContent = () => (
-    <motion.div 
-      className="space-y-3"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+  // Primary filters: Category + Status (always visible)
+  const PrimaryFilters = () => (
+    <div className="flex flex-wrap items-center gap-2">
+      <Select value={filters.category} onValueChange={(v) => updateFilter('category', v)}>
+        <SelectTrigger className="w-[140px] h-8 text-xs">
+          <Tag className="h-3 w-3 mr-1 text-muted-foreground" />
+          <SelectValue placeholder={language === 'bn' ? 'ক্যাটাগরি' : 'Category'} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{language === 'bn' ? 'সব ক্যাটাগরি' : 'All Categories'}</SelectItem>
+          {categories.map(cat => (
+            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={filters.status} onValueChange={(v) => updateFilter('status', v)}>
+        <SelectTrigger className="w-[130px] h-8 text-xs">
+          <Activity className="h-3 w-3 mr-1 text-muted-foreground" />
+          <SelectValue placeholder={language === 'bn' ? 'স্ট্যাটাস' : 'Status'} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{language === 'bn' ? 'সব স্ট্যাটাস' : 'All Status'}</SelectItem>
+          {statusOptions.map(status => (
+            <SelectItem key={status.value} value={status.value}>
+              {language === 'bn' ? status.labelBn : status.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {activeFilterCount > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={clearAllFilters}
+          className="h-8 px-2 text-xs text-destructive hover:text-destructive"
+        >
+          <X className="h-3 w-3 mr-1" />
+          {language === 'bn' ? 'মুছুন' : 'Clear'}
+          <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">{activeFilterCount}</Badge>
+        </Button>
+      )}
+    </div>
+  );
+
+  // Advanced filters: Location, Supplier, Hardware specs, User
+  const AdvancedFilters = () => (
+    <motion.div
+      className="space-y-3 pt-3"
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.2 }}
     >
-      {/* Primary Filters */}
-      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-2">
-        {/* Category */}
-        <Select value={filters.category} onValueChange={(v) => updateFilter('category', v)}>
-          <SelectTrigger className="w-full md:w-[140px] h-9 text-sm group">
-            <motion.div className="flex items-center gap-1.5" whileHover={{ scale: 1.02 }}>
-              <Tag className="h-3.5 w-3.5 text-primary transition-transform group-hover:rotate-12" />
-              <SelectValue placeholder={language === 'bn' ? 'ক্যাটাগরি' : 'Category'} />
-            </motion.div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{language === 'bn' ? 'সব ক্যাটাগরি' : 'All Categories'}</SelectItem>
-            {categories.map(cat => (
-              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Status */}
-        <Select value={filters.status} onValueChange={(v) => updateFilter('status', v)}>
-          <SelectTrigger className="w-full md:w-[130px] h-9 text-sm group">
-            <motion.div className="flex items-center gap-1.5" whileHover={{ scale: 1.02 }}>
-              <Activity className="h-3.5 w-3.5 text-primary transition-transform group-hover:animate-pulse" />
-              <SelectValue placeholder={language === 'bn' ? 'স্ট্যাটাস' : 'Status'} />
-            </motion.div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{language === 'bn' ? 'সব স্ট্যাটাস' : 'All Status'}</SelectItem>
-            {statusOptions.map(status => (
-              <SelectItem key={status.value} value={status.value}>
-                {language === 'bn' ? status.labelBn : status.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Unit Location */}
-        <Select value={filters.unitLocation} onValueChange={(v) => updateFilter('unitLocation', v)}>
-          <SelectTrigger className="w-full md:w-[130px] h-9 text-sm group">
-            <motion.div className="flex items-center gap-1.5" whileHover={{ scale: 1.02 }}>
-              <Building2 className="h-3.5 w-3.5 text-primary transition-transform group-hover:scale-110" />
+      <Separator />
+      
+      {/* Location & Supplier Row */}
+      <div>
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+          {language === 'bn' ? 'লোকেশন ও সাপ্লায়ার' : 'Location & Supplier'}
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <Select value={filters.unitLocation} onValueChange={(v) => updateFilter('unitLocation', v)}>
+            <SelectTrigger className="h-8 text-xs">
+              <Building2 className="h-3 w-3 mr-1 text-muted-foreground" />
               <SelectValue placeholder={language === 'bn' ? 'ইউনিট' : 'Unit'} />
-            </motion.div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{language === 'bn' ? 'সব ইউনিট' : 'All Units'}</SelectItem>
-            {units.map(unit => (
-              <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === 'bn' ? 'সব ইউনিট' : 'All Units'}</SelectItem>
+              {units.map(unit => (
+                <SelectItem key={unit.id} value={unit.id}>{unit.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        {/* Supplier */}
-        <Select value={filters.supplier} onValueChange={(v) => updateFilter('supplier', v)}>
-          <SelectTrigger className="w-full md:w-[140px] h-9 text-sm group">
-            <motion.div className="flex items-center gap-1.5" whileHover={{ scale: 1.02 }}>
-              <Truck className="h-3.5 w-3.5 text-primary transition-transform group-hover:translate-x-1" />
+          <Select value={filters.department} onValueChange={(v) => updateFilter('department', v)}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder={language === 'bn' ? 'বিভাগ' : 'Department'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === 'bn' ? 'সব বিভাগ' : 'All Depts'}</SelectItem>
+              {filteredDepartments.map(dept => (
+                <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.supportUser} onValueChange={(v) => updateFilter('supportUser', v)}>
+            <SelectTrigger className="h-8 text-xs">
+              <Users className="h-3 w-3 mr-1 text-muted-foreground" />
+              <SelectValue placeholder={language === 'bn' ? 'ব্যবহারকারী' : 'User'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === 'bn' ? 'সব ব্যবহারকারী' : 'All Users'}</SelectItem>
+              {filteredUsers.map(user => (
+                <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.supplier} onValueChange={(v) => updateFilter('supplier', v)}>
+            <SelectTrigger className="h-8 text-xs">
+              <Truck className="h-3 w-3 mr-1 text-muted-foreground" />
               <SelectValue placeholder={language === 'bn' ? 'সাপ্লায়ার' : 'Supplier'} />
-            </motion.div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{language === 'bn' ? 'সব সাপ্লায়ার' : 'All Suppliers'}</SelectItem>
-            {suppliers.filter(s => s.is_active).map(supplier => (
-              <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === 'bn' ? 'সব সাপ্লায়ার' : 'All Suppliers'}</SelectItem>
+              {suppliers.filter(s => s.is_active).map(supplier => (
+                <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Hardware Specs Filters */}
-      <div className="grid grid-cols-3 gap-2 md:flex md:flex-wrap md:gap-2">
-        {/* RAM Type */}
-        <Select value={filters.ramType} onValueChange={(v) => updateFilter('ramType', v)}>
-          <SelectTrigger className="w-full md:w-[120px] h-9 text-sm group">
-            <motion.div className="flex items-center gap-1.5" whileHover={{ scale: 1.02 }}>
-              <MemoryStick className="h-3.5 w-3.5 text-primary" />
+      {/* Hardware Specs Row */}
+      <div>
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+          {language === 'bn' ? 'হার্ডওয়্যার স্পেসিফিকেশন' : 'Hardware Specs'}
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          <Select value={filters.ramType} onValueChange={(v) => updateFilter('ramType', v)}>
+            <SelectTrigger className="h-8 text-xs">
+              <MemoryStick className="h-3 w-3 mr-1 text-muted-foreground" />
               <SelectValue placeholder="RAM" />
-            </motion.div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{language === 'bn' ? 'সব RAM' : 'All RAM'}</SelectItem>
-            {RAM_TYPES.map(r => (
-              <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === 'bn' ? 'সব RAM' : 'All RAM'}</SelectItem>
+              {RAM_TYPES.map(r => (
+                <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        {/* Storage Type */}
-        <Select value={filters.storageType} onValueChange={(v) => updateFilter('storageType', v)}>
-          <SelectTrigger className="w-full md:w-[130px] h-9 text-sm group">
-            <motion.div className="flex items-center gap-1.5" whileHover={{ scale: 1.02 }}>
-              <HardDrive className="h-3.5 w-3.5 text-primary" />
+          <Select value={filters.storageType} onValueChange={(v) => updateFilter('storageType', v)}>
+            <SelectTrigger className="h-8 text-xs">
+              <HardDrive className="h-3 w-3 mr-1 text-muted-foreground" />
               <SelectValue placeholder="Storage" />
-            </motion.div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{language === 'bn' ? 'সব স্টোরেজ' : 'All Storage'}</SelectItem>
-            {STORAGE_TYPES.map(s => (
-              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === 'bn' ? 'সব স্টোরেজ' : 'All Storage'}</SelectItem>
+              {STORAGE_TYPES.map(s => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        {/* Processor Generation */}
-        <Select value={filters.processorGen} onValueChange={(v) => updateFilter('processorGen', v)}>
-          <SelectTrigger className="w-full md:w-[140px] h-9 text-sm group">
-            <motion.div className="flex items-center gap-1.5" whileHover={{ scale: 1.02 }}>
-              <Cpu className="h-3.5 w-3.5 text-primary" />
+          <Select value={filters.processorGen} onValueChange={(v) => updateFilter('processorGen', v)}>
+            <SelectTrigger className="h-8 text-xs">
+              <Cpu className="h-3 w-3 mr-1 text-muted-foreground" />
               <SelectValue placeholder="Processor" />
-            </motion.div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{language === 'bn' ? 'সব প্রসেসর' : 'All Processors'}</SelectItem>
-            {PROCESSOR_GENS.map(p => (
-              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === 'bn' ? 'সব প্রসেসর' : 'All Processors'}</SelectItem>
+              {PROCESSOR_GENS.map(p => (
+                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-
-      {/* Cascading User Filter - Advanced */}
-      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-        <CollapsibleTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-full justify-between text-xs text-muted-foreground hover:text-foreground"
-          >
-            <span className="flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5" />
-              {language === 'bn' ? 'ব্যবহারকারী ফিল্টার' : 'User Filter'}
-            </span>
-            <motion.span
-              animate={{ rotate: showAdvanced ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              ▼
-            </motion.span>
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <motion.div 
-            className="grid grid-cols-2 gap-2 pt-2"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-          >
-            <Select 
-              value={filters.department} 
-              onValueChange={(v) => updateFilter('department', v)}
-              disabled={filters.unitLocation === 'all' && departments.length === 0}
-            >
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder={language === 'bn' ? 'বিভাগ' : 'Department'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{language === 'bn' ? 'সব বিভাগ' : 'All Departments'}</SelectItem>
-                {filteredDepartments.map(dept => (
-                  <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select 
-              value={filters.supportUser} 
-              onValueChange={(v) => updateFilter('supportUser', v)}
-            >
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder={language === 'bn' ? 'ব্যবহারকারী' : 'User'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{language === 'bn' ? 'সব ব্যবহারকারী' : 'All Users'}</SelectItem>
-                {filteredUsers.map(user => (
-                  <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </motion.div>
-        </CollapsibleContent>
-      </Collapsible>
-
-      {/* Active Filters Display */}
-      <AnimatePresence>
-        {activeFilterCount > 0 && (
-          <motion.div 
-            className="flex flex-wrap items-center gap-2"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <span className="text-xs text-muted-foreground">
-              {language === 'bn' ? 'সক্রিয় ফিল্টার:' : 'Active filters:'}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearAllFilters}
-              className="h-6 px-2 text-xs text-destructive hover:text-destructive"
-            >
-              <X className="h-3 w-3 mr-1" />
-              {language === 'bn' ? 'সব মুছুন' : 'Clear all'}
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 
   if (isMobile) {
     return (
       <div className="space-y-2">
-        {/* Mobile Search */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -368,19 +317,11 @@ export function DeviceFilters({
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="h-10 w-10 relative">
-                <motion.div whileTap={{ scale: 0.9 }}>
-                  <Filter className="h-4 w-4" />
-                </motion.div>
+                <Filter className="h-4 w-4" />
                 {activeFilterCount > 0 && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1"
-                  >
-                    <Badge className="h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-primary">
-                      {activeFilterCount}
-                    </Badge>
-                  </motion.div>
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-primary">
+                    {activeFilterCount}
+                  </Badge>
                 )}
               </Button>
             </SheetTrigger>
@@ -391,8 +332,9 @@ export function DeviceFilters({
                   {language === 'bn' ? 'ফিল্টার' : 'Filters'}
                 </SheetTitle>
               </SheetHeader>
-              <div className="mt-4">
-                <FilterContent />
+              <div className="mt-4 space-y-3">
+                <PrimaryFilters />
+                <AdvancedFilters />
               </div>
             </SheetContent>
           </Sheet>
@@ -402,25 +344,43 @@ export function DeviceFilters({
   }
 
   return (
-    <div className="space-y-3">
-      {/* Desktop Search + Filters */}
+    <div className="space-y-2">
+      {/* Search + Primary Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <motion.div
-            className="absolute left-3 top-1/2 -translate-y-1/2"
-            whileHover={{ scale: 1.1 }}
-          >
-            <Search className="h-4 w-4 text-muted-foreground" />
-          </motion.div>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={language === 'bn' ? 'ডিভাইস, সিরিয়াল, সাপ্লায়ার খুঁজুন...' : 'Search device, serial, supplier...'}
             value={filters.searchQuery}
             onChange={(e) => updateFilter('searchQuery', e.target.value)}
-            className="pl-9 h-9 text-sm transition-all focus:ring-2 focus:ring-primary/20"
+            className="pl-9 h-8 text-sm"
           />
         </div>
+        <PrimaryFilters />
       </div>
-      <FilterContent />
+
+      {/* More Filters Toggle */}
+      <Collapsible open={showMore} onOpenChange={setShowMore}>
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+          >
+            <SlidersHorizontal className="h-3 w-3" />
+            {language === 'bn' ? 'আরো ফিল্টার' : 'More Filters'}
+            {advancedFilterCount > 0 && (
+              <Badge variant="secondary" className="h-4 px-1 text-[10px]">{advancedFilterCount}</Badge>
+            )}
+            <ChevronDown className={cn("h-3 w-3 transition-transform", showMore && "rotate-180")} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <AnimatePresence>
+            {showMore && <AdvancedFilters />}
+          </AnimatePresence>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
