@@ -803,107 +803,121 @@ export default function Tasks() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Add details..."
-                rows={3}
-              />
-            </div>
+            <FieldVisibility entityType="task" fieldName="description">
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Add details..."
+                  rows={3}
+                />
+              </div>
+            </FieldVisibility>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select
-                  value={formData.priority}
-                  onValueChange={(v) => setFormData((f) => ({ ...f, priority: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <Select
-                  value={formData.category_id}
-                  onValueChange={(v) => setFormData((f) => ({ ...f, category_id: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: cat.color }}
-                          />
-                          {cat.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <FieldVisibility entityType="task" fieldName="priority">
+                <div className="space-y-2">
+                  <Label>Priority</Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(v) => setFormData((f) => ({ ...f, priority: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </FieldVisibility>
+              <FieldVisibility entityType="task" fieldName="category_id">
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select
+                    value={formData.category_id}
+                    onValueChange={(v) => setFormData((f) => ({ ...f, category_id: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            {cat.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </FieldVisibility>
             </div>
             {mode === 'office' && (
-              <div className="space-y-2">
-                <Label>Support User</Label>
-                <Select
-                  value={formData.support_user_id}
-                  onValueChange={(v) => setFormData((f) => ({ ...f, support_user_id: v === 'none' ? '' : v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select support user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Support User</SelectItem>
-                    {allSupportUsers.map((sUser) => (
-                      <SelectItem key={sUser.id} value={sUser.id}>
-                        <div className="flex flex-col">
-                          <span>{sUser.name}</span>
-                          <span className="text-xs text-muted-foreground">{sUser.unit_name} → {sUser.department_name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <FieldVisibility entityType="task" fieldName="support_user_id">
+                <div className="space-y-2">
+                  <Label>Support User</Label>
+                  <Select
+                    value={formData.support_user_id}
+                    onValueChange={(v) => setFormData((f) => ({ ...f, support_user_id: v === 'none' ? '' : v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select support user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Support User</SelectItem>
+                      {allSupportUsers.map((sUser) => (
+                        <SelectItem key={sUser.id} value={sUser.id}>
+                          <div className="flex flex-col">
+                            <span>{sUser.name}</span>
+                            <span className="text-xs text-muted-foreground">{sUser.unit_name} → {sUser.department_name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </FieldVisibility>
             )}
-            <div className="space-y-2">
-              <Label>Due Date</Label>
-              <Input
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData((f) => ({ ...f, due_date: e.target.value }))}
+            <FieldVisibility entityType="task" fieldName="due_date">
+              <div className="space-y-2">
+                <Label>Due Date</Label>
+                <Input
+                  type="date"
+                  value={formData.due_date}
+                  onChange={(e) => setFormData((f) => ({ ...f, due_date: e.target.value }))}
+                />
+              </div>
+            </FieldVisibility>
+            <FieldVisibility entityType="task" fieldName="is_recurring">
+              <RecurringEventForm
+                isRecurring={formData.is_recurring}
+                onIsRecurringChange={(v) => setFormData((f) => ({ ...f, is_recurring: v }))}
+                recurringPattern={formData.recurring_pattern}
+                onRecurringPatternChange={(v) => setFormData((f) => ({ ...f, recurring_pattern: v }))}
               />
-            </div>
-            <RecurringEventForm
-              isRecurring={formData.is_recurring}
-              onIsRecurringChange={(v) => setFormData((f) => ({ ...f, is_recurring: v }))}
-              recurringPattern={formData.recurring_pattern}
-              onRecurringPatternChange={(v) => setFormData((f) => ({ ...f, recurring_pattern: v }))}
-            />
+            </FieldVisibility>
             {editingTask && (
-              <TaskFollowUp
-                taskId={editingTask.id}
-                needsFollowUp={formData.needs_follow_up}
-                followUpDate={formData.follow_up_date || null}
-                onUpdate={(data) => setFormData((f) => ({
-                  ...f,
-                  needs_follow_up: data.needs_follow_up,
-                  follow_up_date: data.follow_up_date || '',
-                }))}
-              />
+              <FieldVisibility entityType="task" fieldName="follow_up_date">
+                <TaskFollowUp
+                  taskId={editingTask.id}
+                  needsFollowUp={formData.needs_follow_up}
+                  followUpDate={formData.follow_up_date || null}
+                  onUpdate={(data) => setFormData((f) => ({
+                    ...f,
+                    needs_follow_up: data.needs_follow_up,
+                    follow_up_date: data.follow_up_date || '',
+                  }))}
+                />
+              </FieldVisibility>
             )}
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
