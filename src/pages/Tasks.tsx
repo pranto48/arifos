@@ -161,52 +161,45 @@ function SortableTask({ task, checklists, categories, supportUserInfo, onToggle,
               </div>
             )}
           </div>
-          {checklists.length > 0 && (
-            <Badge variant="outline" className="text-[10px] md:text-xs">
-              {completedCount}/{checklists.length}
-            </Badge>
-          )}
-          {category && (
-            <Badge
-              variant="outline" 
-              className="text-[10px] md:text-xs flex items-center gap-1 max-w-[80px] md:max-w-none truncate"
-              style={{ borderColor: category.color, color: category.color }}
-            >
-              <FolderOpen className="h-2.5 w-2.5 md:h-3 md:w-3 flex-shrink-0" />
-              <span className="truncate">{category.name}</span>
-            </Badge>
-          )}
-          {task.is_recurring && (
-            <Badge variant="outline" className="text-[10px] md:text-xs flex items-center gap-1 hidden md:flex">
-              <Repeat className="h-3 w-3" />
-              {getPatternLabel(task.recurring_pattern || 'weekly')}
-            </Badge>
-          )}
-          {task.needs_follow_up && (
-            <Badge variant="outline" className="text-[10px] md:text-xs flex items-center gap-1 border-amber-500/50 text-amber-500">
-              <Flag className="h-3 w-3" />
-              <span className="hidden md:inline">
-                {task.follow_up_date ? format(new Date(task.follow_up_date), 'MMM d') : 'Follow-up'}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {task.priority && (
+              <Badge className={`text-[10px] md:text-xs ${priorityColors[task.priority] || 'bg-muted text-muted-foreground'}`}>
+                {task.priority}
+              </Badge>
+            )}
+            {task.due_date && (
+              <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
+                {format(new Date(task.due_date), 'MMM d')}
               </span>
-            </Badge>
-          )}
-          {task.priority && (
-            <Badge className={`text-[10px] md:text-xs ${priorityColors[task.priority] || 'bg-muted text-muted-foreground'}`}>
-              {task.priority}
-            </Badge>
-          )}
-          {task.due_date && (
-            <span className="text-[10px] md:text-xs text-muted-foreground">
-              {format(new Date(task.due_date), 'MMM d')}
-            </span>
-          )}
-          <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
-          </Collapsible>
+            )}
+            {checklists.length > 0 && (
+              <Badge variant="outline" className="text-[10px] md:text-xs hidden sm:flex">
+                {completedCount}/{checklists.length}
+              </Badge>
+            )}
+            {category && (
+              <Badge
+                variant="outline" 
+                className="text-[10px] md:text-xs items-center gap-1 max-w-[60px] md:max-w-none truncate hidden sm:flex"
+                style={{ borderColor: category.color, color: category.color }}
+              >
+                <FolderOpen className="h-2.5 w-2.5 flex-shrink-0" />
+                <span className="truncate">{category.name}</span>
+              </Badge>
+            )}
+            {task.needs_follow_up && (
+              <Badge variant="outline" className="text-[10px] flex items-center gap-0.5 border-amber-500/50 text-amber-500">
+                <Flag className="h-2.5 w-2.5" />
+              </Badge>
+            )}
+            <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8">
+                  {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </Button>
+              </CollapsibleTrigger>
+            </Collapsible>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
