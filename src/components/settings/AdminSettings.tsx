@@ -1211,10 +1211,12 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
               
               {/* SMTP Settings */}
               <SmtpSettings />
-            </TabsContent>
+            </div>
+            )}
 
             {/* Security Settings */}
-            <TabsContent value="security" className="space-y-4 mt-4">
+            {activeTab === 'security' && (
+            <div className="space-y-4">
               <div className="space-y-4">
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
                   <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
