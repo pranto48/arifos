@@ -343,6 +343,17 @@ export function DeviceFilters({
           </Select>
         </div>
       </div>
+
+      {/* Custom Fields Filter */}
+      {customFields.length > 0 && onCustomFieldFiltersChange && (
+        <div>
+          <CustomFieldsFilter
+            fields={customFields}
+            filterValues={customFieldFilters}
+            onFilterChange={onCustomFieldFiltersChange}
+          />
+        </div>
+      )}
     </motion.div>
   );
 
