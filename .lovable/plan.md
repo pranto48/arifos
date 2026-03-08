@@ -1,117 +1,93 @@
 
 
-# Plan: Cross-Platform Full Database Backup & Restore
+## Analysis: Why Restored Data Does Not Appear in Docker
 
-## What This Does
+### Root Cause (Critical Discovery)
 
-Creates a unified backup system where a backup file from Docker can be restored to Cloud (Supabase) and vice versa. Both environments will export/import the **same universal JSON format** covering ALL tables.
+The restore operation **works correctly** — data IS successfully written to the PostgreSQL database via the backend API (`/api/data/:table/upsert`). The `user_id` is properly remapped on line 706 of DataExport.tsx and again on line 1165 of server.js.
 
-## Current State
+**The real problem**: Every page in the application (Tasks, Notes, Goals, Dashboard, etc.) fetches data using `supabase.from('tasks').select(...)` directly. In Docker mode, the Supabase client points to `http://localhost:9999` — a dummy URL that doesn't exist. This means:
 
-The existing `DataExport.tsx` backup only covers 16 personal data tables (tasks, notes, goals, etc.) using camelCase keys. It misses shared/office tables: `support_users`, `support_departments`, `support_units`, `device_inventory`, `device_categories`, `device_suppliers`, `device_service_history`, `support_tickets`, `ticket_activity_log`, `ticket_requesters`, `loans`, `loan_payments`, `task_checklists`, `task_follow_up_notes`, `task_assignments`, `task_categories` (with category_type), `app_notifications`, `custom_form_fields`, `form_field_config`, `module_config`, `user_roles`, `profiles`, `device_transfer_history`.
+- Restore writes data to PostgreSQL via `/api/data/:table` — **works**
+- Pages read data via `supabase.from().select()` hitting `localhost:9999` — **fails silently**
+- Result: "restore complete" but nothing shows anywhere
 
-## Approach
+The error logs confirm this: every single `localhost:9999/rest/v1/...` request fails with `ERR_CONNECTION_REFUSED`.
 
-### 1. Universal Backup Format (version 3.0)
+### Scope of the Problem
 
-Create a new backup format that uses **table names as keys** (not camelCase) and includes ALL tables:
+There are **167 `supabase.from()` calls across 9 page files** plus additional calls in hooks and components. Making every single page dual-mode is a massive undertaking that would touch virtually every file in the application.
 
-```json
-{
-  "format": "lifeos-universal",
-  "version": "3.0",
-  "source": "cloud" | "docker",
-  "exportedAt": "...",
-  "userId": "...",
-  "tables": {
-    "profiles": [...],
-    "user_roles": [...],
-    "tasks": [...],
-    "task_categories": [...],
-    "task_checklists": [...],
-    "task_follow_up_notes": [...],
-    "task_assignments": [...],
-    "notes": [...],
-    "goals": [...],
-    "goal_milestones": [...],
-    "projects": [...],
-    "project_milestones": [...],
-    "transactions": [...],
-    "budgets": [...],
-    "budget_categories": [...],
-    "habits": [...],
-    "habit_completions": [...],
-    "investments": [...],
-    "salary_entries": [...],
-    "family_members": [...],
-    "family_events": [...],
-    "support_units": [...],
-    "support_departments": [...],
-    "support_users": [...],
-    "support_tickets": [...],
-    "device_categories": [...],
-    "device_suppliers": [...],
-    "device_inventory": [...],
-    "device_service_history": [...],
-    "device_transfer_history": [...],
-    "loans": [...],
-    "loan_payments": [...],
-    "custom_form_fields": [...],
-    "form_field_config": [...],
-    "module_config": [...]
-  }
-}
-```
+### Proposed Solution: Proxy Supabase REST Calls Through the Backend
 
-### 2. Changes to `DataExport.tsx`
+Instead of rewriting every page, we intercept at the infrastructure level:
 
-- **Full Backup button**: Uses the new universal format, fetching ALL tables (both user-scoped and shared). Works on both Docker and Cloud via the existing dual-path (`supabase` vs `selfHostedApi`).
-- **Export**: Adds a `source` field ("cloud" or "docker") so the restore knows what environment the backup came from.
-- **Backward compatibility**: The restore still accepts old v2.0 backups (camelCase keys) by mapping them to table names.
-- Add all missing tables to `fetchAllData()` and `executeSelectiveRestore()`.
-- During restore, strip `search_vector`, `created_at`, `updated_at` and remap `user_id` to the current user for user-scoped tables.
+**1. Add a PostgREST-compatible proxy layer to the Docker backend (`docker/backend/server.js`)**
 
-### 3. Cross-Platform Restore Logic
+Add a route handler for `/rest/v1/:table` that translates Supabase-style REST API calls into direct PostgreSQL queries. This way, when the Supabase client in Docker mode calls `localhost:9999/rest/v1/tasks?select=*&user_id=eq.xxx`, the nginx proxy routes it to the backend which executes the equivalent SQL query.
 
-When restoring a Cloud backup to Docker (or vice versa):
-- **user_id remapping**: All `user_id` fields are replaced with the current authenticated user's ID.
-- **Shared tables** (support_users, device_inventory, etc.): `user_id` is also remapped since it represents "created by" not ownership.
-- **Generated columns** stripped: `search_vector`, `ticket_number` (regenerated by trigger).
-- **Table ordering**: Restore parents before children (units → departments → users → devices → service history).
-- **Conflict handling**: Uses upsert with `onConflict: 'id'` to handle duplicates.
+The proxy will handle:
+- `GET /rest/v1/:table` — Parse PostgREST query params (`select`, `eq`, `order`, `limit`, `offset`, `in`, `not.is`, `gte`, `lte`, `like`, `neq`, `or`)
+- `POST /rest/v1/:table` — Insert rows (handle both single and array bodies)
+- `PATCH /rest/v1/:table` — Update rows with filter params
+- `DELETE /rest/v1/:table` — Delete rows with filter params
+- `HEAD /rest/v1/:table` — Return count headers (used by some operations)
 
-### 4. RestoreComparisonDialog Update
+Auth will be extracted from the `apikey`/`Authorization` header that the Supabase client sends.
 
-- Add all new table types to `DATA_TYPES` list so users can selectively restore shared/office data.
-- Update `loadCurrentData` to count rows from all new tables.
-- Group tables in the UI: Personal, Office/Support, Finance, System Config.
+**2. Update the Supabase client URL in Docker builds (`Dockerfile`)**
 
-### 5. Files Modified
+Change `VITE_SUPABASE_URL` from `http://localhost:9999` to an empty string or a relative URL, and configure nginx to proxy `/rest/v1/` requests to the backend.
 
-- **`src/components/settings/DataExport.tsx`**: Add all tables to `fetchAllData()`, update `executeSelectiveRestore()` with full table ordering, add v3.0 format support, backward compat for v2.0.
-- **`src/components/settings/RestoreComparisonDialog.tsx`**: Add all new data types, grouped display, support Docker self-hosted count queries.
+**3. Update nginx proxy config (`nginx.conf`)**
 
-### 6. Technical Details
+Add a proxy rule so `/rest/v1/` requests are forwarded to the backend server alongside the existing `/api/` proxy.
 
-**Table dependency order for delete (children first):**
+**4. Handle the `functions/v1/` calls**
+
+Add a catch-all for `/functions/v1/` that returns graceful no-op responses in Docker mode (these are edge functions that don't exist in self-hosted).
+
+### Technical Details
+
+**PostgREST query param parser** — the key translations needed:
+
 ```text
-ticket_activity_log → support_tickets → ticket_requesters
-device_service_history → device_transfer_history → device_inventory
-loan_payments → loans
-task_checklists → task_follow_up_notes → task_assignments → tasks
-habit_completions → habits
-goal_milestones → goals
-project_milestones → projects
-family_events → family_members
-transactions → budgets → budget_categories
-support_users → support_departments → support_units
+?select=*                          → SELECT *
+?select=id,title,status            → SELECT id, title, status
+&user_id=eq.{uuid}                 → WHERE user_id = '{uuid}'
+&status=neq.pending                → WHERE status != 'pending'
+&date=gte.2026-02-01               → WHERE date >= '2026-02-01'
+&order=created_at.desc             → ORDER BY created_at DESC
+&limit=20&offset=0                 → LIMIT 20 OFFSET 0
+&or=(col1.eq.val1,col2.eq.val2)    → WHERE (col1 = 'val1' OR col2 = 'val2')
+&col=in.(val1,val2)                → WHERE col IN ('val1', 'val2')
+&col=not.is.null                   → WHERE col IS NOT NULL
 ```
 
-**Restore order (parents first):** reverse of above.
+**Auth handling** — The Supabase client sends the anon key as `apikey` header plus the user's JWT in `Authorization: Bearer`. In Docker mode, the JWT is the self-hosted token. We need to:
+- Accept both the dummy anon key and the self-hosted JWT
+- Extract user identity from the self-hosted JWT via `verifyToken()`
+- Scope queries by user_id automatically for data tables
 
-**Shared vs user-scoped tables:**
-- User-scoped: tasks, notes, goals, transactions, habits, investments, etc.
-- Shared (remap user_id as creator): support_units, support_departments, support_users, device_*, module_config, custom_form_fields, form_field_config
+**RPC calls** — Handle `POST /rest/v1/rpc/:function_name` for database functions like `get_support_users_safe`.
 
-No database migrations needed -- this is purely frontend logic changes.
+### Files to modify
+
+- `docker/backend/server.js` — Add PostgREST-compatible proxy routes (~200 lines)
+- `nginx.conf` — Add `/rest/v1/` and `/functions/v1/` proxy rules
+- `Dockerfile` — Change `VITE_SUPABASE_URL` to point to the app itself (e.g., `http://localhost:80` or use relative URL)
+
+### Why this approach
+
+- **Zero changes to any page or component** — all 167+ `supabase.from()` calls work as-is
+- **Backup, restore, AND normal page rendering** all work
+- **Future-proof** — any new pages automatically work in Docker mode
+- **Single point of maintenance** — the proxy layer in server.js
+
+### Risk mitigation
+
+- The PostgREST query parser doesn't need to be 100% complete — just the subset actually used by the app
+- Unknown query params are safely ignored
+- Tables are still whitelisted for security
+- User scoping is enforced server-side
 
