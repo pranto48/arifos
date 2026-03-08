@@ -30,6 +30,7 @@ import { SmtpSettings } from './SmtpSettings';
 import { ResendSettings } from './ResendSettings';
 import { CustomFormFieldManager } from './CustomFormFieldManager';
 import { FormFieldSettings } from './FormFieldSettings';
+import { ModuleSettings } from './ModuleSettings';
 
 interface UserRole {
   id: string;
