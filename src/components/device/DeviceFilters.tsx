@@ -50,6 +50,9 @@ interface DeviceFiltersProps {
   suppliers: DeviceSupplier[];
   statusOptions: { value: string; label: string; labelBn: string }[];
   devices?: DeviceSuggestion[];
+  customFields?: CustomFormField[];
+  customFieldFilters?: Record<string, any>;
+  onCustomFieldFiltersChange?: (values: Record<string, any>) => void;
 }
 
 export function DeviceFilters({
