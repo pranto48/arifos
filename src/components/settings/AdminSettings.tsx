@@ -74,6 +74,7 @@ interface WorkspacePermission {
 }
 
 interface AdminSettingsProps {
+  activeTab?: string;
   onAdminStatusChange?: (isAdmin: boolean) => void;
 }
 
