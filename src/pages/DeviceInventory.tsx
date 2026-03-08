@@ -639,7 +639,7 @@ export default function DeviceInventoryPage() {
             {language === 'bn' ? 'আপনার সকল ডিভাইস পরিচালনা করুন' : 'Manage all your devices'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <DataExportImportButton preset="devices" />
           <ReportActions
             variant="compact"
@@ -657,30 +657,32 @@ export default function DeviceInventoryPage() {
           />
           {isAdmin && (
             <>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" size="sm" onClick={() => setBulkAssignDialog(true)} className="hover-lift">
-                  <Users className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">{language === 'bn' ? 'ব্যাচ বরাদ্দ' : 'Bulk Assign'}</span>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" size="sm" onClick={() => setSupplierDialog(true)} className="hover-lift">
-                  <Truck className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">{language === 'bn' ? 'সাপ্লায়ার' : 'Supplier'}</span>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" size="sm" onClick={() => openCategoryDialog()} className="hover-lift">
-                  <Tag className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</span>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="sm" onClick={() => openDeviceDialog()} className="hover-glow">
-                  <Plus className="h-4 w-4 mr-1" />
-                  {language === 'bn' ? 'ডিভাইস যোগ' : 'Add Device'}
-                </Button>
-              </motion.div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <MoreVertical className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">{language === 'bn' ? 'পরিচালনা' : 'Manage'}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => setBulkAssignDialog(true)}>
+                    <Users className="h-4 w-4 mr-2" />
+                    {language === 'bn' ? 'ব্যাচ বরাদ্দ' : 'Bulk Assign'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSupplierDialog(true)}>
+                    <Truck className="h-4 w-4 mr-2" />
+                    {language === 'bn' ? 'সাপ্লায়ার পরিচালনা' : 'Manage Suppliers'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openCategoryDialog()}>
+                    <Tag className="h-4 w-4 mr-2" />
+                    {language === 'bn' ? 'ক্যাটাগরি পরিচালনা' : 'Manage Categories'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button size="sm" onClick={() => openDeviceDialog()}>
+                <Plus className="h-4 w-4 mr-1" />
+                {language === 'bn' ? 'ডিভাইস যোগ' : 'Add'}
+              </Button>
             </>
           )}
         </div>
