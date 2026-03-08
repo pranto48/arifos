@@ -124,7 +124,7 @@ function SortableTask({ task, checklists, categories, supportUserInfo, onToggle,
       className={`bg-card border-border hover:bg-muted/30 transition-colors ${isSelected ? 'ring-2 ring-primary' : ''}`}
     >
       <CardContent className="p-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4 flex-wrap">
           {selectionMode ? (
             <Checkbox
               checked={isSelected}
