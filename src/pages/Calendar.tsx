@@ -367,7 +367,7 @@ export default function Calendar() {
                           key={day.toISOString()}
                           onClick={() => setSelectedDate(day)}
                           className={cn(
-                            'min-h-64 p-2 border border-border rounded-lg cursor-pointer transition-all hover:bg-accent/50',
+                            'min-h-32 md:min-h-64 p-1.5 md:p-2 border border-border rounded-lg cursor-pointer transition-all hover:bg-accent/50',
                             isToday(day) && 'bg-primary/10 border-primary',
                             isSelected && 'ring-2 ring-primary'
                           )}
