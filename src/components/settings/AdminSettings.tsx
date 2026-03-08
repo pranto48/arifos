@@ -1200,44 +1200,6 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
         </CardContent>
       </Card>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              {language === 'bn' ? 'রোল মুছুন' : 'Revoke Role'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {language === 'bn' 
-                ? `আপনি কি নিশ্চিত যে আপনি এই ইউজারের "${roleToDelete?.role}" রোল মুছতে চান?`
-                : `Are you sure you want to revoke the "${roleToDelete?.role}" role from this user?`
-              }
-              <br />
-              <span className="font-mono text-xs mt-2 block">
-                {roleToDelete?.user_id}
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletingRole}>
-              {language === 'bn' ? 'বাতিল' : 'Cancel'}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={deleteRole}
-              disabled={deletingRole}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deletingRole ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Trash2 className="h-4 w-4 mr-2" />
-              )}
-              {language === 'bn' ? 'মুছুন' : 'Revoke'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
