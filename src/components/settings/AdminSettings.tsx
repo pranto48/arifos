@@ -87,21 +87,6 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
   const [oauthCredentials, setOAuthCredentials] = useState<OAuthCredential[]>([]);
   const [loadingCredentials, setLoadingCredentials] = useState(false);
   
-  // Role management state
-  const [newUserId, setNewUserId] = useState('');
-  const [newRole, setNewRole] = useState<'admin' | 'user' | 'inventory_manager' | 'support_manager'>('user');
-  const [addingRole, setAddingRole] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [roleToDelete, setRoleToDelete] = useState<UserRole | null>(null);
-  const [deletingRole, setDeletingRole] = useState(false);
-  
-  // Email lookup state
-  const [emailSearch, setEmailSearch] = useState('');
-  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
-  const [searchingEmail, setSearchingEmail] = useState(false);
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  
   // User email cache for displaying in role list
   const [userEmails, setUserEmails] = useState<Record<string, string>>({});
   
