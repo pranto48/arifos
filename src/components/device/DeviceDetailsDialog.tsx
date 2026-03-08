@@ -308,7 +308,7 @@ export function DeviceDetailsDialog({
                 const customSpecs = (device.custom_specs || {}) as Record<string, string>;
                 const hasTypeData = typeFields.some(f => customSpecs[f.key]);
                 const TYPE_ICON_MAP: Record<string, React.ElementType> = {
-                  router: Wifi, server: Server, printer: Printer, ups: Zap, cctv: Camera, generic: Settings,
+                  router: Wifi, server: Server, printer: Printer, ups: Zap, cctv: Camera, network_equipment: Network, generic: Settings,
                 };
                 const TypeIcon = TYPE_ICON_MAP[deviceType] || Settings;
 
