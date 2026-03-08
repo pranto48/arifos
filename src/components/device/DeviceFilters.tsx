@@ -65,6 +65,9 @@ export function DeviceFilters({
   suppliers,
   statusOptions,
   devices = [],
+  customFields = [],
+  customFieldFilters = {},
+  onCustomFieldFiltersChange,
 }: DeviceFiltersProps) {
   const { language } = useLanguage();
   const isMobile = useIsMobile();
