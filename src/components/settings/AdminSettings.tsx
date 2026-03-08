@@ -777,10 +777,10 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
                   </AlertDescription>
                 </Alert>
               </div>
-            </TabsContent>
+            )}
 
             {/* Module Management */}
-            <TabsContent value="modules" className="space-y-4 mt-4">
+            {activeTab === 'modules' && (
               <ModuleSettings />
             </TabsContent>
 
