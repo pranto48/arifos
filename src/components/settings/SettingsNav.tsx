@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { 
   User, Shield, Bell, Languages, Calendar, Database, Crown, 
-  ChevronRight, Settings, Fingerprint, Smartphone, KeyRound, Lock, Key
+  ChevronRight, ChevronDown, Settings, Fingerprint, Smartphone, KeyRound, Lock, Key,
+  LayoutGrid, Users, Briefcase, FormInput, ToggleLeft, Mail, Sparkles
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,16 @@ export type SettingsCategory =
   | 'backup' 
   | 'license'
   | 'admin'
+  | 'admin-general'
+  | 'admin-modules'
+  | 'admin-users'
+  | 'admin-workspaces'
+  | 'admin-fields'
+  | 'admin-visibility'
+  | 'admin-email'
+  | 'admin-security'
+  | 'admin-integrations'
+  | 'admin-license'
   | 'preferences';
 
 interface SettingsNavProps {
@@ -36,6 +47,8 @@ interface NavItem {
   labelBn: string;
   icon: React.ReactNode;
   group: 'account' | 'security' | 'app' | 'admin';
+  isSubItem?: boolean;
+  parentId?: SettingsCategory;
 }
 
 const navItems: NavItem[] = [
@@ -57,8 +70,19 @@ const navItems: NavItem[] = [
   { id: 'backup', labelEn: 'Backup & Restore', labelBn: 'ব্যাকআপ ও রিস্টোর', icon: <Database className="h-3.5 w-3.5 md:h-4 md:w-4" />, group: 'app' },
   { id: 'license', labelEn: 'License', labelBn: 'লাইসেন্স', icon: <Key className="h-3.5 w-3.5 md:h-4 md:w-4" />, group: 'app' },
   
-  // Admin Group
+  // Admin Group - Parent
   { id: 'admin', labelEn: 'Admin Panel', labelBn: 'এডমিন প্যানেল', icon: <Crown className="h-3.5 w-3.5 md:h-4 md:w-4" />, group: 'admin' },
+  // Admin Sub-items
+  { id: 'admin-general', labelEn: 'General', labelBn: 'সাধারণ', icon: <Sparkles className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
+  { id: 'admin-modules', labelEn: 'Modules', labelBn: 'মডিউল', icon: <LayoutGrid className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
+  { id: 'admin-users', labelEn: 'Users & Roles', labelBn: 'ইউজার ও রোল', icon: <Users className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
+  { id: 'admin-workspaces', labelEn: 'Workspaces', labelBn: 'ওয়ার্কস্পেস', icon: <Briefcase className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
+  { id: 'admin-fields', labelEn: 'Custom Fields', labelBn: 'কাস্টম ফিল্ড', icon: <FormInput className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
+  { id: 'admin-visibility', labelEn: 'Field Visibility', labelBn: 'দৃশ্যমানতা', icon: <ToggleLeft className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
+  { id: 'admin-email', labelEn: 'Email Config', labelBn: 'ইমেইল কনফিগ', icon: <Mail className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
+  { id: 'admin-security', labelEn: 'Security', labelBn: 'সিকিউরিটি', icon: <Shield className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
+  { id: 'admin-integrations', labelEn: 'Integrations', labelBn: 'ইন্টিগ্রেশন', icon: <Key className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
+  { id: 'admin-license', labelEn: 'License', labelBn: 'লাইসেন্স', icon: <Crown className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
 ];
 
 const groupLabels = {
@@ -70,6 +94,11 @@ const groupLabels = {
 
 export function SettingsNav({ activeCategory, onCategoryChange, isAdmin }: SettingsNavProps) {
   const { language } = useLanguage();
+  const [adminExpanded, setAdminExpanded] = useState(
+    activeCategory.startsWith('admin')
+  );
+
+  const isAdminSubActive = activeCategory.startsWith('admin-');
 
   const filteredItems = navItems.filter(item => {
     if (item.group === 'admin' && !isAdmin) return false;
@@ -78,11 +107,24 @@ export function SettingsNav({ activeCategory, onCategoryChange, isAdmin }: Setti
 
   const groups = ['account', 'security', 'app', 'admin'] as const;
 
+  const handleItemClick = (item: NavItem) => {
+    if (item.id === 'admin' && !item.isSubItem) {
+      const willExpand = !adminExpanded;
+      setAdminExpanded(willExpand);
+      if (willExpand && !isAdminSubActive) {
+        onCategoryChange('admin-general');
+      }
+    } else {
+      onCategoryChange(item.id);
+    }
+  };
+
   return (
     <ScrollArea className="h-full">
       <div className="space-y-4 md:space-y-6 p-3 md:p-4">
         {groups.map(group => {
-          const groupItems = filteredItems.filter(item => item.group === group);
+          const groupItems = filteredItems.filter(item => item.group === group && !item.isSubItem);
+          const subItems = filteredItems.filter(item => item.group === group && item.isSubItem);
           if (groupItems.length === 0) return null;
 
           return (
@@ -90,26 +132,64 @@ export function SettingsNav({ activeCategory, onCategoryChange, isAdmin }: Setti
               <h3 className="text-[10px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 md:px-3 mb-1.5 md:mb-2">
                 {language === 'bn' ? groupLabels[group].bn : groupLabels[group].en}
               </h3>
-              {groupItems.map(item => (
-                <Button
-                  key={item.id}
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start gap-2 md:gap-3 h-9 md:h-10 px-2 md:px-3",
-                    activeCategory === item.id && "bg-primary/10 text-primary hover:bg-primary/15"
-                  )}
-                  onClick={() => onCategoryChange(item.id)}
-                >
-                  {item.icon}
-                  <span className="flex-1 text-left text-xs md:text-sm">
-                    {language === 'bn' ? item.labelBn : item.labelEn}
-                  </span>
-                  <ChevronRight className={cn(
-                    "h-3 w-3 md:h-4 md:w-4 text-muted-foreground transition-transform",
-                    activeCategory === item.id && "text-primary"
-                  )} />
-                </Button>
-              ))}
+              {groupItems.map(item => {
+                const isParentWithSubs = item.id === 'admin' && subItems.length > 0;
+                const isActive = isParentWithSubs 
+                  ? isAdminSubActive || activeCategory === 'admin'
+                  : activeCategory === item.id;
+
+                return (
+                  <div key={item.id}>
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        "w-full justify-start gap-2 md:gap-3 h-9 md:h-10 px-2 md:px-3",
+                        isActive && "bg-primary/10 text-primary hover:bg-primary/15"
+                      )}
+                      onClick={() => handleItemClick(item)}
+                    >
+                      {item.icon}
+                      <span className="flex-1 text-left text-xs md:text-sm">
+                        {language === 'bn' ? item.labelBn : item.labelEn}
+                      </span>
+                      {isParentWithSubs ? (
+                        <ChevronDown className={cn(
+                          "h-3 w-3 md:h-4 md:w-4 text-muted-foreground transition-transform duration-200",
+                          !adminExpanded && "-rotate-90",
+                          isActive && "text-primary"
+                        )} />
+                      ) : (
+                        <ChevronRight className={cn(
+                          "h-3 w-3 md:h-4 md:w-4 text-muted-foreground transition-transform",
+                          activeCategory === item.id && "text-primary"
+                        )} />
+                      )}
+                    </Button>
+
+                    {/* Admin Sub-items */}
+                    {isParentWithSubs && adminExpanded && (
+                      <div className="ml-3 md:ml-4 mt-1 space-y-0.5 border-l-2 border-border pl-2 md:pl-3">
+                        {subItems.map(sub => (
+                          <Button
+                            key={sub.id}
+                            variant="ghost"
+                            className={cn(
+                              "w-full justify-start gap-2 h-8 md:h-9 px-2 md:px-3 text-muted-foreground",
+                              activeCategory === sub.id && "bg-primary/10 text-primary hover:bg-primary/15"
+                            )}
+                            onClick={() => onCategoryChange(sub.id)}
+                          >
+                            {sub.icon}
+                            <span className="flex-1 text-left text-[11px] md:text-xs">
+                              {language === 'bn' ? sub.labelBn : sub.labelEn}
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           );
         })}

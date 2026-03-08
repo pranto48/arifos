@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -74,10 +73,11 @@ interface WorkspacePermission {
 }
 
 interface AdminSettingsProps {
+  activeTab?: string;
   onAdminStatusChange?: (isAdmin: boolean) => void;
 }
 
-export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
+export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: AdminSettingsProps) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const { hasRole: isAdmin, loading: roleLoading, recheckRoles } = useIsAdmin();
@@ -734,52 +734,9 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
-          <Tabs defaultValue="general" className="w-full">
-            <TabsList className="flex w-full overflow-x-auto">
-              <TabsTrigger value="general" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
-                <Settings className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">{language === 'bn' ? 'সাধারণ' : 'General'}</span>
-              </TabsTrigger>
-              <TabsTrigger value="modules" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
-                <LayoutGrid className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">{language === 'bn' ? 'মডিউল' : 'Modules'}</span>
-              </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
-                <Users className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">{language === 'bn' ? 'ইউজার' : 'Users'}</span>
-              </TabsTrigger>
-              <TabsTrigger value="workspaces" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
-                <Briefcase className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">{language === 'bn' ? 'ওয়ার্কস্পেস' : 'Workspaces'}</span>
-              </TabsTrigger>
-              <TabsTrigger value="custom-fields" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
-                <FormInput className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">{language === 'bn' ? 'কাস্টম ফিল্ড' : 'Fields'}</span>
-              </TabsTrigger>
-              <TabsTrigger value="field-visibility" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
-                <ToggleLeft className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">{language === 'bn' ? 'দৃশ্যমানতা' : 'Visibility'}</span>
-              </TabsTrigger>
-              <TabsTrigger value="email" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
-                <Mail className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">{language === 'bn' ? 'ইমেইল' : 'Email'}</span>
-              </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
-                <Shield className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">{language === 'bn' ? 'সিকিউরিটি' : 'Security'}</span>
-              </TabsTrigger>
-              <TabsTrigger value="integrations" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
-                <Key className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">{language === 'bn' ? 'ইন্টিগ্রেশন' : 'Integrations'}</span>
-              </TabsTrigger>
-              <TabsTrigger value="license" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
-                <Crown className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">{language === 'bn' ? 'লাইসেন্স' : 'License'}</span>
-              </TabsTrigger>
-            </TabsList>
-
+          <div className="w-full">
             {/* General Settings */}
-            <TabsContent value="general" className="space-y-4 mt-4">
+            {activeTab === 'general' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border">
                   <div className="flex items-start gap-3">
@@ -819,25 +776,26 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
                   </AlertDescription>
                 </Alert>
               </div>
-            </TabsContent>
+            )}
 
             {/* Module Management */}
-            <TabsContent value="modules" className="space-y-4 mt-4">
+            {activeTab === 'modules' && (
               <ModuleSettings />
-            </TabsContent>
+            )}
 
             {/* Custom Form Fields */}
-            <TabsContent value="custom-fields" className="space-y-4 mt-4">
+            {activeTab === 'custom-fields' && (
               <CustomFormFieldManager />
-            </TabsContent>
+            )}
 
             {/* Field Visibility */}
-            <TabsContent value="field-visibility" className="space-y-4 mt-4">
+            {activeTab === 'field-visibility' && (
               <FormFieldSettings />
-            </TabsContent>
+            )}
 
             {/* Users & Role Management */}
-            <TabsContent value="users" className="space-y-4 mt-4">
+            {activeTab === 'users' && (
+            <div className="space-y-4">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium text-foreground text-sm md:text-base">
                   {language === 'bn' ? 'ইউজার ও রোল ম্যানেজমেন্ট' : 'Users & Role Management'}
@@ -1043,10 +1001,12 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
                   )}
                 </div>
               </ScrollArea>
-            </TabsContent>
+            </div>
+            )}
 
             {/* Workspace Permissions */}
-            <TabsContent value="workspaces" className="space-y-4 mt-4">
+            {activeTab === 'workspaces' && (
+            <div className="space-y-4">
               {/* Add Permission Section */}
               <div className="p-4 rounded-lg border border-border bg-muted/30">
                 <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
@@ -1239,19 +1199,23 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
                   )}
                 </div>
               </ScrollArea>
-            </TabsContent>
+            </div>
+            )}
 
             {/* Email/SMTP Settings */}
-            <TabsContent value="email" className="space-y-6 mt-4">
+            {activeTab === 'email' && (
+            <div className="space-y-6">
               {/* Resend API Settings */}
               <ResendSettings />
               
               {/* SMTP Settings */}
               <SmtpSettings />
-            </TabsContent>
+            </div>
+            )}
 
             {/* Security Settings */}
-            <TabsContent value="security" className="space-y-4 mt-4">
+            {activeTab === 'security' && (
+            <div className="space-y-4">
               <div className="space-y-4">
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
                   <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
@@ -1313,10 +1277,12 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
                   </div>
                 </div>
               </div>
-            </TabsContent>
+            </div>
+            )}
 
             {/* Integrations Settings */}
-            <TabsContent value="integrations" className="space-y-4 mt-4">
+            {activeTab === 'integrations' && (
+            <div className="space-y-4">
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
@@ -1383,10 +1349,12 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
                   }
                 </p>
               </div>
-            </TabsContent>
+            </div>
+            )}
 
             {/* License Information */}
-            <TabsContent value="license" className="space-y-4 mt-4">
+            {activeTab === 'license' && (
+            <div className="space-y-4">
               {loadingLicense ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin" />
@@ -1590,8 +1558,9 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
                   </div>
                 </div>
               )}
-            </TabsContent>
-          </Tabs>
+            </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
