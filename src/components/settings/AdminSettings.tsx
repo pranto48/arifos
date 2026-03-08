@@ -308,37 +308,8 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
     }
   };
 
-  const searchByEmail = async (query: string) => {
-    if (!query.trim() || query.length < 2) {
-      setSearchResults([]);
-      setShowSearchResults(false);
-      return;
-    }
 
-    setSearchingEmail(true);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, email, full_name')
-        .or(`email.ilike.%${query}%,full_name.ilike.%${query}%`)
-        .limit(10);
 
-      if (data) {
-        setSearchResults(data);
-        setShowSearchResults(true);
-      }
-    } catch (error) {
-      console.error('Failed to search users:', error);
-    } finally {
-      setSearchingEmail(false);
-    }
-  };
-
-  const selectUser = (result: UserSearchResult) => {
-    setNewUserId(result.user_id);
-    setEmailSearch(result.email || result.full_name || result.user_id);
-    setShowSearchResults(false);
-  };
 
   const loadWorkspacePermissions = async () => {
     try {
