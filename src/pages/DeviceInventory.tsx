@@ -846,12 +846,22 @@ export default function DeviceInventoryPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              {/* View Section */}
                               <DropdownMenuItem onClick={() => setDetailsDialog({ open: true, device })}>
                                 <Eye className="h-4 w-4 mr-2" />
                                 {language === 'bn' ? 'বিস্তারিত দেখুন' : 'View Details'}
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openServiceDialog(device)}>
+                                <Wrench className="h-4 w-4 mr-2" />
+                                {language === 'bn' ? 'সার্ভিস ইতিহাস' : 'Service History'}
+                              </DropdownMenuItem>
                               {isAdmin && (
                                 <>
+                                  <DropdownMenuSeparator />
+                                  {/* Manage Section */}
+                                  <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                    {language === 'bn' ? 'পরিচালনা' : 'Manage'}
+                                  </div>
                                   <DropdownMenuItem onClick={() => openDeviceDialog(device)}>
                                     <Pencil className="h-4 w-4 mr-2" />
                                     {language === 'bn' ? 'সম্পাদনা' : 'Edit'}
@@ -860,15 +870,11 @@ export default function DeviceInventoryPage() {
                                     <User className="h-4 w-4 mr-2" />
                                     {language === 'bn' ? 'দ্রুত বরাদ্দ' : 'Quick Assign'}
                                   </DropdownMenuItem>
-                                </>
-                              )}
-                              <DropdownMenuItem onClick={() => openServiceDialog(device)}>
-                                <Wrench className="h-4 w-4 mr-2" />
-                                {language === 'bn' ? 'সার্ভিস ইতিহাস' : 'Service History'}
-                              </DropdownMenuItem>
-                              {isAdmin && (
-                                <>
                                   <DropdownMenuSeparator />
+                                  {/* Danger Section */}
+                                  <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                    {language === 'bn' ? 'বিপজ্জনক' : 'Danger'}
+                                  </div>
                                   <DropdownMenuItem 
                                     onClick={() => setDisposalDialog({ open: true, device })}
                                     className="text-orange-600 focus:text-orange-600"
