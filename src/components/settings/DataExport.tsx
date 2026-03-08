@@ -847,10 +847,12 @@ export function DataExport() {
           : `${restored} items restored successfully. Reloading page...`
       });
 
-      setTimeout(() => window.location.reload(), 1500);
+      setTimeout(() => window.location.reload(), 3000);
     } catch (error: any) {
       console.error('Restore failed:', error);
+      setRestoreProgressState(prev => prev ? { ...prev, phase: 'error', errors: [...prev.errors, error.message] } : null);
       toast({ title: 'Error', description: error.message || 'Failed to restore data', variant: 'destructive' });
+      setTimeout(() => setRestoreProgressState(null), 8000);
     } finally {
       setRestoring(false);
       setRestoreProgress(null);
