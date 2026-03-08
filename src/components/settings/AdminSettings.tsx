@@ -1002,10 +1002,12 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
                   )}
                 </div>
               </ScrollArea>
-            </TabsContent>
+            </div>
+            )}
 
             {/* Workspace Permissions */}
-            <TabsContent value="workspaces" className="space-y-4 mt-4">
+            {activeTab === 'workspaces' && (
+            <div className="space-y-4">
               {/* Add Permission Section */}
               <div className="p-4 rounded-lg border border-border bg-muted/30">
                 <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
