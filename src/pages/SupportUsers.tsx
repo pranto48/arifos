@@ -257,6 +257,20 @@ export default function SupportUsers() {
       if (user.extension_number !== filterExtension) return false;
     }
 
+    // Custom field filters
+    if (Object.keys(customFieldFilters).length > 0) {
+      const cf: Record<string, any> = (user as any).custom_fields || {};
+      const matches = Object.entries(customFieldFilters).every(([key, value]) => {
+        const fieldValue = cf[key];
+        if (typeof value === 'boolean') return fieldValue === value;
+        if (typeof value === 'string') {
+          return String(fieldValue || '').toLowerCase().includes(value.toLowerCase());
+        }
+        return fieldValue === value;
+      });
+      if (!matches) return false;
+    }
+
     return true;
   });
 
