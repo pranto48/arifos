@@ -376,25 +376,29 @@ export default function Notes() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>{t('notes.content')}</Label>
-              <Textarea
-                value={newContent}
-                onChange={e => setNewContent(e.target.value)}
-                placeholder={t('notes.writeNote')}
-                className="bg-muted/50 min-h-[150px]"
-              />
-            </div>
+            <FieldVisibility entityType="note" fieldName="content">
+              <div className="space-y-2">
+                <Label>{t('notes.content')}</Label>
+                <Textarea
+                  value={newContent}
+                  onChange={e => setNewContent(e.target.value)}
+                  placeholder={t('notes.writeNote')}
+                  className="bg-muted/50 min-h-[150px]"
+                />
+              </div>
+            </FieldVisibility>
 
-            <div className="space-y-2">
-              <Label>{t('notes.tagsComma')}</Label>
-              <Input
-                value={newTags}
-                onChange={e => setNewTags(e.target.value)}
-                placeholder="work, ideas, important"
-                className="bg-muted/50"
-              />
-            </div>
+            <FieldVisibility entityType="note" fieldName="tags">
+              <div className="space-y-2">
+                <Label>{t('notes.tagsComma')}</Label>
+                <Input
+                  value={newTags}
+                  onChange={e => setNewTags(e.target.value)}
+                  placeholder="work, ideas, important"
+                  className="bg-muted/50"
+                />
+              </div>
+            </FieldVisibility>
 
             <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
               <div className="flex items-center gap-2">
