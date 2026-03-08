@@ -297,7 +297,7 @@ export default function Calendar() {
                     ))}
                   </div>
                   {/* Calendar grid */}
-                  <div className="grid grid-cols-7 gap-1">
+                  <div className="grid grid-cols-7 gap-0.5 md:gap-1">
                     {monthDays.map(day => {
                       const dayEvents = getEventsForDate(day);
                       const isCurrentMonth = isSameMonth(day, currentDate);
@@ -308,7 +308,7 @@ export default function Calendar() {
                           key={day.toISOString()}
                           onClick={() => setSelectedDate(day)}
                           className={cn(
-                            'min-h-24 p-1 border border-border rounded-lg cursor-pointer transition-all hover:bg-accent/50',
+                            'min-h-14 md:min-h-24 p-0.5 md:p-1 border border-border rounded-md md:rounded-lg cursor-pointer transition-all hover:bg-accent/50',
                             !isCurrentMonth && 'opacity-40',
                             isToday(day) && 'bg-primary/10 border-primary',
                             isSelected && 'ring-2 ring-primary'
