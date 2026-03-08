@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { 
   HardDrive, Calendar, DollarSign, User, Tag, 
   Package, FileText, AlertTriangle, CheckCircle, Clock,
-  Wrench, ArrowRightLeft, Building2, Users
+  Wrench, ArrowRightLeft, Building2, Users, Wifi, Server, Printer, Zap, Camera, Settings
 } from 'lucide-react';
+import { getDeviceType, getFieldsForType, getTypeLabel } from './deviceTypeConfig';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
