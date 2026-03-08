@@ -31,6 +31,18 @@ import { ResendSettings } from './ResendSettings';
 import { CustomFormFieldManager } from './CustomFormFieldManager';
 import { FormFieldSettings } from './FormFieldSettings';
 import { ModuleSettings } from './ModuleSettings';
+import { isSelfHosted, getApiUrl } from '@/lib/selfHostedConfig';
+import {
+  getLicenseInfo,
+  saveLicenseInfo,
+  verifyLicenseViaBackend,
+  checkLicenseStatus,
+  getPlanFromMaxDevices,
+  getInstallationId,
+  LICENSE_PLANS,
+  LICENSE_PORTAL_URL,
+  type LicenseInfo,
+} from '@/lib/licenseConfig';
 
 interface UserRole {
   id: string;
