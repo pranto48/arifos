@@ -1559,8 +1559,9 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
                   </div>
                 </div>
               )}
-            </TabsContent>
-          </Tabs>
+            </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
