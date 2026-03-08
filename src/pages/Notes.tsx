@@ -20,6 +20,7 @@ import { toast } from '@/hooks/use-toast';
 import { encryptContent, decryptContent, validatePassphrase } from '@/lib/encryption';
 import { format } from 'date-fns';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
+import { FieldVisibility } from '@/components/shared/FieldVisibility';
 
 export default function Notes() {
   const { user } = useAuth();
