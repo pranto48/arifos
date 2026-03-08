@@ -1224,27 +1224,107 @@ export default function DeviceInventoryPage() {
               />
             </div>
 
+            {/* Sample Categories */}
+            {categories.length === 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs">{language === 'bn' ? 'নমুনা ক্যাটাগরি যোগ করুন' : 'Add Sample Categories'}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {language === 'bn' 
+                    ? 'সাধারণ আইটি ডিভাইস ক্যাটাগরি দ্রুত যোগ করুন। প্রতিটি ক্যাটাগরির জন্য নির্দিষ্ট ফিল্ড স্বয়ংক্রিয়ভাবে দেখাবে।'
+                    : 'Quickly add common IT device categories. Each category will show its specific fields automatically.'}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={async () => {
+                    const sampleCategories = [
+                      { name: 'Desktop', description: 'Desktop computers and workstations (RAM, Storage, Processor, Monitor, UPS fields)' },
+                      { name: 'Desktop Clone PC', description: 'Assembled/Clone desktop PCs (RAM, Storage, Processor, Monitor, UPS fields)' },
+                      { name: 'Laptop', description: 'Portable computers and notebooks (RAM, Storage, Processor, Webcam, Headset fields)' },
+                      { name: 'Router', description: 'Network routers and access points (SSID, WiFi Password, Admin IP, LAN/WAN IP fields)' },
+                      { name: 'Switch', description: 'Network switches and hubs (Management IP, VLAN, Subnet, Gateway, Port Count fields)' },
+                      { name: 'Server', description: 'Rack/Tower servers (LAN/WAN IP, iLO/IPMI, OS, RAID Config, Domain fields)' },
+                      { name: 'Printer', description: 'Printers, scanners, and copiers (IP Address, Model, Driver, Toner Type fields)' },
+                      { name: 'UPS', description: 'Uninterruptible power supplies (Capacity VA, Battery Count, Load Info fields)' },
+                      { name: 'CCTV', description: 'Security cameras and DVR/NVR (IP Address, DVR/NVR IP, Channel, Location fields)' },
+                      { name: 'Firewall', description: 'Network firewalls and gateways (SSID, Admin IP, WAN/LAN IP, Firmware fields)' },
+                      { name: 'Access Point', description: 'Wireless access points (SSID, WiFi Password, Admin IP, Firmware fields)' },
+                      { name: 'NAS', description: 'Network attached storage (LAN IP, Admin Username, RAID Config, OS fields)' },
+                      { name: 'Scanner', description: 'Standalone scanners (IP Address, Model, Driver Info fields)' },
+                      { name: 'Monitor', description: 'Standalone display monitors' },
+                      { name: 'Projector', description: 'Projectors and display equipment' },
+                      { name: 'Phone', description: 'IP phones and communication devices' },
+                      { name: 'Tablet', description: 'Tablets and handheld devices' },
+                      { name: 'Other', description: 'Miscellaneous IT equipment' },
+                    ];
+                    const existingNames = categories.map(c => c.name.toLowerCase());
+                    let added = 0;
+                    for (const cat of sampleCategories) {
+                      if (!existingNames.includes(cat.name.toLowerCase())) {
+                        await addCategory(cat.name, cat.description);
+                        added++;
+                      }
+                    }
+                    toast.success(
+                      language === 'bn' 
+                        ? `${added}টি নমুনা ক্যাটাগরি যোগ হয়েছে` 
+                        : `${added} sample categories added`
+                    );
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {language === 'bn' ? '১৮টি নমুনা ক্যাটাগরি যোগ করুন' : 'Add 18 Sample IT Categories'}
+                </Button>
+              </div>
+            )}
+
             {/* Existing Categories */}
             {categories.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-xs">{language === 'bn' ? 'বিদ্যমান ক্যাটাগরি' : 'Existing Categories'}</Label>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {categories.map(cat => (
-                    <div key={cat.id} className="flex items-center justify-between p-2 rounded bg-muted/30">
-                      <span className="text-sm">{cat.name}</span>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
-                          setCategoryForm({ name: cat.name, description: cat.description || '' });
-                          setCategoryDialog({ open: true, editing: cat });
-                        }}>
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDeleteCategory(cat.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {categories.map(cat => {
+                    const typeLabel = (() => {
+                      const lower = cat.name.toLowerCase();
+                      if (['desktop', 'laptop', 'notebook', 'clone', 'workstation', 'all-in-one'].some(k => lower.includes(k))) return '🖥️';
+                      if (['router', 'firewall', 'gateway', 'access point', 'modem', 'wifi'].some(k => lower.includes(k))) return '📡';
+                      if (['switch', 'hub', 'patch'].some(k => lower.includes(k))) return '🔌';
+                      if (['server', 'nas', 'rack'].some(k => lower.includes(k))) return '🖧';
+                      if (['printer', 'scanner', 'copier'].some(k => lower.includes(k))) return '🖨️';
+                      if (['ups', 'power', 'ips', 'stabilizer'].some(k => lower.includes(k))) return '🔋';
+                      if (['cctv', 'camera', 'dvr', 'nvr'].some(k => lower.includes(k))) return '📹';
+                      if (['monitor', 'display'].some(k => lower.includes(k))) return '🖵';
+                      if (['phone'].some(k => lower.includes(k))) return '📞';
+                      if (['projector'].some(k => lower.includes(k))) return '📽️';
+                      if (['tablet'].some(k => lower.includes(k))) return '📱';
+                      return '📦';
+                    })();
+                    return (
+                      <div key={cat.id} className="flex items-center justify-between p-2 rounded bg-muted/30">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{typeLabel}</span>
+                          <div>
+                            <span className="text-sm font-medium">{cat.name}</span>
+                            {cat.description && (
+                              <p className="text-[10px] text-muted-foreground line-clamp-1">{cat.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                            setCategoryForm({ name: cat.name, description: cat.description || '' });
+                            setCategoryDialog({ open: true, editing: cat });
+                          }}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDeleteCategory(cat.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
