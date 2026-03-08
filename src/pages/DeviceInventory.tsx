@@ -271,10 +271,10 @@ export default function DeviceInventoryPage() {
 
       // Custom field filters (stored in custom_specs)
       if (Object.keys(customFieldFilters).length > 0) {
-        const specs = device.custom_specs || {};
+        const specs: Record<string, any> = device.custom_specs || {};
         const matches = Object.entries(customFieldFilters).every(([key, value]) => {
           const fieldValue = specs[key];
-          if (typeof value === 'boolean') return fieldValue === value;
+          if (typeof value === 'boolean') return String(fieldValue) === String(value);
           if (typeof value === 'string') {
             return String(fieldValue || '').toLowerCase().includes(value.toLowerCase());
           }
