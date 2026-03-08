@@ -1,6 +1,6 @@
 // Device type detection and field configuration
 
-export type DeviceType = 'computer' | 'router' | 'server' | 'printer' | 'ups' | 'cctv' | 'generic';
+export type DeviceType = 'computer' | 'router' | 'server' | 'printer' | 'ups' | 'cctv' | 'network_equipment' | 'generic';
 
 const COMPUTER_CATEGORIES = [
   'Desktop', 'Desktop Clone PC', 'Desktop Clone', 'Clone PC',
@@ -8,8 +8,8 @@ const COMPUTER_CATEGORIES = [
 ];
 
 const ROUTER_CATEGORIES = [
-  'Router', 'Switch', 'Access Point', 'AP', 'Firewall', 'Gateway', 'Modem',
-  'Network Switch', 'WiFi', 'Wireless',
+  'Router', 'Access Point', 'AP', 'Firewall', 'Gateway', 'Modem',
+  'WiFi', 'Wireless',
 ];
 
 const SERVER_CATEGORIES = [
@@ -28,11 +28,18 @@ const CCTV_CATEGORIES = [
   'CCTV', 'Camera', 'IP Camera', 'DVR', 'NVR', 'Security Camera',
 ];
 
+const NETWORK_EQUIPMENT_CATEGORIES = [
+  'Switch', 'Network Switch', 'Managed Switch', 'Layer 3 Switch',
+  'Network Equipment', 'Hub', 'Patch Panel',
+];
+
 export function getDeviceType(categoryName: string | null): DeviceType {
   if (!categoryName) return 'generic';
   const lower = categoryName.toLowerCase();
   
   if (COMPUTER_CATEGORIES.some(c => lower.includes(c.toLowerCase()))) return 'computer';
+  // Network equipment before router since 'Switch' was in both
+  if (NETWORK_EQUIPMENT_CATEGORIES.some(c => lower.includes(c.toLowerCase()))) return 'network_equipment';
   if (ROUTER_CATEGORIES.some(c => lower.includes(c.toLowerCase()))) return 'router';
   if (SERVER_CATEGORIES.some(c => lower.includes(c.toLowerCase()))) return 'server';
   if (PRINTER_CATEGORIES.some(c => lower.includes(c.toLowerCase()))) return 'printer';
@@ -100,6 +107,19 @@ export const CCTV_FIELDS: DeviceTypeField[] = [
   { key: 'location', labelEn: 'Camera Location', labelBn: 'ক্যামেরার অবস্থান', placeholder: 'e.g. Main Gate' },
 ];
 
+export const NETWORK_EQUIPMENT_FIELDS: DeviceTypeField[] = [
+  { key: 'management_ip', labelEn: 'Management IP', labelBn: 'ম্যানেজমেন্ট IP', placeholder: 'e.g. 10.0.0.2' },
+  { key: 'vlan_config', labelEn: 'VLAN Configuration', labelBn: 'VLAN কনফিগারেশন', placeholder: 'e.g. VLAN 10, 20, 30' },
+  { key: 'subnet', labelEn: 'Subnet', labelBn: 'সাবনেট', placeholder: 'e.g. 192.168.1.0/24' },
+  { key: 'gateway', labelEn: 'Gateway', labelBn: 'গেটওয়ে', placeholder: 'e.g. 192.168.1.1' },
+  { key: 'port_count', labelEn: 'Port Count', labelBn: 'পোর্ট সংখ্যা', placeholder: 'e.g. 24' },
+  { key: 'admin_username', labelEn: 'Admin Username', labelBn: 'অ্যাডমিন ইউজারনেম', placeholder: 'e.g. admin' },
+  { key: 'admin_password', labelEn: 'Admin Password', labelBn: 'অ্যাডমিন পাসওয়ার্ড', placeholder: '••••••', isPassword: true },
+  { key: 'firmware_version', labelEn: 'Firmware Version', labelBn: 'ফার্মওয়্যার ভার্সন', placeholder: 'e.g. v3.0.1' },
+  { key: 'mac_address', labelEn: 'MAC Address', labelBn: 'MAC ঠিকানা', placeholder: 'e.g. AA:BB:CC:DD:EE:FF' },
+  { key: 'spanning_tree', labelEn: 'Spanning Tree', labelBn: 'স্প্যানিং ট্রি', placeholder: 'e.g. RSTP Enabled' },
+];
+
 export function getFieldsForType(type: DeviceType): DeviceTypeField[] {
   switch (type) {
     case 'router': return ROUTER_FIELDS;
@@ -107,6 +127,7 @@ export function getFieldsForType(type: DeviceType): DeviceTypeField[] {
     case 'printer': return PRINTER_FIELDS;
     case 'ups': return UPS_FIELDS;
     case 'cctv': return CCTV_FIELDS;
+    case 'network_equipment': return NETWORK_EQUIPMENT_FIELDS;
     default: return [];
   }
 }
@@ -118,6 +139,7 @@ export function getTypeIcon(type: DeviceType): string {
     case 'printer': return 'Printer';
     case 'ups': return 'Zap';
     case 'cctv': return 'Camera';
+    case 'network_equipment': return 'Network';
     default: return 'Settings';
   }
 }
@@ -130,6 +152,7 @@ export function getTypeLabel(type: DeviceType, lang: string): string {
     printer: { en: 'Printer/Scanner Info', bn: 'প্রিন্টার/স্ক্যানার তথ্য' },
     ups: { en: 'UPS/Power Info', bn: 'UPS/পাওয়ার তথ্য' },
     cctv: { en: 'CCTV/Camera Info', bn: 'CCTV/ক্যামেরা তথ্য' },
+    network_equipment: { en: 'Network Equipment Info', bn: 'নেটওয়ার্ক ইকুইপমেন্ট তথ্য' },
     generic: { en: 'Device Info', bn: 'ডিভাইস তথ্য' },
   };
   return lang === 'bn' ? labels[type].bn : labels[type].en;

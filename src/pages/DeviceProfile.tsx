@@ -5,8 +5,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
    HardDrive, Calendar, DollarSign, User, Tag, 
    Package, FileText, AlertTriangle, CheckCircle, Clock,
   Wrench, ArrowRightLeft, Building2, Users, ArrowLeft, Lock,
-  Loader2, AlertCircle, LogIn, Ticket
+  Loader2, AlertCircle, LogIn, Ticket, Wifi, Server, Printer, Zap, Camera, Network, Settings
  } from 'lucide-react';
+import { getDeviceType, getFieldsForType, getTypeLabel, type DeviceType as DevType } from '@/components/device/deviceTypeConfig';
  import { Badge } from '@/components/ui/badge';
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  import { Separator } from '@/components/ui/separator';
@@ -41,11 +42,13 @@ import { useAuth } from '@/contexts/AuthContext';
    notes: string | null;
    ram_info: string | null;
    storage_info: string | null;
+   processor_info: string | null;
    monitor_info: string | null;
    has_ups: boolean | null;
    ups_info: string | null;
    webcam_info: string | null;
    headset_info: string | null;
+   custom_specs: Record<string, string> | any;
    category?: { name: string } | null;
    support_user?: {
      name: string;
@@ -416,8 +419,59 @@ import { useAuth } from '@/contexts/AuthContext';
              </Card>
            </motion.div>
  
-           {/* Hardware Specs */}
-           {(device.ram_info || device.storage_info || device.monitor_info) && (
+           {/* Device-Type-Specific Info */}
+           {(() => {
+             const deviceType = getDeviceType(device.category?.name || null);
+             const typeFields = getFieldsForType(deviceType);
+             const customSpecs = (device.custom_specs || {}) as Record<string, string>;
+             const hasTypeData = typeFields.some(f => customSpecs[f.key]);
+             const TYPE_ICON_MAP: Record<string, React.ElementType> = {
+               router: Wifi, server: Server, printer: Printer, ups: Zap, cctv: Camera, network_equipment: Network, generic: Settings,
+             };
+             const TypeIcon = TYPE_ICON_MAP[deviceType] || Settings;
+
+             if (deviceType !== 'computer' && deviceType !== 'generic' && hasTypeData) {
+               return (
+                 <motion.div
+                   initial={{ opacity: 0, x: 20 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   transition={{ delay: 0.35 }}
+                 >
+                   <Card>
+                     <CardHeader className="pb-2">
+                       <CardTitle className="text-sm flex items-center gap-2">
+                         <TypeIcon className="h-4 w-4 text-primary" />
+                         {getTypeLabel(deviceType, language)}
+                       </CardTitle>
+                     </CardHeader>
+                     <CardContent className="space-y-2 text-sm">
+                       {typeFields.map((field) => {
+                         const val = customSpecs[field.key];
+                         if (!val) return null;
+                         return (
+                           <div key={field.key}>
+                             <div className="flex justify-between">
+                               <span className="text-muted-foreground">
+                                 {language === 'bn' ? field.labelBn : field.labelEn}
+                               </span>
+                               <span className={field.isPassword ? 'font-mono text-xs' : ''}>
+                                 {field.isPassword ? '••••••••' : val}
+                               </span>
+                             </div>
+                             <Separator />
+                           </div>
+                         );
+                       })}
+                     </CardContent>
+                   </Card>
+                 </motion.div>
+               );
+             }
+             return null;
+           })()}
+
+           {/* Hardware Specs (for computers) */}
+           {(device.ram_info || device.storage_info || device.processor_info || device.monitor_info) && (
              <motion.div
                initial={{ opacity: 0, x: 20 }}
                animate={{ opacity: 1, x: 0 }}
@@ -445,6 +499,15 @@ import { useAuth } from '@/contexts/AuthContext';
                        <div className="flex justify-between">
                          <span className="text-muted-foreground">{language === 'bn' ? 'স্টোরেজ' : 'Storage'}</span>
                          <span>{device.storage_info}</span>
+                       </div>
+                       <Separator />
+                     </>
+                   )}
+                   {device.processor_info && (
+                     <>
+                       <div className="flex justify-between">
+                         <span className="text-muted-foreground">{language === 'bn' ? 'প্রসেসর' : 'Processor'}</span>
+                         <span>{device.processor_info}</span>
                        </div>
                        <Separator />
                      </>

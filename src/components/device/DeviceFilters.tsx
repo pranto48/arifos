@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Filter, Building2, Users, Truck, Tag, Activity, X, Cpu, MemoryStick, HardDrive, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,13 @@ interface DeviceSupplier {
   is_active: boolean;
 }
 
+interface DeviceSuggestion {
+  id: string;
+  device_name: string;
+  device_number?: string | null;
+  serial_number?: string | null;
+}
+
 interface DeviceFiltersProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
@@ -40,6 +47,7 @@ interface DeviceFiltersProps {
   supportUsers: { id: string; name: string; department_id: string; is_active: boolean }[];
   suppliers: DeviceSupplier[];
   statusOptions: { value: string; label: string; labelBn: string }[];
+  devices?: DeviceSuggestion[];
 }
 
 export function DeviceFilters({
@@ -51,11 +59,37 @@ export function DeviceFilters({
   supportUsers,
   suppliers,
   statusOptions,
+  devices = [],
 }: DeviceFiltersProps) {
   const { language } = useLanguage();
   const isMobile = useIsMobile();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const suggestions = useMemo(() => {
+    const q = filters.searchQuery.toLowerCase().trim();
+    if (!q || q.length < 1) return [];
+    return devices
+      .filter(d =>
+        d.device_name.toLowerCase().includes(q) ||
+        d.device_number?.toLowerCase().includes(q) ||
+        d.serial_number?.toLowerCase().includes(q)
+      )
+      .slice(0, 8);
+  }, [devices, filters.searchQuery]);
 
   const filteredDepartments = useMemo(() => {
     if (filters.unitLocation === 'all') return departments;
@@ -305,14 +339,29 @@ export function DeviceFilters({
     return (
       <div className="space-y-2">
         <div className="flex gap-2">
-          <div className="relative flex-1">
+          <div className="relative flex-1" ref={searchRef}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={language === 'bn' ? 'ডিভাইস খুঁজুন...' : 'Search devices...'}
               value={filters.searchQuery}
-              onChange={(e) => updateFilter('searchQuery', e.target.value)}
+              onChange={(e) => { updateFilter('searchQuery', e.target.value); setShowSuggestions(true); }}
+              onFocus={() => setShowSuggestions(true)}
               className="pl-9 h-10 text-sm"
             />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                {suggestions.map(s => (
+                  <button
+                    key={s.id}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between"
+                    onMouseDown={(e) => { e.preventDefault(); updateFilter('searchQuery', s.device_name); setShowSuggestions(false); }}
+                  >
+                    <span className="truncate font-medium">{s.device_name}</span>
+                    {s.device_number && <span className="text-xs text-muted-foreground ml-2 shrink-0">#{s.device_number}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <SheetTrigger asChild>
@@ -347,14 +396,29 @@ export function DeviceFilters({
     <div className="space-y-2">
       {/* Search + Primary Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
+        <div className="relative flex-1" ref={searchRef}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={language === 'bn' ? 'ডিভাইস, সিরিয়াল, সাপ্লায়ার খুঁজুন...' : 'Search device, serial, supplier...'}
             value={filters.searchQuery}
-            onChange={(e) => updateFilter('searchQuery', e.target.value)}
+            onChange={(e) => { updateFilter('searchQuery', e.target.value); setShowSuggestions(true); }}
+            onFocus={() => setShowSuggestions(true)}
             className="pl-9 h-8 text-sm"
           />
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
+              {suggestions.map(s => (
+                <button
+                  key={s.id}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between"
+                  onMouseDown={(e) => { e.preventDefault(); updateFilter('searchQuery', s.device_name); setShowSuggestions(false); }}
+                >
+                  <span className="truncate font-medium">{s.device_name}</span>
+                  {s.device_number && <span className="text-xs text-muted-foreground ml-2 shrink-0">#{s.device_number}</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <PrimaryFilters />
       </div>
