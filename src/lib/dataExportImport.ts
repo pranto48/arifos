@@ -55,11 +55,9 @@ const SHARED_TABLES = new Set([
 
 export async function fetchEntityData(entity: ExportableEntity, userId: string): Promise<any[]> {
   if (isSelfHosted()) {
-    // For self-hosted, use the PostgREST proxy which handles scoping properly
     const isShared = SHARED_TABLES.has(entity);
     try {
       if (isShared) {
-        // Fetch all rows for shared tables via PostgREST proxy
         const response = await fetch(`${getApiBaseUrl()}/rest/v1/${entity}?select=*`, {
           headers: getRestHeaders(),
         });
@@ -69,7 +67,6 @@ export async function fetchEntityData(entity: ExportableEntity, userId: string):
         return selfHostedApi.selectAll(entity);
       }
     } catch {
-      // Fallback to data API
       return selfHostedApi.selectAll(entity);
     }
   }
@@ -81,6 +78,33 @@ export async function fetchEntityData(entity: ExportableEntity, userId: string):
   const { data, error } = await query;
   if (error) throw error;
   return data || [];
+}
+
+// Fetch multiple entities in parallel with concurrency limit
+async function fetchEntitiesParallel(
+  entities: ExportableEntity[],
+  userId: string,
+  onProgress?: (entity: string, pct: number) => void,
+  concurrency = 3,
+): Promise<Record<string, any[]>> {
+  const result: Record<string, any[]> = {};
+  const total = entities.length;
+  let completed = 0;
+
+  // Process in chunks of `concurrency`
+  for (let i = 0; i < total; i += concurrency) {
+    const chunk = entities.slice(i, i + concurrency);
+    const promises = chunk.map(async (entity) => {
+      onProgress?.(entity, (completed / total) * 100);
+      const data = await fetchEntityData(entity, userId);
+      result[entity] = data;
+      completed++;
+      onProgress?.(entity, (completed / total) * 100);
+    });
+    await Promise.all(promises);
+  }
+
+  return result;
 }
 
 function getApiBaseUrl(): string {
@@ -114,15 +138,9 @@ export async function exportData(
   if (!config) throw new Error(`Unknown preset: ${preset}`);
 
   const entities = selectedEntities && selectedEntities.length > 0 ? selectedEntities : config.entities;
-  const result: Record<string, any[]> = {};
-  const total = entities.length;
 
-  for (let i = 0; i < total; i++) {
-    const entity = entities[i];
-    onProgress?.(entity, ((i) / total) * 100);
-    result[entity] = await fetchEntityData(entity, userId);
-    onProgress?.(entity, ((i + 1) / total) * 100);
-  }
+  // Parallel fetch all entities
+  const result = await fetchEntitiesParallel(entities, userId, onProgress);
 
   const exportPayload = {
     exportType: preset,
@@ -143,22 +161,58 @@ export async function exportData(
   }
 }
 
+/** Parse a file into the standard payload object */
+export async function parseImportFile(file: File): Promise<any> {
+  const text = await file.text();
+  if (file.name.endsWith('.xml')) {
+    return xmlToJson(text);
+  }
+  return JSON.parse(text);
+}
+
+/** Detect conflicts between import payload and existing data (parallel) */
+export async function detectConflicts(
+  payload: any,
+  userId: string,
+): Promise<{ entity: string; id: string; existingName: string }[]> {
+  const preset = EXPORT_PRESETS[payload.exportType];
+  if (!preset) return [];
+
+  const entitiesToCheck = preset.entities.filter(
+    (e) => Array.isArray(payload.data[e]) && payload.data[e].length > 0,
+  );
+
+  // Fetch all existing data in parallel
+  const existingDataMap = await fetchEntitiesParallel(entitiesToCheck as ExportableEntity[], userId);
+
+  const conflicts: { entity: string; id: string; existingName: string }[] = [];
+
+  for (const entity of entitiesToCheck) {
+    const rows = payload.data[entity];
+    const existingIds = new Set((existingDataMap[entity] || []).map((r: any) => r.id));
+
+    for (const row of rows) {
+      if (existingIds.has(row.id)) {
+        conflicts.push({
+          entity,
+          id: row.id,
+          existingName: row.name || row.title || row.content?.substring(0, 40) || row.id,
+        });
+      }
+    }
+  }
+
+  return conflicts;
+}
+
 export async function importData(
-  file: File,
+  payload: any,
   userId: string,
   onProgress?: (msg: string) => void,
   onPct?: (pct: number) => void,
   conflictResolution: 'overwrite' | 'skip' = 'overwrite',
+  existingDataMap?: Record<string, any[]>,
 ): Promise<{ imported: number; errors: string[] }> {
-  const text = await file.text();
-  let payload: any;
-
-  if (file.name.endsWith('.xml')) {
-    payload = xmlToJson(text);
-  } else {
-    payload = JSON.parse(text);
-  }
-
   if (!payload?.data || !payload?.exportType) {
     throw new Error('Invalid export file. Missing "data" or "exportType" field.');
   }
@@ -184,11 +238,11 @@ export async function importData(
     onProgress?.(`Importing ${entity.replace(/_/g, ' ')} (${rows.length} items)...`);
     onPct?.((idx / total) * 100);
 
-    // If skip mode, filter out existing IDs
+    // If skip mode, filter out existing IDs using pre-fetched data or fetch now
     let filteredRows = rows;
     if (conflictResolution === 'skip') {
       try {
-        const existingData = await fetchEntityData(entity as ExportableEntity, userId);
+        const existingData = existingDataMap?.[entity] ?? await fetchEntityData(entity as ExportableEntity, userId);
         const existingIds = new Set(existingData.map((r: any) => r.id));
         filteredRows = rows.filter((row: any) => !existingIds.has(row.id));
       } catch {
@@ -203,31 +257,35 @@ export async function importData(
 
     const cleaned = filteredRows.map((row: any) => {
       const { search_vector, ...rest } = row;
-      // Remap user_id to current user for ALL tables during import
-      // This ensures cross-platform compatibility (web <-> Docker)
       if (rest.user_id) {
         rest.user_id = userId;
       }
       return rest;
     });
 
-    // Determine the correct onConflict key for upsert
     const onConflictKey = getOnConflictKey(entity);
+    const BATCH_SIZE = isSelfHosted() ? 50 : 200;
 
     try {
       if (isSelfHosted()) {
-        // Use PostgREST proxy for Docker imports (supports upsert via Prefer header)
-        await upsertViaPostgrest(entity, cleaned);
+        await upsertViaPostgrest(entity, cleaned, BATCH_SIZE);
       } else {
-        for (let i = 0; i < cleaned.length; i += 100) {
-          const batch = cleaned.slice(i, i + 100);
-          const { error } = await supabase.from(entity as any).upsert(batch as any, { onConflict: onConflictKey });
+        // Parallel batch upserts
+        const batches: any[][] = [];
+        for (let i = 0; i < cleaned.length; i += BATCH_SIZE) {
+          batches.push(cleaned.slice(i, i + BATCH_SIZE));
+        }
+
+        const batchResults = await Promise.all(
+          batches.map((batch) =>
+            supabase.from(entity as any).upsert(batch as any, { onConflict: onConflictKey }),
+          ),
+        );
+
+        for (const { error } of batchResults) {
           if (error) {
             errors.push(`${entity}: ${error.message}`);
           }
-          // Sub-progress within entity
-          const subPct = (idx / total + ((i + batch.length) / cleaned.length) / total) * 100;
-          onPct?.(subPct);
         }
       }
       imported += cleaned.length;
@@ -241,33 +299,37 @@ export async function importData(
   return { imported, errors };
 }
 
-// Use PostgREST proxy for Docker upserts - this preserves created_at/updated_at
-async function upsertViaPostgrest(table: string, rows: any[]): Promise<void> {
-  const batchSize = 50;
+async function upsertViaPostgrest(table: string, rows: any[], batchSize = 50): Promise<void> {
+  const batches: any[][] = [];
   for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
-    const response = await fetch(`${getApiBaseUrl()}/rest/v1/${table}`, {
-      method: 'POST',
-      headers: {
-        ...getRestHeaders(),
-        'Prefer': 'resolution=merge-duplicates,return=minimal',
-      },
-      body: JSON.stringify(batch),
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: response.statusText }));
-      throw new Error(err.message || `Import failed for ${table}`);
-    }
+    batches.push(rows.slice(i, i + batchSize));
   }
+
+  // Parallel PostgREST upserts
+  const results = await Promise.all(
+    batches.map(async (batch) => {
+      const response = await fetch(`${getApiBaseUrl()}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: {
+          ...getRestHeaders(),
+          'Prefer': 'resolution=merge-duplicates,return=minimal',
+        },
+        body: JSON.stringify(batch),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(err.message || `Import failed for ${table}`);
+      }
+    }),
+  );
 }
 
-// Get the correct onConflict key for each entity during upsert
 function getOnConflictKey(entity: string): string {
   switch (entity) {
     case 'profiles':
-      return 'user_id';  // profiles has unique constraint on user_id
+      return 'user_id';
     case 'user_roles':
-      return 'user_id,role';  // user_roles has unique(user_id, role)
+      return 'user_id,role';
     default:
       return 'id';
   }
@@ -333,7 +395,6 @@ function xmlToJson(xmlStr: string): any {
   return xmlNodeToJson(root);
 }
 
-// Public wrapper for conflict detection in the component
 export function xmlToJsonPublic(xmlStr: string): any {
   return xmlToJson(xmlStr);
 }

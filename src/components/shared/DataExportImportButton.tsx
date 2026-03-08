@@ -14,8 +14,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   exportData,
   importData,
+  parseImportFile,
+  detectConflicts,
   downloadBlob,
-  fetchEntityData,
   type ExportFormat,
   type ExportableEntity,
   EXPORT_PRESETS,
@@ -182,7 +183,7 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
   const [conflicts, setConflicts] = useState<ConflictItem[]>([]);
   const [showConflict, setShowConflict] = useState(false);
   const [conflictResolution, setConflictResolution] = useState<ConflictResolution>('overwrite');
-  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
+  const [pendingPayload, setPendingPayload] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -253,20 +254,13 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
       return;
     }
 
-    // Detect conflicts before importing
     setImporting(true);
     setImportProgress(5);
-    setImportEntity('Checking for conflicts...');
+    setImportEntity('Parsing file...');
 
     try {
-      const text = await file.text();
-      let payload: any;
-      if (file.name.endsWith('.xml')) {
-        const { xmlToJsonPublic } = await import('@/lib/dataExportImport');
-        payload = xmlToJsonPublic(text);
-      } else {
-        payload = JSON.parse(text);
-      }
+      // Parse file once, reuse payload throughout
+      const payload = await parseImportFile(file);
 
       if (!payload?.data || !payload?.exportType) {
         throw new Error('Invalid export file.');
@@ -275,35 +269,21 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
       const presetConfig = EXPORT_PRESETS[payload.exportType];
       if (!presetConfig) throw new Error(`Unknown export type: ${payload.exportType}`);
 
-      // Check for existing IDs
-      const foundConflicts: ConflictItem[] = [];
-      for (const entity of presetConfig.entities) {
-        const rows = payload.data[entity];
-        if (!Array.isArray(rows) || rows.length === 0) continue;
+      setImportEntity('Checking for conflicts...');
+      setImportProgress(15);
 
-        const existingData = await fetchEntityData(entity, user.id);
-        const existingIds = new Set(existingData.map((r: any) => r.id));
-
-        for (const row of rows) {
-          if (existingIds.has(row.id)) {
-            foundConflicts.push({
-              entity,
-              id: row.id,
-              existingName: row.name || row.title || row.content?.substring(0, 40) || row.id,
-            });
-          }
-        }
-      }
+      // Parallel conflict detection
+      const foundConflicts = await detectConflicts(payload, user.id);
 
       if (foundConflicts.length > 0) {
         setConflicts(foundConflicts);
-        setPendingImportFile(file);
+        setPendingPayload(payload);
         setShowConflict(true);
         setImporting(false);
         setImportProgress(0);
         setImportEntity('');
       } else {
-        await executeImport(file, 'overwrite');
+        await executeImport(payload, 'overwrite');
       }
     } catch (err: any) {
       toast.error(`Import failed: ${err.message}`);
@@ -314,7 +294,7 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
     }
   };
 
-  const executeImport = async (file: File, resolution: ConflictResolution) => {
+  const executeImport = async (payload: any, resolution: ConflictResolution) => {
     if (!user) return;
     setShowConflict(false);
     setImporting(true);
@@ -323,11 +303,11 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
 
     try {
       const result = await importData(
-        file,
+        payload,
         user.id,
         (msg) => setImportEntity(msg),
         (pct) => setImportProgress(pct),
-        resolution
+        resolution,
       );
       setImportResult(result);
       setShowResult(true);
@@ -344,13 +324,13 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
       setImporting(false);
       setImportProgress(0);
       setImportEntity('');
-      setPendingImportFile(null);
+      setPendingPayload(null);
     }
   };
 
   const handleConflictResolve = () => {
-    if (pendingImportFile) {
-      executeImport(pendingImportFile, conflictResolution);
+    if (pendingPayload) {
+      executeImport(pendingPayload, conflictResolution);
     }
   };
 
@@ -358,7 +338,7 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
 
   return (
     <>
-      {/* Main action buttons - clearly visible */}
+      {/* Main action buttons */}
       <div className="flex flex-wrap items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -521,7 +501,7 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowConflict(false); setPendingImportFile(null); }}>Cancel</Button>
+            <Button variant="outline" onClick={() => { setShowConflict(false); setPendingPayload(null); }}>Cancel</Button>
             <Button onClick={handleConflictResolve}>
               {conflictResolution === 'overwrite' ? <Replace className="h-4 w-4 mr-2" /> : <SkipForward className="h-4 w-4 mr-2" />}
               {conflictResolution === 'overwrite' ? 'Overwrite & Import' : 'Skip & Import'}
