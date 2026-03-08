@@ -121,6 +121,13 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
   const [onboardingEnabled, setOnboardingEnabled] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
 
+  // License state
+  const [licenseInfo, setLicenseInfo] = useState<LicenseInfo | null>(null);
+  const [licenseServerStatus, setLicenseServerStatus] = useState<any>(null);
+  const [loadingLicense, setLoadingLicense] = useState(false);
+  const [licenseKeyInput, setLicenseKeyInput] = useState('');
+  const [verifyingLicense, setVerifyingLicense] = useState(false);
+
   useEffect(() => {
     checkAdminStatus();
   }, [user, isAdmin]);
