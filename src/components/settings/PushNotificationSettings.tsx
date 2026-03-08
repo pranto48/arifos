@@ -65,6 +65,28 @@ export function PushNotificationSettings() {
         return false;
       }
 
+      // Fetch VAPID public key from edge function
+      let vapidKey = '';
+      try {
+        const { data, error } = await supabase.functions.invoke('send-push-notification', {
+          body: { action: 'get-vapid-key' },
+        });
+        if (!error && data?.vapid_public_key) {
+          vapidKey = data.vapid_public_key;
+        }
+      } catch (e) {
+        console.error('Failed to fetch VAPID key:', e);
+      }
+
+      if (!vapidKey) {
+        toast({
+          title: 'Configuration error',
+          description: 'Push notification keys are not configured on the server.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
       // Get service worker registration
       const registration = await navigator.serviceWorker.ready;
       
@@ -72,9 +94,6 @@ export function PushNotificationSettings() {
       let subscription = await (registration as any).pushManager.getSubscription();
       
       if (!subscription) {
-        // Get VAPID public key from environment
-        const vapidKey = 'BG1h7v3LFX6J1eY8O5tFg_Qx0Y6nUKQv1q7m0xHc0w8v2KJb_L5nP8rM2sT3yU4w6A9oZ1dC3eF5gH7iJ9kL0m';
-        
         try {
           subscription = await (registration as any).pushManager.subscribe({
             userVisibleOnly: true,
@@ -82,7 +101,6 @@ export function PushNotificationSettings() {
           });
         } catch (e: any) {
           console.log('Push subscription with VAPID failed:', e.message);
-          // Create a pseudo-subscription for fallback
           const pseudoSubscription = {
             endpoint: `polling-${user.id}-${Date.now()}`,
             p256dh: 'polling',
