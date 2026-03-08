@@ -78,7 +78,7 @@ interface AdminSettingsProps {
   onAdminStatusChange?: (isAdmin: boolean) => void;
 }
 
-export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
+export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: AdminSettingsProps) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const { hasRole: isAdmin, loading: roleLoading, recheckRoles } = useIsAdmin();
