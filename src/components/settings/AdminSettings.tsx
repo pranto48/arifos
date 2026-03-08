@@ -1200,10 +1200,12 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
                   )}
                 </div>
               </ScrollArea>
-            </TabsContent>
+            </div>
+            )}
 
             {/* Email/SMTP Settings */}
-            <TabsContent value="email" className="space-y-6 mt-4">
+            {activeTab === 'email' && (
+            <div className="space-y-6">
               {/* Resend API Settings */}
               <ResendSettings />
               
