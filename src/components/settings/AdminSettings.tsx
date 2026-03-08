@@ -708,6 +708,11 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
               </div>
             </TabsContent>
 
+            {/* Module Management */}
+            <TabsContent value="modules" className="space-y-4 mt-4">
+              <ModuleSettings />
+            </TabsContent>
+
             {/* Custom Form Fields */}
             <TabsContent value="custom-fields" className="space-y-4 mt-4">
               <CustomFormFieldManager />
