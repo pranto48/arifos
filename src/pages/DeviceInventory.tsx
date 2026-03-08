@@ -640,49 +640,70 @@ export default function DeviceInventoryPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <DataExportImportButton preset="devices" />
-          <ReportActions
-            variant="compact"
-            headers={reportHeaders}
-            rows={reportRows}
-            filename={`device-inventory-${format(new Date(), 'yyyy-MM-dd')}`}
-            title="Device Inventory Report"
-            subtitle={`${filteredDevices.length} devices`}
-            summaryCards={[
-              { label: 'Total', value: stats.total },
-              { label: 'Available', value: stats.available },
-              { label: 'Assigned', value: stats.assigned },
-              { label: 'Maintenance', value: stats.maintenance },
-            ]}
-          />
           {isAdmin && (
-            <>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" size="sm" onClick={() => setBulkAssignDialog(true)} className="hover-lift">
-                  <Users className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">{language === 'bn' ? 'ব্যাচ বরাদ্দ' : 'Bulk Assign'}</span>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" size="sm" onClick={() => setSupplierDialog(true)} className="hover-lift">
-                  <Truck className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">{language === 'bn' ? 'সাপ্লায়ার' : 'Supplier'}</span>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" size="sm" onClick={() => openCategoryDialog()} className="hover-lift">
-                  <Tag className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">{language === 'bn' ? 'ক্যাটাগরি' : 'Category'}</span>
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="sm" onClick={() => openDeviceDialog()} className="hover-glow">
-                  <Plus className="h-4 w-4 mr-1" />
-                  {language === 'bn' ? 'ডিভাইস যোগ' : 'Add Device'}
-                </Button>
-              </motion.div>
-            </>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button size="sm" onClick={() => openDeviceDialog()} className="hover-glow">
+                <Plus className="h-4 w-4 mr-1" />
+                {language === 'bn' ? 'ডিভাইস যোগ' : 'Add Device'}
+              </Button>
+            </motion.div>
           )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <MoreVertical className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">{language === 'bn' ? 'আরো' : 'More'}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => document.getElementById('device-report-trigger')?.click()}>
+                <Download className="h-4 w-4 mr-2" />
+                {language === 'bn' ? 'রিপোর্ট' : 'Report / Export'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => document.getElementById('device-import-trigger')?.click()}>
+                <FileText className="h-4 w-4 mr-2" />
+                {language === 'bn' ? 'ইম্পোর্ট / এক্সপোর্ট' : 'Import / Export Data'}
+              </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setBulkAssignDialog(true)}>
+                    <Users className="h-4 w-4 mr-2" />
+                    {language === 'bn' ? 'ব্যাচ বরাদ্দ' : 'Bulk Assign'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSupplierDialog(true)}>
+                    <Truck className="h-4 w-4 mr-2" />
+                    {language === 'bn' ? 'সাপ্লায়ার পরিচালনা' : 'Manage Suppliers'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openCategoryDialog()}>
+                    <Tag className="h-4 w-4 mr-2" />
+                    {language === 'bn' ? 'ক্যাটাগরি পরিচালনা' : 'Manage Categories'}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="hidden">
+            <div id="device-report-trigger">
+              <ReportActions
+                variant="compact"
+                headers={reportHeaders}
+                rows={reportRows}
+                filename={`device-inventory-${format(new Date(), 'yyyy-MM-dd')}`}
+                title="Device Inventory Report"
+                subtitle={`${filteredDevices.length} devices`}
+                summaryCards={[
+                  { label: 'Total', value: stats.total },
+                  { label: 'Available', value: stats.available },
+                  { label: 'Assigned', value: stats.assigned },
+                  { label: 'Maintenance', value: stats.maintenance },
+                ]}
+              />
+            </div>
+            <div id="device-import-trigger">
+              <DataExportImportButton preset="devices" />
+            </div>
+          </div>
         </div>
       </motion.div>
 
