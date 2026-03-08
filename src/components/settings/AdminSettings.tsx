@@ -1350,10 +1350,12 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
                   }
                 </p>
               </div>
-            </TabsContent>
+            </div>
+            )}
 
             {/* License Information */}
-            <TabsContent value="license" className="space-y-4 mt-4">
+            {activeTab === 'license' && (
+            <div className="space-y-4">
               {loadingLicense ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin" />
