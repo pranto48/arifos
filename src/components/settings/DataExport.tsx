@@ -116,6 +116,8 @@ export function DataExport() {
   const restoreInputRef = useRef<HTMLInputElement>(null);
   const [isActive, setIsActive] = useState(false);
   const [restoreProgress, setRestoreProgress] = useState<{ current: number; total: number; currentTable: string } | null>(null);
+  const [backupProgressState, setBackupProgressState] = useState<BackupRestoreProgressState | null>(null);
+  const [restoreProgressState, setRestoreProgressState] = useState<BackupRestoreProgressState | null>(null);
   const { hasRole: isAdmin } = useIsAdmin();
 
   useEffect(() => {
