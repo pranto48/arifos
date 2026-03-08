@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
-import { Shield, Users, Key, Loader2, Crown, UserPlus, Trash2, Search, Briefcase, Home, Settings, Calendar, AlertTriangle, Mail, Sparkles, FormInput, ToggleLeft } from 'lucide-react';
+import { Shield, Users, Key, Loader2, Crown, UserPlus, Trash2, Search, Briefcase, Home, Settings, Calendar, AlertTriangle, Mail, Sparkles, FormInput, ToggleLeft, LayoutGrid } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +30,7 @@ import { SmtpSettings } from './SmtpSettings';
 import { ResendSettings } from './ResendSettings';
 import { CustomFormFieldManager } from './CustomFormFieldManager';
 import { FormFieldSettings } from './FormFieldSettings';
+import { ModuleSettings } from './ModuleSettings';
 
 interface UserRole {
   id: string;
@@ -625,36 +626,40 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-8">
-              <TabsTrigger value="general" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
+            <TabsList className="flex w-full overflow-x-auto">
+              <TabsTrigger value="general" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
                 <Settings className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">{language === 'bn' ? 'সাধারণ' : 'General'}</span>
               </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
+              <TabsTrigger value="modules" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
+                <LayoutGrid className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">{language === 'bn' ? 'মডিউল' : 'Modules'}</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
                 <Users className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">{language === 'bn' ? 'ইউজার' : 'Users'}</span>
               </TabsTrigger>
-              <TabsTrigger value="workspaces" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
+              <TabsTrigger value="workspaces" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
                 <Briefcase className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">{language === 'bn' ? 'ওয়ার্কস্পেস' : 'Workspaces'}</span>
               </TabsTrigger>
-              <TabsTrigger value="custom-fields" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
+              <TabsTrigger value="custom-fields" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
                 <FormInput className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">{language === 'bn' ? 'কাস্টম ফিল্ড' : 'Fields'}</span>
               </TabsTrigger>
-              <TabsTrigger value="field-visibility" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
+              <TabsTrigger value="field-visibility" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
                 <ToggleLeft className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">{language === 'bn' ? 'দৃশ্যমানতা' : 'Visibility'}</span>
               </TabsTrigger>
-              <TabsTrigger value="email" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
+              <TabsTrigger value="email" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
                 <Mail className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">{language === 'bn' ? 'ইমেইল' : 'Email'}</span>
               </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
+              <TabsTrigger value="security" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
                 <Shield className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">{language === 'bn' ? 'সিকিউরিটি' : 'Security'}</span>
               </TabsTrigger>
-              <TabsTrigger value="integrations" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-1 md:px-3">
+              <TabsTrigger value="integrations" className="flex items-center gap-1 md:gap-2 text-[10px] md:text-sm px-2 md:px-3">
                 <Key className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">{language === 'bn' ? 'ইন্টিগ্রেশন' : 'Integrations'}</span>
               </TabsTrigger>
@@ -701,6 +706,11 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
                   </AlertDescription>
                 </Alert>
               </div>
+            </TabsContent>
+
+            {/* Module Management */}
+            <TabsContent value="modules" className="space-y-4 mt-4">
+              <ModuleSettings />
             </TabsContent>
 
             {/* Custom Form Fields */}

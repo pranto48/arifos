@@ -120,6 +120,8 @@ export function useFormFieldConfig(entityType?: string) {
       setConfigs(typed);
       if (entityType) {
         configCache.set(entityType, { data: typed, timestamp: Date.now() });
+      } else {
+        configCache.clear();
       }
     } catch (err) {
       console.error('Failed to fetch form field configs:', err);
@@ -130,39 +132,33 @@ export function useFormFieldConfig(entityType?: string) {
 
   const isFieldEnabled = useCallback((fieldName: string): boolean => {
     const config = configs.find(c => c.field_name === fieldName);
-    return config ? config.is_enabled : true; // default enabled if no config
+    return config ? config.is_enabled : true;
   }, [configs]);
 
   const toggleField = useCallback(async (entityType: string, fieldName: string, enabled: boolean, isCustom: boolean = false) => {
     if (!user) return;
     try {
-      // Upsert
-      const existing = configs.find(c => c.entity_type === entityType && c.field_name === fieldName);
-      if (existing) {
-        const { error } = await supabase
-          .from('form_field_config')
-          .update({ is_enabled: enabled, updated_by: user.id } as any)
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('form_field_config')
-          .insert({
+      // Use upsert with the unique constraint on (entity_type, field_name)
+      const { error } = await supabase
+        .from('form_field_config')
+        .upsert(
+          {
             entity_type: entityType,
             field_name: fieldName,
             is_enabled: enabled,
             is_custom: isCustom,
             updated_by: user.id,
-          } as any);
-        if (error) throw error;
-      }
+          } as any,
+          { onConflict: 'entity_type,field_name' }
+        );
+      if (error) throw error;
       configCache.clear();
       await fetchConfigs();
     } catch (err) {
       console.error('Failed to toggle field:', err);
       throw err;
     }
-  }, [user, configs, fetchConfigs]);
+  }, [user, fetchConfigs]);
 
   useEffect(() => {
     if (entityType) {

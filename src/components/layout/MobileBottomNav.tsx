@@ -14,15 +14,16 @@ import {
   DollarSign,
   TrendingUp,
   Landmark,
-  Lightbulb
+  Lightbulb,
+  Ticket
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDashboardMode } from '@/contexts/DashboardModeContext';
+import { useModuleConfig } from '@/hooks/useModuleConfig';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
 import { TranslationKey } from '@/translations';
 
 interface NavItem {
@@ -31,38 +32,41 @@ interface NavItem {
   icon: any;
   personalOnly?: boolean;
   officeOnly?: boolean;
+  moduleName?: string;
 }
 
-// Primary nav items for bottom bar (max 5)
+// Primary nav items for bottom bar (max 4 + more)
 const primaryNavItems: NavItem[] = [
   { titleKey: 'nav.dashboard', url: '/', icon: LayoutDashboard },
-  { titleKey: 'nav.tasks', url: '/tasks', icon: CheckSquare },
-  { titleKey: 'nav.calendar', url: '/calendar', icon: Calendar },
-  { titleKey: 'nav.notes', url: '/notes', icon: FileText },
+  { titleKey: 'nav.tasks', url: '/tasks', icon: CheckSquare, moduleName: 'tasks' },
+  { titleKey: 'nav.calendar', url: '/calendar', icon: Calendar, moduleName: 'calendar' },
+  { titleKey: 'nav.notes', url: '/notes', icon: FileText, moduleName: 'notes' },
 ];
 
 // All nav items for the "more" menu
 const allNavItems: NavItem[] = [
   { titleKey: 'nav.dashboard', url: '/', icon: LayoutDashboard },
-  { titleKey: 'nav.calendar', url: '/calendar', icon: Calendar },
-  { titleKey: 'nav.tasks', url: '/tasks', icon: CheckSquare },
-  { titleKey: 'nav.notes', url: '/notes', icon: FileText },
-  { titleKey: 'nav.supportUsers', url: '/support-users', icon: HeadsetIcon, officeOnly: true },
-  { titleKey: 'nav.deviceInventory', url: '/device-inventory', icon: HardDrive, officeOnly: true },
-  { titleKey: 'nav.habits', url: '/habits', icon: Repeat, personalOnly: true },
-  { titleKey: 'nav.family', url: '/family', icon: UsersIcon, personalOnly: true },
-  { titleKey: 'nav.budget', url: '/budget', icon: Wallet, personalOnly: true },
-  { titleKey: 'nav.salary', url: '/salary', icon: DollarSign, personalOnly: true },
-  { titleKey: 'nav.investments', url: '/investments', icon: TrendingUp, personalOnly: true },
-  { titleKey: 'nav.loans', url: '/loans', icon: Landmark, personalOnly: true },
-  { titleKey: 'nav.goals', url: '/goals', icon: Target },
-  { titleKey: 'nav.projects', url: '/projects', icon: Lightbulb },
+  { titleKey: 'nav.calendar', url: '/calendar', icon: Calendar, moduleName: 'calendar' },
+  { titleKey: 'nav.tasks', url: '/tasks', icon: CheckSquare, moduleName: 'tasks' },
+  { titleKey: 'nav.notes', url: '/notes', icon: FileText, moduleName: 'notes' },
+  { titleKey: 'nav.supportUsers', url: '/support-users', icon: HeadsetIcon, officeOnly: true, moduleName: 'support_users' },
+  { titleKey: 'nav.deviceInventory', url: '/device-inventory', icon: HardDrive, officeOnly: true, moduleName: 'device_inventory' },
+  { titleKey: 'nav.supportTickets', url: '/support-tickets', icon: Ticket, officeOnly: true, moduleName: 'support_tickets' },
+  { titleKey: 'nav.habits', url: '/habits', icon: Repeat, personalOnly: true, moduleName: 'habits' },
+  { titleKey: 'nav.family', url: '/family', icon: UsersIcon, personalOnly: true, moduleName: 'family' },
+  { titleKey: 'nav.budget', url: '/budget', icon: Wallet, personalOnly: true, moduleName: 'budget' },
+  { titleKey: 'nav.salary', url: '/salary', icon: DollarSign, personalOnly: true, moduleName: 'salary' },
+  { titleKey: 'nav.investments', url: '/investments', icon: TrendingUp, personalOnly: true, moduleName: 'investments' },
+  { titleKey: 'nav.loans', url: '/loans', icon: Landmark, personalOnly: true, moduleName: 'loans' },
+  { titleKey: 'nav.goals', url: '/goals', icon: Target, moduleName: 'goals' },
+  { titleKey: 'nav.projects', url: '/projects', icon: Lightbulb, moduleName: 'projects' },
   { titleKey: 'nav.settings', url: '/settings', icon: Settings },
 ];
 
 export function MobileBottomNav() {
   const { t } = useLanguage();
   const { mode } = useDashboardMode();
+  const { isModuleEnabled } = useModuleConfig();
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -72,20 +76,22 @@ export function MobileBottomNav() {
     return location.pathname.startsWith(path);
   };
 
-  const filteredAllNavItems = allNavItems.filter(item => {
-    if (mode === 'office' && item.personalOnly) {
-      return false;
-    }
-    if (mode === 'personal' && item.officeOnly) {
-      return false;
-    }
-    return true;
-  });
+  const filterItems = (items: NavItem[]) => {
+    return items.filter(item => {
+      if (mode === 'office' && item.personalOnly) return false;
+      if (mode === 'personal' && item.officeOnly) return false;
+      if (item.moduleName && !isModuleEnabled(item.moduleName)) return false;
+      return true;
+    });
+  };
+
+  const filteredPrimaryItems = filterItems(primaryNavItems);
+  const filteredAllNavItems = filterItems(allNavItems);
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-sidebar/95 backdrop-blur-xl border-t border-sidebar-border safe-area-pb">
       <div className="flex items-center justify-around h-16 px-2">
-        {primaryNavItems.map(item => (
+        {filteredPrimaryItems.map(item => (
           <NavLink
             key={item.url}
             to={item.url}
