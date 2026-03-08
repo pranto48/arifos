@@ -24,6 +24,8 @@ import { useDeviceInventory } from '@/hooks/useDeviceInventory';
 import { useAuth } from '@/contexts/AuthContext';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
 import { ReportActions } from '@/components/shared/ReportActions';
+import { useCustomFormFields } from '@/hooks/useCustomFormFields';
+import { CustomFieldsFilter, filterByCustomFields } from '@/components/shared/CustomFieldsFilter';
 
 interface SupportUserTask {
   id: string;
