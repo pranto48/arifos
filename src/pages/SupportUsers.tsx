@@ -67,6 +67,8 @@ export default function SupportUsers() {
   const [filterUnit, setFilterUnit] = useState<string>('all');
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [filterExtension, setFilterExtension] = useState<string>('all');
+  const [customFieldFilters, setCustomFieldFilters] = useState<Record<string, any>>({});
+  const { fields: supportUserCustomFields } = useCustomFormFields('support_user');
 
   // Dialog states
   const [unitDialog, setUnitDialog] = useState<{ open: boolean; editing: SupportUnit | null }>({ open: false, editing: null });
