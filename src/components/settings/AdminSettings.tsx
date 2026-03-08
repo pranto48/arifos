@@ -148,6 +148,7 @@ export function AdminSettings({ onAdminStatusChange }: AdminSettingsProps) {
         await loadOAuthCredentials();
         await loadWorkspacePermissions();
         await loadAppSettings();
+        await loadLicenseInfo();
       }
     } catch (error) {
       console.error('Failed to load admin data:', error);
