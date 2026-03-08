@@ -734,6 +734,7 @@ export default function DeviceInventoryPage() {
             supportUsers={supportUsers}
             suppliers={suppliers}
             statusOptions={STATUS_OPTIONS}
+            devices={devices}
           />
         </CardContent>
       </Card>
