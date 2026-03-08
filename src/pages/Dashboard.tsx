@@ -284,26 +284,25 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
+      <div className="flex items-start sm:items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold text-foreground truncate">
             {getGreeting()}, {user?.user_metadata?.full_name?.split(' ')[0] || t('dashboard.there')}
           </h1>
-          <p className="text-muted-foreground">
-            {format(new Date(), 'EEEE, MMMM d, yyyy')}
+          <p className="text-muted-foreground text-xs md:text-sm">
+            {format(new Date(), 'EEE, MMM d, yyyy')}
             <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-medium">
-              {mode === 'office' ? 'Office Mode' : 'Personal Mode'}
+              {mode === 'office' ? 'Office' : 'Personal'}
             </span>
           </p>
         </div>
         <Button 
           variant="outline" 
-          size="sm" 
+          size="icon" 
           onClick={() => setIsCustomizing(true)}
-          className="gap-2"
+          className="flex-shrink-0 h-9 w-9"
         >
           <Settings2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Customize</span>
         </Button>
       </div>
 
@@ -330,7 +329,7 @@ export default function Dashboard() {
       </div>
 
       {/* Mode-specific counts */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
         {modeCountCards.map((stat, i) => (
           <motion.div
             key={stat.title}
