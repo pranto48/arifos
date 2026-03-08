@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Filter, Building2, Users, Truck, Tag, Activity, X, Cpu, MemoryStick, HardDrive, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,13 @@ interface DeviceSupplier {
   is_active: boolean;
 }
 
+interface DeviceSuggestion {
+  id: string;
+  device_name: string;
+  device_number?: string | null;
+  serial_number?: string | null;
+}
+
 interface DeviceFiltersProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
@@ -40,6 +47,7 @@ interface DeviceFiltersProps {
   supportUsers: { id: string; name: string; department_id: string; is_active: boolean }[];
   suppliers: DeviceSupplier[];
   statusOptions: { value: string; label: string; labelBn: string }[];
+  devices?: DeviceSuggestion[];
 }
 
 export function DeviceFilters({
@@ -51,11 +59,37 @@ export function DeviceFilters({
   supportUsers,
   suppliers,
   statusOptions,
+  devices = [],
 }: DeviceFiltersProps) {
   const { language } = useLanguage();
   const isMobile = useIsMobile();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const suggestions = useMemo(() => {
+    const q = filters.searchQuery.toLowerCase().trim();
+    if (!q || q.length < 1) return [];
+    return devices
+      .filter(d =>
+        d.device_name.toLowerCase().includes(q) ||
+        d.device_number?.toLowerCase().includes(q) ||
+        d.serial_number?.toLowerCase().includes(q)
+      )
+      .slice(0, 8);
+  }, [devices, filters.searchQuery]);
 
   const filteredDepartments = useMemo(() => {
     if (filters.unitLocation === 'all') return departments;
