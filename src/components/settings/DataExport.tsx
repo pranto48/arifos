@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays, addWeeks, addMonths, startOfDay } from 'date-fns';
 import { RestoreComparisonDialog } from './RestoreComparisonDialog';
+import { BackupRestoreProgress, type BackupRestoreProgressState, type TableProgress } from './BackupRestoreProgress';
 
 interface BackupSchedule {
   id: string;
