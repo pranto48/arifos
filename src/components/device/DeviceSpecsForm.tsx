@@ -97,6 +97,7 @@ const TYPE_ICONS: Record<DeviceType, React.ElementType> = {
   printer: Printer,
   ups: Zap,
   cctv: Camera,
+  network_equipment: Network,
   generic: Settings,
 };
 
