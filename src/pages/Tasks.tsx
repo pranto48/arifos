@@ -30,6 +30,7 @@ import { TaskAssignmentHistory } from '@/components/tasks/TaskAssignmentHistory'
 import { TaskFollowUp } from '@/components/tasks/TaskFollowUp';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
 import { ReportActions } from '@/components/shared/ReportActions';
+import { FieldVisibility } from '@/components/shared/FieldVisibility';
 import {
   DndContext,
   closestCenter,
