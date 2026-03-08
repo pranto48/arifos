@@ -1411,6 +1411,45 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          family_event_reminders: boolean
+          follow_up_reminders: boolean
+          habit_reminders: boolean
+          id: string
+          loan_reminders: boolean
+          task_assignment_alerts: boolean
+          task_reminders: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          family_event_reminders?: boolean
+          follow_up_reminders?: boolean
+          habit_reminders?: boolean
+          id?: string
+          loan_reminders?: boolean
+          task_assignment_alerts?: boolean
+          task_reminders?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          family_event_reminders?: boolean
+          follow_up_reminders?: boolean
+          habit_reminders?: boolean
+          id?: string
+          loan_reminders?: boolean
+          task_assignment_alerts?: boolean
+          task_reminders?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
