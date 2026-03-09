@@ -111,6 +111,7 @@ const AppContent = () => {
             <Route path="/support-tickets" element={<AppLayout><SupportTickets /></AppLayout>} />
             <Route path="/submit-ticket" element={<SubmitTicket />} />
             <Route path="/time-tracking" element={<AppLayout><TimeTracking /></AppLayout>} />
+            <Route path="/workflow" element={<AppLayout><WorkflowAutomation /></AppLayout>} />
             <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

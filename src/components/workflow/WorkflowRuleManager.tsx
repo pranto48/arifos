@@ -42,7 +42,7 @@ export function WorkflowRuleManager({ rules, onCreate, onDelete, onToggle }: Pro
   const [form, setForm] = useState({
     name: '', description: '',
     trigger_type: 'task_completed',
-    trigger_config: { task_type: 'any', priority: 'any' },
+    trigger_config: { task_type: 'any', priority: 'any', days_before: 1 } as Record<string, any>,
     action_type: 'create_task',
     action_config: { title: '', priority: 'medium' },
   });
