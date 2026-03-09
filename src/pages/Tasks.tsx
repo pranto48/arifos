@@ -28,6 +28,7 @@ import { PendingTaskAssignments } from '@/components/tasks/PendingTaskAssignment
 import { OutgoingTaskAssignments } from '@/components/tasks/OutgoingTaskAssignments';
 import { TaskAssignmentHistory } from '@/components/tasks/TaskAssignmentHistory';
 import { TaskFollowUp } from '@/components/tasks/TaskFollowUp';
+import { TaskKanbanBoard } from '@/components/tasks/TaskKanbanBoard';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
 import { ReportActions } from '@/components/shared/ReportActions';
 import { FieldVisibility } from '@/components/shared/FieldVisibility';
