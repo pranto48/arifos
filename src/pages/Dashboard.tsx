@@ -65,11 +65,11 @@ export default function Dashboard() {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
     
     const [tasksRes, notesRes, transactionsRes, goalsRes, projectsRes] = await Promise.all([
-      supabase.from('tasks').select('*').eq('user_id', user?.id),
-      supabase.from('notes').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
-      supabase.from('transactions').select('*').eq('user_id', user?.id).gte('date', startOfMonth.split('T')[0]),
-      supabase.from('goals').select('*').eq('user_id', user?.id).in('status', ['active', 'in_progress']).eq('goal_type', mode),
-      supabase.from('projects').select('id, project_type').eq('user_id', user?.id),
+      supabase.from('tasks').select('id,title,status,due_date,task_type,sort_order,category_id').eq('user_id', user?.id),
+      supabase.from('notes').select('id,title,note_type,created_at').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('transactions').select('id,amount,type').eq('user_id', user?.id).gte('date', startOfMonth.split('T')[0]),
+      supabase.from('goals').select('id,title,category,target_amount,current_amount,target_date,status').eq('user_id', user?.id).in('status', ['active', 'in_progress']).eq('goal_type', mode),
+      supabase.from('projects').select('id,project_type').eq('user_id', user?.id),
     ]);
 
     const tasks = tasksRes.data || [];
