@@ -285,7 +285,7 @@ export default function Dashboard() {
   );
   
   const listWidgets = enabledWidgets.filter(w => 
-    ['recent-notes', 'upcoming-tasks', 'budget-summary', 'family-events'].includes(w.id)
+    ['recent-notes', 'upcoming-tasks', 'budget-summary', 'family-events', 'ai-suggestions', 'ai-anomalies'].includes(w.id)
   );
 
   const fullWidthWidgets = enabledWidgets.filter(w => 

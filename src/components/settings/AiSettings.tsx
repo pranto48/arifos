@@ -64,6 +64,16 @@ export function AiSettings() {
 
   return (
     <div className="space-y-6">
+      {isSelfHosted() && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            {language === 'bn'
+              ? 'AI ফিচারগুলো সেলফ-হোস্টেড মোডে সীমিত। সম্পূর্ণ AI সাপোর্টের জন্য ক্লাউড মোড ব্যবহার করুন।'
+              : 'AI features are limited in self-hosted mode. Use cloud mode for full AI support.'}
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
