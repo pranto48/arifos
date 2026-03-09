@@ -27,6 +27,8 @@ const DeviceInventoryReport = lazy(() => import('@/components/dashboard/DeviceIn
 const GoalProgressChart = lazy(() => import('@/components/goals/GoalProgressChart'));
 const AiSmartSuggestions = lazy(() => import('@/components/dashboard/AiSmartSuggestions').then(m => ({ default: m.AiSmartSuggestions })));
 const AiAnomalyAlerts = lazy(() => import('@/components/dashboard/AiAnomalyAlerts').then(m => ({ default: m.AiAnomalyAlerts })));
+const ActivityFeed = lazy(() => import('@/components/dashboard/ActivityFeed').then(m => ({ default: m.ActivityFeed })));
+const RecentTimeEntries = lazy(() => import('@/components/dashboard/RecentTimeEntries').then(m => ({ default: m.RecentTimeEntries })));
 
 const ChartLoader = () => <Skeleton className="h-64 w-full rounded-lg" />;
 
