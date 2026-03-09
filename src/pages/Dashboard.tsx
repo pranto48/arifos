@@ -25,6 +25,8 @@ const TaskCategoriesChart = lazy(() => import('@/components/dashboard/TaskCatego
 const DeviceCategoryChart = lazy(() => import('@/components/dashboard/DeviceCategoryChart').then(m => ({ default: m.DeviceCategoryChart })));
 const DeviceInventoryReport = lazy(() => import('@/components/dashboard/DeviceInventoryReport').then(m => ({ default: m.DeviceInventoryReport })));
 const GoalProgressChart = lazy(() => import('@/components/goals/GoalProgressChart'));
+const AiSmartSuggestions = lazy(() => import('@/components/dashboard/AiSmartSuggestions').then(m => ({ default: m.AiSmartSuggestions })));
+const AiAnomalyAlerts = lazy(() => import('@/components/dashboard/AiAnomalyAlerts').then(m => ({ default: m.AiAnomalyAlerts })));
 
 const ChartLoader = () => <Skeleton className="h-64 w-full rounded-lg" />;
 
