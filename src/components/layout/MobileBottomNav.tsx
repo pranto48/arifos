@@ -15,7 +15,8 @@ import {
   TrendingUp,
   Landmark,
   Lightbulb,
-  Ticket
+  Ticket,
+  Timer
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -60,6 +61,7 @@ const allNavItems: NavItem[] = [
   { titleKey: 'nav.loans', url: '/loans', icon: Landmark, personalOnly: true, moduleName: 'loans' },
   { titleKey: 'nav.goals', url: '/goals', icon: Target, moduleName: 'goals' },
   { titleKey: 'nav.projects', url: '/projects', icon: Lightbulb, moduleName: 'projects' },
+  { titleKey: 'nav.timeTracking', url: '/time-tracking', icon: Timer, moduleName: 'time_tracking' },
   { titleKey: 'nav.settings', url: '/settings', icon: Settings },
 ];
 

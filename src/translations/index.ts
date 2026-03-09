@@ -484,6 +484,9 @@ export const translations = {
   'projects.deleteConfirm': { bn: 'এই প্রকল্প মুছে ফেলবেন?', en: 'Delete this project?' },
   'salary.net': { bn: 'নিট', en: 'Net' },
 
+  // Time Tracking
+  'nav.timeTracking': { bn: 'টাইম ট্র্যাকিং', en: 'Time Tracking' },
+
   // Projects Additional
   'projects.projectIdeas': { bn: 'প্রকল্প আইডিয়া', en: 'Project Ideas' },
   'projects.noProjectsYet': { bn: 'এখনো কোন প্রকল্প আইডিয়া নেই।', en: 'No project ideas yet.' },

@@ -36,6 +36,7 @@ const DeviceInventory = lazy(() => import("./pages/DeviceInventory"));
 const DeviceProfile = lazy(() => import("./pages/DeviceProfile"));
 const SupportTickets = lazy(() => import("./pages/SupportTickets"));
 const SubmitTicket = lazy(() => import("./pages/SubmitTicket"));
+const TimeTracking = lazy(() => import("./pages/TimeTracking"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -108,6 +109,7 @@ const AppContent = () => {
             <Route path="/device/:deviceNumber" element={<DeviceProfile />} />
             <Route path="/support-tickets" element={<AppLayout><SupportTickets /></AppLayout>} />
             <Route path="/submit-ticket" element={<SubmitTicket />} />
+            <Route path="/time-tracking" element={<AppLayout><TimeTracking /></AppLayout>} />
             <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

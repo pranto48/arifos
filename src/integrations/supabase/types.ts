@@ -1486,6 +1486,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pomodoro_settings: {
+        Row: {
+          auto_start_breaks: boolean
+          auto_start_work: boolean
+          created_at: string
+          id: string
+          long_break: number
+          sessions_before_long_break: number
+          short_break: number
+          updated_at: string
+          user_id: string
+          work_duration: number
+        }
+        Insert: {
+          auto_start_breaks?: boolean
+          auto_start_work?: boolean
+          created_at?: string
+          id?: string
+          long_break?: number
+          sessions_before_long_break?: number
+          short_break?: number
+          updated_at?: string
+          user_id: string
+          work_duration?: number
+        }
+        Update: {
+          auto_start_breaks?: boolean
+          auto_start_work?: boolean
+          created_at?: string
+          id?: string
+          long_break?: number
+          sessions_before_long_break?: number
+          short_break?: number
+          updated_at?: string
+          user_id?: string
+          work_duration?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2512,6 +2551,66 @@ export type Database = {
             columns: ["support_user_id"]
             isOneToOne: false
             referencedRelation: "support_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_entries: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          end_time: string | null
+          entry_type: string
+          id: string
+          is_running: boolean | null
+          notes: string | null
+          project_id: string | null
+          start_time: string
+          task_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          end_time?: string | null
+          entry_type?: string
+          id?: string
+          is_running?: boolean | null
+          notes?: string | null
+          project_id?: string | null
+          start_time?: string
+          task_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          end_time?: string | null
+          entry_type?: string
+          id?: string
+          is_running?: boolean | null
+          notes?: string | null
+          project_id?: string | null
+          start_time?: string
+          task_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]

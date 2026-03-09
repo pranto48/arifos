@@ -21,7 +21,8 @@ import {
   Ticket,
   Briefcase,
   Home,
-  BarChart3
+  BarChart3,
+  Timer
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -73,6 +74,7 @@ const navGroups: NavGroup[] = [
       { titleKey: 'nav.notes', url: '/notes', icon: FileText, moduleName: 'notes' },
       { titleKey: 'nav.projects', url: '/projects', icon: Lightbulb, moduleName: 'projects' },
       { titleKey: 'nav.goals', url: '/goals', icon: Target, moduleName: 'goals' },
+      { titleKey: 'nav.timeTracking', url: '/time-tracking', icon: Timer, moduleName: 'time_tracking' },
     ],
   },
   {
