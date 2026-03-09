@@ -158,23 +158,23 @@ export default function Dashboard() {
   const renderWidget = (widgetId: string) => {
     switch (widgetId) {
       case 'task-completion':
-        return <TaskCompletionChart key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><TaskCompletionChart /></Suspense>;
       case 'tasks-breakdown':
-        return <TasksBreakdownChart key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><TasksBreakdownChart /></Suspense>;
       case 'task-categories':
-        return <TaskCategoriesChart key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><TaskCategoriesChart /></Suspense>;
       case 'device-categories':
-        return <DeviceCategoryChart key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><DeviceCategoryChart /></Suspense>;
       case 'device-report':
-        return <DeviceInventoryReport key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><DeviceInventoryReport /></Suspense>;
       case 'expense-breakdown':
-        return <ExpenseBreakdownChart key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><ExpenseBreakdownChart /></Suspense>;
       case 'goal-cards':
-        return <GoalProgressCards key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><GoalProgressCards /></Suspense>;
       case 'goal-chart':
-        return <GoalProgressChart key={widgetId} goals={stats.goals} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><GoalProgressChart goals={stats.goals} /></Suspense>;
       case 'goal-progress':
-        return <GoalProgressChart key={widgetId} goals={stats.goals} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><GoalProgressChart goals={stats.goals} /></Suspense>;
       case 'budget-summary':
         return (
           <Card key={widgetId} className="bg-card border-border">
