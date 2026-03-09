@@ -1514,6 +1514,7 @@ const server = http.createServer(async (req, res) => {
         'microsoft-calendar-sync': { success: true, message: 'Microsoft Calendar sync not available in local mode', events: [] },
         'save-calendar-credentials': { success: true, message: 'Calendar credentials not supported in local mode' },
         'manage-resend-key': { success: true, message: 'Resend API not available in local mode' },
+        'ai-assist': { success: true, content: 'AI features require cloud mode or a configured API key.', provider: 'local', error: 'AI not available in self-hosted mode' },
       };
 
       const response = functionResponses[funcName] || { success: true, message: `Edge function '${funcName}' not available in self-hosted mode` };
