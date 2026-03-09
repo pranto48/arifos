@@ -79,6 +79,7 @@ const navGroups: NavGroup[] = [
       { titleKey: 'nav.timeTracking', url: '/time-tracking', icon: Timer, moduleName: 'time_tracking' },
       { titleKey: 'nav.workflow', url: '/workflow', icon: Workflow, moduleName: 'workflow' },
       { titleKey: 'nav.aiHub', url: '/ai-hub', icon: Brain, moduleName: 'ai_hub' },
+      { titleKey: 'nav.analytics', url: '/analytics', icon: BarChart3, moduleName: 'analytics' },
     ],
   },
   {

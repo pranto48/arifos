@@ -115,6 +115,7 @@ const AppContent = () => {
             <Route path="/time-tracking" element={<AppLayout><TimeTracking /></AppLayout>} />
             <Route path="/workflow" element={<AppLayout><WorkflowAutomation /></AppLayout>} />
             <Route path="/ai-hub" element={<AppLayout><AiHub /></AppLayout>} />
+            <Route path="/analytics" element={<AppLayout><Analytics /></AppLayout>} />
             <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
