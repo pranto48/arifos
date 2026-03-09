@@ -190,6 +190,17 @@ export function SmtpSettings() {
     setTesting(true);
     setTestResult(null);
 
+    if (isSelfHosted()) {
+      setTestResult({
+        success: false,
+        message: language === 'bn' 
+          ? 'SMTP টেস্ট স্থানীয়/ডকার মোডে উপলব্ধ নয়।' 
+          : 'SMTP test email is not available in local/Docker mode.',
+      });
+      setTesting(false);
+      return;
+    }
+
     try {
       const response = await supabase.functions.invoke('send-smtp-email', {
         body: {
