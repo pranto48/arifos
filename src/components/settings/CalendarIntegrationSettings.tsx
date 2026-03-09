@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, RefreshCw, Link, Unlink, Eye, EyeOff, Save, HelpCircle, X, ExternalLink, AlertTriangle, CheckCircle2, Copy } from 'lucide-react';
+import { Calendar, RefreshCw, Link, Unlink, Eye, EyeOff, Save, HelpCircle, X, ExternalLink, AlertTriangle, CheckCircle2, Copy, MonitorSmartphone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -11,8 +11,10 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { isSelfHosted } from '@/lib/selfHostedConfig';
 
 interface CalendarSyncConfig {
   id: string;
