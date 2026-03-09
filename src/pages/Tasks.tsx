@@ -815,6 +815,7 @@ export default function Tasks() {
           </>
         )}
       </div>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
