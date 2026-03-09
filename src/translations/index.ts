@@ -487,6 +487,7 @@ export const translations = {
   // Time Tracking
   'nav.timeTracking': { bn: 'টাইম ট্র্যাকিং', en: 'Time Tracking' },
   'nav.workflow': { bn: 'ওয়ার্কফ্লো', en: 'Workflow' },
+  'nav.aiHub': { bn: 'AI হাব', en: 'AI Hub' },
 
   // Projects Additional
   'projects.projectIdeas': { bn: 'প্রকল্প আইডিয়া', en: 'Project Ideas' },
