@@ -17,6 +17,7 @@ import { BiometricManagement } from '@/components/settings/BiometricManagement';
 import { TrustedDevicesManagement } from '@/components/settings/TrustedDevicesManagement';
 import { DataExport } from '@/components/settings/DataExport';
 import { LicenseSettings } from '@/components/settings/LicenseSettings';
+import { LocationReminders } from '@/components/pwa/LocationReminders';
 import { CalendarIntegrationSettings } from '@/components/settings/CalendarIntegrationSettings';
 import { AdminSettings } from '@/components/settings/AdminSettings';
 import { AiSettings } from '@/components/settings/AiSettings';
