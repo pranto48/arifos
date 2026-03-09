@@ -15,7 +15,8 @@ import {
   TrendingUp,
   Landmark,
   Lightbulb,
-  Ticket
+  Ticket,
+  Timer
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
