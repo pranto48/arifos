@@ -454,6 +454,30 @@ export function CalendarIntegrationSettings() {
   };
 
   const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/settings` : '';
+  const selfHosted = isSelfHosted();
+
+  if (selfHosted) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <Calendar className="h-5 w-5" />
+            {language === 'bn' ? 'ক্যালেন্ডার ইন্টিগ্রেশন' : 'Calendar Integration'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <MonitorSmartphone className="h-4 w-4" />
+            <AlertDescription>
+              {language === 'bn' 
+                ? 'ক্যালেন্ডার সিঙ্ক স্থানীয়/ডকার মোডে উপলব্ধ নয়। এই বৈশিষ্ট্যটি ক্লাউড মোডে ব্যবহার করুন।'
+                : 'Calendar sync is not available in local/Docker mode. This feature requires Cloud mode.'}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <>
