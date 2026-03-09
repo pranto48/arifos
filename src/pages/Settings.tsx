@@ -112,6 +112,7 @@ export default function Settings() {
       backup: { en: 'Backup & Restore', bn: 'ব্যাকআপ ও রিস্টোর' },
       license: { en: 'License', bn: 'লাইসেন্স' },
       admin: { en: 'Admin Panel', bn: 'এডমিন প্যানেল' },
+      ai: { en: 'AI Settings', bn: 'AI সেটিংস' },
       'admin-general': { en: 'Admin — General', bn: 'এডমিন — সাধারণ' },
       'admin-modules': { en: 'Admin — Modules', bn: 'এডমিন — মডিউল' },
       'admin-users': { en: 'Admin — Users & Roles', bn: 'এডমিন — ইউজার ও রোল' },
