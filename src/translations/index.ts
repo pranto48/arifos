@@ -504,8 +504,6 @@ export const translations = {
   // Tasks Kanban
   'tasks.listView': { bn: 'তালিকা', en: 'List' },
   'tasks.kanbanView': { bn: 'কানবান', en: 'Kanban' },
-  'tasks.toDo': { bn: 'করতে হবে', en: 'To Do' },
-  'tasks.inProgress': { bn: 'চলমান', en: 'In Progress' },
 
   // Dashboard Activity
   'dashboard.activityFeed': { bn: 'আজকের কার্যকলাপ', en: "Today's Activity" },
