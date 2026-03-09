@@ -276,6 +276,10 @@ export default function Dashboard() {
         return <Suspense key={widgetId} fallback={<ChartLoader />}><AiSmartSuggestions /></Suspense>;
       case 'ai-anomalies':
         return <Suspense key={widgetId} fallback={<ChartLoader />}><AiAnomalyAlerts /></Suspense>;
+      case 'activity-feed':
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><ActivityFeed /></Suspense>;
+      case 'recent-time':
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><RecentTimeEntries /></Suspense>;
       default:
         return null;
     }
