@@ -1,0 +1,81 @@
+import { Sparkles, Loader2, Zap } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+
+interface AiIndicatorProps {
+  variant?: 'badge' | 'dot' | 'inline';
+  loading?: boolean;
+  provider?: 'free' | 'openai' | 'custom' | string;
+  remaining?: number | null;
+  className?: string;
+}
+
+export function AiIndicator({ variant = 'badge', loading, provider, remaining, className }: AiIndicatorProps) {
+  const isFree = !provider || provider === 'free';
+  const label = isFree ? 'AI Free' : 'AI Pro';
+
+  if (variant === 'dot') {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={cn(
+            'inline-flex items-center gap-1 text-xs',
+            loading ? 'text-muted-foreground animate-pulse' : 'text-primary',
+            className
+          )}>
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{label}{remaining !== null && remaining !== undefined ? ` · ${remaining} calls left today` : ''}</p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  if (variant === 'inline') {
+    return (
+      <span className={cn(
+        'inline-flex items-center gap-1 text-xs font-medium',
+        loading ? 'text-muted-foreground' : isFree ? 'text-blue-500' : 'text-amber-500',
+        className
+      )}>
+        {loading ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : isFree ? (
+          <Sparkles className="h-3 w-3" />
+        ) : (
+          <Zap className="h-3 w-3" />
+        )}
+        {loading ? 'Analyzing...' : label}
+      </span>
+    );
+  }
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        'gap-1 text-xs font-medium',
+        loading && 'animate-pulse',
+        isFree
+          ? 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+          : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        className
+      )}
+    >
+      {loading ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : isFree ? (
+        <Sparkles className="h-3 w-3" />
+      ) : (
+        <Zap className="h-3 w-3" />
+      )}
+      {loading ? 'Analyzing...' : label}
+      {remaining !== null && remaining !== undefined && !loading && (
+        <span className="opacity-60">({remaining})</span>
+      )}
+    </Badge>
+  );
+}
