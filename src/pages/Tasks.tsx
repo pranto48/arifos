@@ -611,6 +611,24 @@ export default function Tasks() {
             ]}
           />
           <DataExportImportButton preset="tasks" />
+          <div className="flex items-center gap-0.5 bg-muted/30 rounded-md p-0.5">
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => setViewMode('kanban')}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </Button>
+          </div>
           <Button
             variant={selectionMode ? 'secondary' : 'ghost'}
             size="sm"
