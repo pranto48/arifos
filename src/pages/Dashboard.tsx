@@ -270,6 +270,10 @@ export default function Dashboard() {
         );
       case 'family-events':
         return <Suspense key={widgetId} fallback={<ChartLoader />}><UpcomingFamilyEvents /></Suspense>;
+      case 'ai-suggestions':
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><AiSmartSuggestions /></Suspense>;
+      case 'ai-anomalies':
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><AiAnomalyAlerts /></Suspense>;
       default:
         return null;
     }
