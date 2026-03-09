@@ -19,6 +19,7 @@ import { DataExport } from '@/components/settings/DataExport';
 import { LicenseSettings } from '@/components/settings/LicenseSettings';
 import { CalendarIntegrationSettings } from '@/components/settings/CalendarIntegrationSettings';
 import { AdminSettings } from '@/components/settings/AdminSettings';
+import { AiSettings } from '@/components/settings/AiSettings';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsAdmin } from '@/hooks/useUserRoles';
 import { SectionErrorBoundary } from '@/components/ErrorBoundary';
