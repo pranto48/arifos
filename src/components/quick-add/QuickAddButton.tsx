@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, X, CheckSquare, FileText, Wallet, Target } from 'lucide-react';
+import { Plus, X, CheckSquare, FileText, Wallet, Target, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -8,12 +8,14 @@ import { QuickAddTask } from './QuickAddTask';
 import { QuickAddNote } from './QuickAddNote';
 import { QuickAddExpense } from './QuickAddExpense';
 import { QuickAddGoal } from './QuickAddGoal';
+import { VoiceCapture } from './VoiceCapture';
 
 const tabs = [
   { id: 'task', label: 'Task', icon: CheckSquare, shortcut: 't' },
   { id: 'note', label: 'Note', icon: FileText, shortcut: 'n' },
   { id: 'expense', label: 'Expense', icon: Wallet, shortcut: 'e' },
   { id: 'goal', label: 'Goal', icon: Target, shortcut: 'g' },
+  { id: 'voice', label: 'Voice', icon: Mic, shortcut: 'v' },
 ];
 
 export function QuickAddButton() {
