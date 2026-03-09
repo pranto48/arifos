@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 interface AiIndicatorProps {
   variant?: 'badge' | 'dot' | 'inline';
   loading?: boolean;
-  provider?: 'free' | 'openai' | 'custom' | string;
+  provider?: 'free' | 'openai' | 'openrouter' | 'custom' | string;
   remaining?: number | null;
   className?: string;
 }
