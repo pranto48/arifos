@@ -103,6 +103,8 @@ export function useAiAssist() {
     }
   }, [user]);
 
+  const isAvailable = !isLocalModeFeature('ai-assist');
+
   return {
     loading,
     config,
@@ -110,5 +112,6 @@ export function useAiAssist() {
     saveConfig,
     getRemainingCalls,
     isConfigured: !!config && config.provider !== 'free',
+    isAvailable,
   };
 }

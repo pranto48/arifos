@@ -23,7 +23,7 @@ const severityConfig = {
 
 export function AiAnomalyAlerts() {
   const { user } = useAuth();
-  const { callAi, loading, config } = useAiAssist();
+  const { callAi, loading, config, isAvailable } = useAiAssist();
   const { language } = useLanguage();
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [fetched, setFetched] = useState(false);
@@ -79,8 +79,8 @@ export function AiAnomalyAlerts() {
             {language === 'bn' ? 'অ্যানোমালি অ্যালার্ট' : 'Anomaly Alerts'}
           </CardTitle>
           <div className="flex items-center gap-2">
-            <AiIndicator variant="dot" loading={loading} provider={config?.provider} />
-            {fetched && (
+            <AiIndicator variant="dot" loading={loading} provider={config?.provider} unavailable={!isAvailable} />
+            {fetched && isAvailable && (
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchAnomalies} disabled={loading}>
                 <RefreshCw className="h-3 w-3" />
               </Button>
@@ -89,7 +89,14 @@ export function AiAnomalyAlerts() {
         </div>
       </CardHeader>
       <CardContent>
-        {!fetched && !loading ? (
+        {!isAvailable ? (
+          <div className="flex flex-col items-center py-6 gap-2">
+            <AiIndicator variant="inline" unavailable />
+            <p className="text-xs text-muted-foreground text-center">
+              {language === 'bn' ? 'AI ফিচার সেলফ-হোস্টেড মোডে পাওয়া যায় না' : 'AI features are not available in self-hosted mode'}
+            </p>
+          </div>
+        ) : !fetched && !loading ? (
           <div className="flex flex-col items-center py-6 gap-3">
             <p className="text-sm text-muted-foreground text-center">
               {language === 'bn' ? 'আপনার ডেটায় অস্বাভাবিক প্যাটার্ন শনাক্ত করুন' : 'Detect unusual patterns in your data'}
