@@ -27,7 +27,6 @@ const LOCAL_MODE_FUNCTIONS = new Set([
   'send-family-event-reminders',
   'send-loan-reminders',
   'manage-resend-key',
-  'ai-assist',
 ]);
 
 export async function invokeEdgeFunction<T = any>(
