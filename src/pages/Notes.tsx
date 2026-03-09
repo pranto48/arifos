@@ -21,6 +21,8 @@ import { encryptContent, decryptContent, validatePassphrase } from '@/lib/encryp
 import { format } from 'date-fns';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
 import { FieldVisibility } from '@/components/shared/FieldVisibility';
+import { MarkdownEditor } from '@/components/notes/MarkdownEditor';
+import ReactMarkdown from 'react-markdown';
 
 export default function Notes() {
   const { user } = useAuth();
