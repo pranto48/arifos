@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_config: {
+        Row: {
+          api_key_encrypted: string | null
+          created_at: string | null
+          daily_usage_count: number | null
+          id: string
+          last_usage_date: string | null
+          model_preference: string | null
+          provider: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          created_at?: string | null
+          daily_usage_count?: number | null
+          id?: string
+          last_usage_date?: string | null
+          model_preference?: string | null
+          provider?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          created_at?: string | null
+          daily_usage_count?: number | null
+          id?: string
+          last_usage_date?: string | null
+          model_preference?: string | null
+          provider?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_notifications: {
         Row: {
           created_at: string
