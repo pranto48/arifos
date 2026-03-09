@@ -12,6 +12,7 @@ import { PersonalPageGuard } from "@/components/layout/PersonalPageGuard";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { AnimatePresence } from "framer-motion";
