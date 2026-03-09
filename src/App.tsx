@@ -39,6 +39,7 @@ const SubmitTicket = lazy(() => import("./pages/SubmitTicket"));
 const TimeTracking = lazy(() => import("./pages/TimeTracking"));
 const WorkflowAutomation = lazy(() => import("./pages/WorkflowAutomation"));
 const AiHub = lazy(() => import("./pages/AiHub"));
+const Analytics = lazy(() => import("./pages/Analytics"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
