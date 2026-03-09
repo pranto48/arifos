@@ -85,6 +85,8 @@ export default function Settings() {
         return <CalendarIntegrationSettings />;
       case 'backup':
         return <DataExport />;
+      case 'ai':
+        return <AiSettings />;
       case 'license':
         return <LicenseSettings />;
       case 'admin':
