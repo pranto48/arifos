@@ -267,6 +267,7 @@ export default function Tasks() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
