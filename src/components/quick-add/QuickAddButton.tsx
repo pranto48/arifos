@@ -95,6 +95,9 @@ export function QuickAddButton() {
               <TabsContent value="goal" className="mt-0">
                 <QuickAddGoal onClose={handleClose} />
               </TabsContent>
+              <TabsContent value="voice" className="mt-0">
+                <VoiceCapture onClose={handleClose} />
+              </TabsContent>
             </div>
           </Tabs>
         </DialogContent>
