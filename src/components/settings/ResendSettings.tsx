@@ -202,6 +202,21 @@ export function ResendSettings() {
     );
   }
 
+  if (isSelfHosted()) {
+    return (
+      <div className="space-y-4">
+        <Alert>
+          <MonitorSmartphone className="h-4 w-4" />
+          <AlertDescription>
+            {language === 'bn' 
+              ? 'Resend API স্থানীয়/ডকার মোডে উপলব্ধ নয়। এই বৈশিষ্ট্যটি ক্লাউড মোডে ব্যবহার করুন।'
+              : 'Resend API is not available in local/Docker mode. This feature requires Cloud mode.'}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Info Alert */}
