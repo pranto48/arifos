@@ -77,13 +77,13 @@ serve(async (req) => {
         break;
       case "smart_suggestions":
         systemPrompt =
-          "You are a productivity coach. Based on user activity data, suggest 2-3 reports they should generate or actions to take. Be actionable and specific.";
-        userPrompt = `Activity summary:\n${context.activity}`;
+          'You are a productivity coach. Based on user activity data, suggest 2-4 actionable items. Return as JSON array: [{title, description, action?, link?}]. link can be: tasks, goals, budget, notes, habits.';
+        userPrompt = `Activity summary:\n${JSON.stringify(context)}`;
         break;
       case "anomaly_detection":
         systemPrompt =
-          "You are a data anomaly detector. Analyze the data for unusual patterns, spikes, or concerning trends. Return findings as JSON: {anomalies: [{title: string, description: string, severity: 'low'|'medium'|'high'}]}";
-        userPrompt = `Data to analyze:\n${context.data}`;
+          'You are a data anomaly detector. Analyze the data for unusual patterns, spikes, or concerning trends. Return as JSON array: [{title, description, severity: "low"|"medium"|"high", category?}]';
+        userPrompt = `Data to analyze:\n${JSON.stringify(context)}`;
         break;
       default:
         return new Response(

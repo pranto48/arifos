@@ -14,7 +14,7 @@ interface AiReportSummaryProps {
 }
 
 export function AiReportSummary({ title, headers, rows, summaryCards }: AiReportSummaryProps) {
-  const { callAi, loading, config } = useAiAssist();
+  const { callAi, loading, config, isAvailable } = useAiAssist();
   const [summary, setSummary] = useState<string | null>(null);
 
   const handleGenerate = async () => {
@@ -35,6 +35,14 @@ export function AiReportSummary({ title, headers, rows, summaryCards }: AiReport
       setSummary(result.content);
     }
   };
+
+  if (!isAvailable) {
+    return (
+      <div className="flex items-center gap-2">
+        <AiIndicator variant="inline" unavailable />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">

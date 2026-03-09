@@ -18,7 +18,7 @@ interface Suggestion {
 
 export function AiSmartSuggestions() {
   const { user } = useAuth();
-  const { callAi, loading, config } = useAiAssist();
+  const { callAi, loading, config, isAvailable } = useAiAssist();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -81,8 +81,8 @@ export function AiSmartSuggestions() {
             {language === 'bn' ? 'স্মার্ট সাজেশন' : 'Smart Suggestions'}
           </CardTitle>
           <div className="flex items-center gap-2">
-            <AiIndicator variant="dot" loading={loading} provider={config?.provider} />
-            {fetched && (
+            <AiIndicator variant="dot" loading={loading} provider={config?.provider} unavailable={!isAvailable} />
+            {fetched && isAvailable && (
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchSuggestions} disabled={loading}>
                 <RefreshCw className="h-3 w-3" />
               </Button>
@@ -91,7 +91,14 @@ export function AiSmartSuggestions() {
         </div>
       </CardHeader>
       <CardContent>
-        {!fetched && !loading ? (
+        {!isAvailable ? (
+          <div className="flex flex-col items-center py-6 gap-2">
+            <AiIndicator variant="inline" unavailable />
+            <p className="text-xs text-muted-foreground text-center">
+              {language === 'bn' ? 'AI ফিচার সেলফ-হোস্টেড মোডে পাওয়া যায় না' : 'AI features are not available in self-hosted mode'}
+            </p>
+          </div>
+        ) : !fetched && !loading ? (
           <div className="flex flex-col items-center py-6 gap-3">
             <p className="text-sm text-muted-foreground text-center">
               {language === 'bn' ? 'আপনার কার্যকলাপের উপর ভিত্তি করে AI সাজেশন পান' : 'Get AI-powered suggestions based on your activity'}
