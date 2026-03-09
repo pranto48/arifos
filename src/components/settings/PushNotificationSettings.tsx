@@ -246,6 +246,26 @@ export function PushNotificationSettings() {
     }
   };
 
+  if (isSelfHosted()) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <Bell className="h-5 w-5" /> Push Notifications
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <MonitorSmartphone className="h-4 w-4" />
+            <AlertDescription>
+              Push notifications are not available in local/Docker mode. This feature requires Cloud mode.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-card border-border">
       <CardHeader>

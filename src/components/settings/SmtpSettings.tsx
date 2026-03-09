@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, Server, Lock, Save, Loader2, TestTube, Eye, EyeOff, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Mail, Server, Lock, Save, Loader2, TestTube, Eye, EyeOff, CheckCircle, XCircle, AlertTriangle, MonitorSmartphone } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
+import { isSelfHosted } from '@/lib/selfHostedConfig';
 
 interface SmtpSettingsData {
   id?: string;
