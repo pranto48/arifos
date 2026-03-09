@@ -63,6 +63,9 @@ serve(async (req) => {
     // Build prompt based on type
     let systemPrompt = "";
     let userPrompt = "";
+    let useToolCalling = false;
+    let tools: any[] = [];
+    let toolChoice: any = undefined;
 
     switch (type) {
       case "report_summary":
@@ -85,6 +88,124 @@ serve(async (req) => {
           'You are a data anomaly detector. Analyze the data for unusual patterns, spikes, or concerning trends. Return as JSON array: [{title, description, severity: "low"|"medium"|"high", category?}]';
         userPrompt = `Data to analyze:\n${JSON.stringify(context)}`;
         break;
+
+      // ====== NEW AI CAPABILITIES ======
+
+      case "ocr_document":
+        systemPrompt = `You are a document analysis expert. Extract all text, numbers, dates, and key information from the document image/content provided. Structure your response clearly with:
+- **Document Type**: (receipt, invoice, contract, letter, etc.)
+- **Key Fields**: extracted data as key-value pairs
+- **Line Items**: any itemized entries with amounts
+- **Total Amount**: if applicable
+- **Dates**: any dates found
+- **Raw Text**: full extracted text
+
+Be thorough and precise with numbers and amounts.`;
+        userPrompt = context.imageBase64
+          ? `Analyze this document image and extract all information.`
+          : `Extract information from this document text:\n${context.documentText}`;
+        break;
+
+      case "smart_categorize":
+        systemPrompt = "You are a task organization expert. Analyze the provided tasks and suggest optimal category assignments.";
+        userPrompt = `Here are tasks that need categorization. Available categories: ${JSON.stringify(context.categories)}.\n\nTasks to categorize:\n${JSON.stringify(context.tasks)}`;
+        useToolCalling = true;
+        tools = [{
+          type: "function",
+          function: {
+            name: "categorize_tasks",
+            description: "Assign categories to tasks based on their content",
+            parameters: {
+              type: "object",
+              properties: {
+                assignments: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      task_id: { type: "string" },
+                      category_id: { type: "string" },
+                      confidence: { type: "number", description: "0-1 confidence score" },
+                      reason: { type: "string" },
+                    },
+                    required: ["task_id", "category_id", "confidence"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["assignments"],
+              additionalProperties: false,
+            },
+          },
+        }];
+        toolChoice = { type: "function", function: { name: "categorize_tasks" } };
+        break;
+
+      case "predictive_insights":
+        systemPrompt = `You are a predictive analytics expert. Analyze the user's historical data and provide actionable forecasts.`;
+        userPrompt = `Analyze this data and provide predictions:\n${JSON.stringify(context)}`;
+        useToolCalling = true;
+        tools = [{
+          type: "function",
+          function: {
+            name: "generate_predictions",
+            description: "Generate predictive insights from user data",
+            parameters: {
+              type: "object",
+              properties: {
+                predictions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      title: { type: "string" },
+                      description: { type: "string" },
+                      category: { type: "string", enum: ["deadline", "budget", "productivity", "goal"] },
+                      confidence: { type: "number" },
+                      severity: { type: "string", enum: ["info", "warning", "critical"] },
+                      suggested_action: { type: "string" },
+                    },
+                    required: ["title", "description", "category", "confidence", "severity"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["predictions"],
+              additionalProperties: false,
+            },
+          },
+        }];
+        toolChoice = { type: "function", function: { name: "generate_predictions" } };
+        break;
+
+      case "natural_language_task":
+        systemPrompt = "You are a task parsing assistant. Parse natural language into structured task data. Interpret relative dates based on today's date.";
+        userPrompt = `Today is ${new Date().toISOString().split("T")[0]}. Parse this into a task:\n"${context.input}"\n\nAvailable categories: ${JSON.stringify(context.categories || [])}`;
+        useToolCalling = true;
+        tools = [{
+          type: "function",
+          function: {
+            name: "create_task",
+            description: "Create a structured task from natural language",
+            parameters: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                description: { type: "string" },
+                priority: { type: "string", enum: ["low", "medium", "high", "urgent"] },
+                due_date: { type: "string", description: "ISO date string YYYY-MM-DD" },
+                category_name: { type: "string", description: "Best matching category name" },
+                is_recurring: { type: "boolean" },
+                recurring_pattern: { type: "string", enum: ["daily", "weekly", "biweekly", "monthly", "quarterly", "yearly"] },
+              },
+              required: ["title", "priority"],
+              additionalProperties: false,
+            },
+          },
+        }];
+        toolChoice = { type: "function", function: { name: "create_task" } };
+        break;
+
       default:
         return new Response(
           JSON.stringify({ error: "Unknown AI assist type" }),
@@ -101,20 +222,18 @@ serve(async (req) => {
     let model: string;
 
     if (provider === "free" || !aiConfig?.api_key_encrypted) {
-      // Use Lovable AI gateway
       const lovableKey = Deno.env.get("LOVABLE_API_KEY");
       if (!lovableKey)
         throw new Error("LOVABLE_API_KEY is not configured");
       apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
       apiKey = lovableKey;
-      model = "google/gemini-2.5-flash-lite";
+      // Use flash for most tasks, pro for OCR (needs vision)
+      model = type === "ocr_document" ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
     } else if (provider === "openrouter") {
-      // OpenRouter API (Llama, Mistral, etc.)
       apiUrl = "https://openrouter.ai/api/v1/chat/completions";
       apiKey = aiConfig.api_key_encrypted;
       model = aiConfig.model_preference || "meta-llama/llama-4-maverick";
     } else {
-      // User's own OpenAI or custom key
       const userKey = aiConfig.api_key_encrypted;
       if (aiConfig.model_preference?.startsWith("openai/")) {
         apiUrl = "https://api.openai.com/v1/chat/completions";
@@ -126,40 +245,58 @@ serve(async (req) => {
       apiKey = userKey;
     }
 
+    // Build messages - support multimodal for OCR
+    const messages: any[] = [
+      { role: "system", content: systemPrompt },
+    ];
+
+    if (type === "ocr_document" && context.imageBase64) {
+      messages.push({
+        role: "user",
+        content: [
+          { type: "text", text: userPrompt },
+          {
+            type: "image_url",
+            image_url: { url: `data:${context.mimeType || "image/jpeg"};base64,${context.imageBase64}` },
+          },
+        ],
+      });
+    } else {
+      messages.push({ role: "user", content: userPrompt });
+    }
+
+    const requestBody: any = {
+      model,
+      messages,
+      max_tokens: type === "ocr_document" ? 2000 : 800,
+      temperature: 0.3,
+    };
+
+    if (useToolCalling) {
+      requestBody.tools = tools;
+      requestBody.tool_choice = toolChoice;
+    }
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: 500,
-        temperature: 0.3,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "AI rate limit exceeded. Please try again later." }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: "AI credits exhausted. Please add funds." }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       const errText = await response.text();
@@ -168,7 +305,21 @@ serve(async (req) => {
     }
 
     const result = await response.json();
-    const content = result.choices?.[0]?.message?.content || "";
+
+    // Extract content - handle tool calls
+    let content: any;
+    const choice = result.choices?.[0];
+
+    if (choice?.message?.tool_calls?.length) {
+      const toolCall = choice.message.tool_calls[0];
+      try {
+        content = JSON.parse(toolCall.function.arguments);
+      } catch {
+        content = toolCall.function.arguments;
+      }
+    } else {
+      content = choice?.message?.content || "";
+    }
 
     // Update usage count
     const serviceClient = createClient(

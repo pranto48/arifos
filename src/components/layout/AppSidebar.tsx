@@ -23,7 +23,8 @@ import {
   Home,
   BarChart3,
     Timer,
-    Workflow
+    Workflow,
+    Brain
   } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -77,6 +78,7 @@ const navGroups: NavGroup[] = [
       { titleKey: 'nav.goals', url: '/goals', icon: Target, moduleName: 'goals' },
       { titleKey: 'nav.timeTracking', url: '/time-tracking', icon: Timer, moduleName: 'time_tracking' },
       { titleKey: 'nav.workflow', url: '/workflow', icon: Workflow, moduleName: 'workflow' },
+      { titleKey: 'nav.aiHub', url: '/ai-hub', icon: Brain, moduleName: 'ai_hub' },
     ],
   },
   {
