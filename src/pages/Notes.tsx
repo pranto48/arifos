@@ -390,11 +390,11 @@ export default function Notes() {
             <FieldVisibility entityType="note" fieldName="content">
               <div className="space-y-2">
                 <Label>{t('notes.content')}</Label>
-                <Textarea
+                <MarkdownEditor
                   value={newContent}
-                  onChange={e => setNewContent(e.target.value)}
+                  onChange={setNewContent}
                   placeholder={t('notes.writeNote')}
-                  className="bg-muted/50 min-h-[150px]"
+                  minHeight="200px"
                 />
               </div>
             </FieldVisibility>

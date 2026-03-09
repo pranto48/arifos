@@ -15,11 +15,13 @@ const DEFAULT_OFFICE_WIDGETS: DashboardWidget[] = [
   { id: 'task-categories', name: 'Task Categories', enabled: true, order: 2 },
   { id: 'device-categories', name: 'Device Categories', enabled: true, order: 3 },
   { id: 'device-report', name: 'Device Inventory Report', enabled: true, order: 4 },
-  { id: 'recent-notes', name: 'Recent Notes', enabled: true, order: 5 },
-  { id: 'upcoming-tasks', name: 'Upcoming Tasks', enabled: true, order: 6 },
-  { id: 'goal-progress', name: 'Goal Progress', enabled: true, order: 7 },
-  { id: 'ai-suggestions', name: 'AI Smart Suggestions', enabled: true, order: 8 },
-  { id: 'ai-anomalies', name: 'AI Anomaly Alerts', enabled: true, order: 9 },
+  { id: 'activity-feed', name: 'Activity Feed', enabled: true, order: 5 },
+  { id: 'recent-notes', name: 'Recent Notes', enabled: true, order: 6 },
+  { id: 'upcoming-tasks', name: 'Upcoming Tasks', enabled: true, order: 7 },
+  { id: 'recent-time', name: 'Time Tracked Today', enabled: true, order: 8 },
+  { id: 'goal-progress', name: 'Goal Progress', enabled: true, order: 9 },
+  { id: 'ai-suggestions', name: 'AI Smart Suggestions', enabled: true, order: 10 },
+  { id: 'ai-anomalies', name: 'AI Anomaly Alerts', enabled: true, order: 11 },
 ];
 
 const DEFAULT_PERSONAL_WIDGETS: DashboardWidget[] = [
@@ -28,11 +30,13 @@ const DEFAULT_PERSONAL_WIDGETS: DashboardWidget[] = [
   { id: 'goal-cards', name: 'Goal Progress Cards', enabled: true, order: 2 },
   { id: 'goal-chart', name: 'Goal Progress Chart', enabled: true, order: 3 },
   { id: 'budget-summary', name: 'Budget Summary', enabled: true, order: 4 },
-  { id: 'recent-notes', name: 'Recent Notes', enabled: true, order: 5 },
-  { id: 'upcoming-tasks', name: 'Upcoming Tasks', enabled: true, order: 6 },
-  { id: 'family-events', name: 'Family Events', enabled: true, order: 7 },
-  { id: 'ai-suggestions', name: 'AI Smart Suggestions', enabled: true, order: 8 },
-  { id: 'ai-anomalies', name: 'AI Anomaly Alerts', enabled: true, order: 9 },
+  { id: 'activity-feed', name: 'Activity Feed', enabled: true, order: 5 },
+  { id: 'recent-notes', name: 'Recent Notes', enabled: true, order: 6 },
+  { id: 'upcoming-tasks', name: 'Upcoming Tasks', enabled: true, order: 7 },
+  { id: 'recent-time', name: 'Time Tracked Today', enabled: true, order: 8 },
+  { id: 'family-events', name: 'Family Events', enabled: true, order: 9 },
+  { id: 'ai-suggestions', name: 'AI Smart Suggestions', enabled: true, order: 10 },
+  { id: 'ai-anomalies', name: 'AI Anomaly Alerts', enabled: true, order: 11 },
 ];
 
 export function useDashboardLayout() {
