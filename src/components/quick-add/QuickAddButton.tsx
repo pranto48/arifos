@@ -69,12 +69,12 @@ export function QuickAddButton() {
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-4 bg-muted/50 p-1">
+            <TabsList className="grid grid-cols-5 bg-muted/50 p-1">
               {tabs.map(tab => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="flex items-center justify-center gap-1 md:gap-2 data-[state=active]:bg-background data-[state=active]:text-foreground px-2 py-2"
+                  className="flex items-center justify-center gap-1 data-[state=active]:bg-background data-[state=active]:text-foreground px-1.5 py-2"
                 >
                   <tab.icon className="h-4 w-4" />
                   <span className="text-xs md:text-sm">{tab.label}</span>
