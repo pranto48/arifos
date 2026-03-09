@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   User, Shield, Bell, Languages, Calendar, Database, Crown, 
   ChevronRight, ChevronDown, Settings, Fingerprint, Smartphone, KeyRound, Lock, Key,
-  LayoutGrid, Users, Briefcase, FormInput, ToggleLeft, Mail, Sparkles
+  LayoutGrid, Users, Briefcase, FormInput, ToggleLeft, Mail, Sparkles, MapPin
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
