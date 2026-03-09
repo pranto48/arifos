@@ -25,7 +25,11 @@ export function ResendSettings() {
   const [maskedKey, setMaskedKey] = useState('');
 
   useEffect(() => {
-    loadApiKey();
+    if (!isSelfHosted()) {
+      loadApiKey();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const loadApiKey = async () => {
