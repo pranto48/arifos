@@ -21,7 +21,8 @@ import {
   Ticket,
   Briefcase,
   Home,
-  BarChart3
+  BarChart3,
+  Timer
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
