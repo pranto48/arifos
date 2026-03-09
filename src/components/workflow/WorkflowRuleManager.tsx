@@ -107,7 +107,7 @@ export function WorkflowRuleManager({ rules, onCreate, onDelete, onToggle }: Pro
               {/* Trigger */}
               <div className="p-3 rounded-lg border border-border bg-muted/30 space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-amber-500" />
+                  <Zap className="h-4 w-4 text-primary" />
                   {language === 'bn' ? 'যখন (ট্রিগার)' : 'When (Trigger)'}
                 </Label>
                 <Select value={form.trigger_type} onValueChange={v => setForm(f => ({ ...f, trigger_type: v }))}>

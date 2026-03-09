@@ -28,6 +28,8 @@ const LOCAL_MODE_FUNCTIONS = new Set([
   'send-loan-reminders',
   'manage-resend-key',
   'ai-assist',
+  'webhook-receiver',
+  'workflow-trigger',
 ]);
 
 export async function invokeEdgeFunction<T = any>(

@@ -34,7 +34,7 @@ export function WorkflowLogViewer({ logs }: Props) {
               <Card key={log.id}>
                 <CardContent className="py-2 px-4 flex items-center gap-3">
                   {log.status === 'success' ? (
-                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
                   ) : (
                     <XCircle className="h-4 w-4 text-destructive shrink-0" />
                   )}
