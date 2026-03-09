@@ -60,8 +60,8 @@ export function AiIndicator({ variant = 'badge', loading, provider, remaining, c
         'gap-1 text-xs font-medium',
         loading && 'animate-pulse',
         isFree
-          ? 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400'
-          : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+          ? 'border-primary/30 bg-primary/10 text-primary'
+          : 'border-accent/30 bg-accent/10 text-accent-foreground',
         className
       )}
     >

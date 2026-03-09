@@ -86,7 +86,7 @@ export function AiSettings() {
               key={p.id}
               className={`cursor-pointer transition-all ${isActive ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
               onClick={() => {
-                setProvider(p.id);
+                setProvider(p.id as 'free' | 'openai' | 'custom');
                 setModel(MODELS[p.id as keyof typeof MODELS]?.[0]?.id || 'auto');
               }}
             >
