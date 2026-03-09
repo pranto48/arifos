@@ -56,7 +56,7 @@ export function CalendarIntegrationSettings() {
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && !isSelfHosted()) {
       loadCalendarSyncStatus();
       loadStoredCredentials();
       
@@ -66,13 +66,11 @@ export function CalendarIntegrationSettings() {
       const state = urlParams.get('state');
       
       if (code && state) {
-        // Exchange the code for tokens based on the provider
         if (state === 'microsoft_calendar') {
           handleMicrosoftOAuthCallback(code);
         } else if (state === 'google_calendar') {
           handleOAuthCallback(code, state);
         }
-        // Clean up the URL
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
