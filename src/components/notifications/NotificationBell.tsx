@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Bell, Check, CheckCheck, Trash2, ExternalLink } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, ExternalLink, Sparkles } from 'lucide-react';
+import { AiNotificationDigest } from './AiNotificationDigest';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -79,6 +80,13 @@ export function NotificationBell() {
             )}
           </div>
         </div>
+
+        {/* AI Digest */}
+        {notifications.length > 2 && (
+          <div className="px-3 py-2 border-b border-border">
+            <AiNotificationDigest />
+          </div>
+        )}
 
         {/* Notifications list */}
         <ScrollArea className="max-h-80">

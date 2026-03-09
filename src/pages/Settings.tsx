@@ -19,6 +19,7 @@ import { DataExport } from '@/components/settings/DataExport';
 import { LicenseSettings } from '@/components/settings/LicenseSettings';
 import { CalendarIntegrationSettings } from '@/components/settings/CalendarIntegrationSettings';
 import { AdminSettings } from '@/components/settings/AdminSettings';
+import { AiSettings } from '@/components/settings/AiSettings';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsAdmin } from '@/hooks/useUserRoles';
 import { SectionErrorBoundary } from '@/components/ErrorBoundary';
@@ -84,6 +85,8 @@ export default function Settings() {
         return <CalendarIntegrationSettings />;
       case 'backup':
         return <DataExport />;
+      case 'ai':
+        return <AiSettings />;
       case 'license':
         return <LicenseSettings />;
       case 'admin':
@@ -109,6 +112,7 @@ export default function Settings() {
       backup: { en: 'Backup & Restore', bn: 'ব্যাকআপ ও রিস্টোর' },
       license: { en: 'License', bn: 'লাইসেন্স' },
       admin: { en: 'Admin Panel', bn: 'এডমিন প্যানেল' },
+      ai: { en: 'AI Settings', bn: 'AI সেটিংস' },
       'admin-general': { en: 'Admin — General', bn: 'এডমিন — সাধারণ' },
       'admin-modules': { en: 'Admin — Modules', bn: 'এডমিন — মডিউল' },
       'admin-users': { en: 'Admin — Users & Roles', bn: 'এডমিন — ইউজার ও রোল' },
