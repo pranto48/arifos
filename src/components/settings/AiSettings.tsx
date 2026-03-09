@@ -40,7 +40,7 @@ const MODELS = {
 export function AiSettings() {
   const { config, saveConfig, getRemainingCalls, loading } = useAiAssist();
   const { language } = useLanguage();
-  const [provider, setProvider] = useState<'free' | 'openai' | 'custom'>(config?.provider as any || 'free');
+  const [provider, setProvider] = useState<'free' | 'openai' | 'openrouter' | 'custom'>(config?.provider as any || 'free');
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState(config?.model_preference || 'auto');
   const [showKey, setShowKey] = useState(false);
