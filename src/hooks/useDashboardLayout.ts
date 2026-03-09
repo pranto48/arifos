@@ -18,6 +18,8 @@ const DEFAULT_OFFICE_WIDGETS: DashboardWidget[] = [
   { id: 'recent-notes', name: 'Recent Notes', enabled: true, order: 5 },
   { id: 'upcoming-tasks', name: 'Upcoming Tasks', enabled: true, order: 6 },
   { id: 'goal-progress', name: 'Goal Progress', enabled: true, order: 7 },
+  { id: 'ai-suggestions', name: 'AI Smart Suggestions', enabled: true, order: 8 },
+  { id: 'ai-anomalies', name: 'AI Anomaly Alerts', enabled: true, order: 9 },
 ];
 
 const DEFAULT_PERSONAL_WIDGETS: DashboardWidget[] = [
