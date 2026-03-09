@@ -22,8 +22,9 @@ import {
   Briefcase,
   Home,
   BarChart3,
-  Timer
-} from 'lucide-react';
+    Timer,
+    Workflow
+  } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
