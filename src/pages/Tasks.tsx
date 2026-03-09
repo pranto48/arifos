@@ -561,6 +561,16 @@ export default function Tasks() {
     }
   };
 
+  const handleKanbanStatusChange = async (taskId: string, newStatus: string) => {
+    const { error } = await supabase.from('tasks').update({
+      status: newStatus,
+      completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
+    }).eq('id', taskId);
+    if (!error) {
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    }
+  };
+
   const filteredTasks = tasks.filter((t) => {
     // Status filter
     if (filter === 'completed' && t.status !== 'completed') return false;
