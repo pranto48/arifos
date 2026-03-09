@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { 
   CheckSquare, FileText, Wallet, Target, 
@@ -11,17 +11,22 @@ import { useDashboardMode } from '@/contexts/DashboardModeContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { UpcomingFamilyEvents } from '@/components/dashboard/UpcomingFamilyEvents';
-import { TaskCompletionChart } from '@/components/dashboard/TaskCompletionChart';
-import { ExpenseBreakdownChart } from '@/components/dashboard/ExpenseBreakdownChart';
-import { GoalProgressCards } from '@/components/dashboard/GoalProgressCards';
-import { TasksBreakdownChart } from '@/components/dashboard/TasksBreakdownChart';
-import { TaskCategoriesChart } from '@/components/dashboard/TaskCategoriesChart';
-import { DeviceCategoryChart } from '@/components/dashboard/DeviceCategoryChart';
-import { DeviceInventoryReport } from '@/components/dashboard/DeviceInventoryReport';
 import { DashboardCustomizer } from '@/components/dashboard/DashboardCustomizer';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
-import GoalProgressChart from '@/components/goals/GoalProgressChart';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load heavy chart components
+const UpcomingFamilyEvents = lazy(() => import('@/components/dashboard/UpcomingFamilyEvents').then(m => ({ default: m.UpcomingFamilyEvents })));
+const TaskCompletionChart = lazy(() => import('@/components/dashboard/TaskCompletionChart').then(m => ({ default: m.TaskCompletionChart })));
+const ExpenseBreakdownChart = lazy(() => import('@/components/dashboard/ExpenseBreakdownChart').then(m => ({ default: m.ExpenseBreakdownChart })));
+const GoalProgressCards = lazy(() => import('@/components/dashboard/GoalProgressCards').then(m => ({ default: m.GoalProgressCards })));
+const TasksBreakdownChart = lazy(() => import('@/components/dashboard/TasksBreakdownChart').then(m => ({ default: m.TasksBreakdownChart })));
+const TaskCategoriesChart = lazy(() => import('@/components/dashboard/TaskCategoriesChart').then(m => ({ default: m.TaskCategoriesChart })));
+const DeviceCategoryChart = lazy(() => import('@/components/dashboard/DeviceCategoryChart').then(m => ({ default: m.DeviceCategoryChart })));
+const DeviceInventoryReport = lazy(() => import('@/components/dashboard/DeviceInventoryReport').then(m => ({ default: m.DeviceInventoryReport })));
+const GoalProgressChart = lazy(() => import('@/components/goals/GoalProgressChart'));
+
+const ChartLoader = () => <Skeleton className="h-64 w-full rounded-lg" />;
 
 export default function Dashboard() {
   const { user } = useAuth();
