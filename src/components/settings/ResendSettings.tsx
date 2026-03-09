@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, Key, Save, Loader2, Eye, EyeOff, CheckCircle, XCircle, TestTube, ExternalLink } from 'lucide-react';
+import { Send, Key, Save, Loader2, Eye, EyeOff, CheckCircle, XCircle, TestTube, ExternalLink, MonitorSmartphone } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from '@/hooks/use-toast';
+import { isSelfHosted } from '@/lib/selfHostedConfig';
 
 export function ResendSettings() {
   const { user } = useAuth();
@@ -24,7 +25,11 @@ export function ResendSettings() {
   const [maskedKey, setMaskedKey] = useState('');
 
   useEffect(() => {
-    loadApiKey();
+    if (!isSelfHosted()) {
+      loadApiKey();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const loadApiKey = async () => {
@@ -193,6 +198,21 @@ export function ResendSettings() {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isSelfHosted()) {
+    return (
+      <div className="space-y-4">
+        <Alert>
+          <MonitorSmartphone className="h-4 w-4" />
+          <AlertDescription>
+            {language === 'bn' 
+              ? 'Resend API স্থানীয়/ডকার মোডে উপলব্ধ নয়। এই বৈশিষ্ট্যটি ক্লাউড মোডে ব্যবহার করুন।'
+              : 'Resend API is not available in local/Docker mode. This feature requires Cloud mode.'}
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }

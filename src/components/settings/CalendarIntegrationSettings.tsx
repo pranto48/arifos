@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, RefreshCw, Link, Unlink, Eye, EyeOff, Save, HelpCircle, X, ExternalLink, AlertTriangle, CheckCircle2, Copy } from 'lucide-react';
+import { Calendar, RefreshCw, Link, Unlink, Eye, EyeOff, Save, HelpCircle, X, ExternalLink, AlertTriangle, CheckCircle2, Copy, MonitorSmartphone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -11,8 +11,10 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { isSelfHosted } from '@/lib/selfHostedConfig';
 
 interface CalendarSyncConfig {
   id: string;
@@ -54,7 +56,7 @@ export function CalendarIntegrationSettings() {
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && !isSelfHosted()) {
       loadCalendarSyncStatus();
       loadStoredCredentials();
       
@@ -64,13 +66,11 @@ export function CalendarIntegrationSettings() {
       const state = urlParams.get('state');
       
       if (code && state) {
-        // Exchange the code for tokens based on the provider
         if (state === 'microsoft_calendar') {
           handleMicrosoftOAuthCallback(code);
         } else if (state === 'google_calendar') {
           handleOAuthCallback(code, state);
         }
-        // Clean up the URL
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
@@ -452,6 +452,30 @@ export function CalendarIntegrationSettings() {
   };
 
   const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/settings` : '';
+  const selfHosted = isSelfHosted();
+
+  if (selfHosted) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <Calendar className="h-5 w-5" />
+            {language === 'bn' ? 'ক্যালেন্ডার ইন্টিগ্রেশন' : 'Calendar Integration'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <MonitorSmartphone className="h-4 w-4" />
+            <AlertDescription>
+              {language === 'bn' 
+                ? 'ক্যালেন্ডার সিঙ্ক স্থানীয়/ডকার মোডে উপলব্ধ নয়। এই বৈশিষ্ট্যটি ক্লাউড মোডে ব্যবহার করুন।'
+                : 'Calendar sync is not available in local/Docker mode. This feature requires Cloud mode.'}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <>

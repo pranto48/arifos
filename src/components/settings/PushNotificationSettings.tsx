@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Bell, BellOff, Loader2 } from 'lucide-react';
+import { Bell, BellOff, Loader2, MonitorSmartphone } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { isSelfHosted } from '@/lib/selfHostedConfig';
 
 export function PushNotificationSettings() {
   const { user } = useAuth();
@@ -243,6 +245,26 @@ export function PushNotificationSettings() {
       });
     }
   };
+
+  if (isSelfHosted()) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <Bell className="h-5 w-5" /> Push Notifications
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <MonitorSmartphone className="h-4 w-4" />
+            <AlertDescription>
+              Push notifications are not available in local/Docker mode. This feature requires Cloud mode.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-card border-border">
