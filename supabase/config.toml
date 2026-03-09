@@ -35,3 +35,9 @@ verify_jwt = false
 
 [functions.send-email-otp]
 verify_jwt = false
+
+[functions.webhook-receiver]
+verify_jwt = false
+
+[functions.workflow-trigger]
+verify_jwt = false

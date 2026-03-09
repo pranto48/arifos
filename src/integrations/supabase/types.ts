@@ -2224,6 +2224,54 @@ export type Database = {
           },
         ]
       }
+      task_templates: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_generated_at: string | null
+          priority: string | null
+          schedule_config: Json | null
+          schedule_type: string
+          task_type: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_generated_at?: string | null
+          priority?: string | null
+          schedule_config?: Json | null
+          schedule_type?: string
+          task_type?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_generated_at?: string | null
+          priority?: string | null
+          schedule_config?: Json | null
+          schedule_type?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           category_id: string | null
@@ -2871,6 +2919,137 @@ export type Database = {
           id?: string
           office_enabled?: boolean
           personal_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      webhooks: {
+        Row: {
+          call_count: number | null
+          created_at: string
+          field_mapping: Json | null
+          id: string
+          is_active: boolean | null
+          last_called_at: string | null
+          name: string
+          target_type: string
+          updated_at: string
+          user_id: string
+          webhook_key: string
+        }
+        Insert: {
+          call_count?: number | null
+          created_at?: string
+          field_mapping?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_called_at?: string | null
+          name: string
+          target_type?: string
+          updated_at?: string
+          user_id: string
+          webhook_key?: string
+        }
+        Update: {
+          call_count?: number | null
+          created_at?: string
+          field_mapping?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_called_at?: string | null
+          name?: string
+          target_type?: string
+          updated_at?: string
+          user_id?: string
+          webhook_key?: string
+        }
+        Relationships: []
+      }
+      workflow_logs: {
+        Row: {
+          action_result: Json | null
+          created_at: string
+          error_message: string | null
+          id: string
+          rule_id: string
+          status: string
+          trigger_data: Json | null
+          user_id: string
+        }
+        Insert: {
+          action_result?: Json | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          rule_id: string
+          status?: string
+          trigger_data?: Json | null
+          user_id: string
+        }
+        Update: {
+          action_result?: Json | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          rule_id?: string
+          status?: string
+          trigger_data?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_logs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_rules: {
+        Row: {
+          action_config: Json
+          action_type: string
+          created_at: string
+          description: string | null
+          execution_count: number | null
+          id: string
+          is_active: boolean | null
+          last_executed_at: string | null
+          name: string
+          trigger_config: Json
+          trigger_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_config?: Json
+          action_type: string
+          created_at?: string
+          description?: string | null
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          name: string
+          trigger_config?: Json
+          trigger_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_config?: Json
+          action_type?: string
+          created_at?: string
+          description?: string | null
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          name?: string
+          trigger_config?: Json
+          trigger_type?: string
           updated_at?: string
           user_id?: string
         }
