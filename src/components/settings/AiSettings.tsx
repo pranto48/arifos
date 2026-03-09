@@ -146,13 +146,13 @@ export function AiSettings() {
       {provider !== 'free' && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>{provider === 'openai' ? 'OpenAI API Key' : 'API Key'}</Label>
+            <Label>{provider === 'openai' ? 'OpenAI API Key' : provider === 'openrouter' ? 'OpenRouter API Key' : 'API Key'}</Label>
             <div className="relative">
               <Input
                 type={showKey ? 'text' : 'password'}
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
-                placeholder={provider === 'openai' ? 'sk-...' : 'Enter your API key'}
+                placeholder={provider === 'openai' ? 'sk-...' : provider === 'openrouter' ? 'sk-or-...' : 'Enter your API key'}
                 className="pr-10"
               />
               <Button
@@ -168,6 +168,8 @@ export function AiSettings() {
             <p className="text-xs text-muted-foreground">
               {provider === 'openai'
                 ? 'Get your key from platform.openai.com/api-keys'
+                : provider === 'openrouter'
+                ? 'Get your key from openrouter.ai/keys'
                 : 'Enter your API key for the custom endpoint'}
             </p>
           </div>

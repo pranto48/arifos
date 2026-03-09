@@ -108,17 +108,17 @@ serve(async (req) => {
       apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
       apiKey = lovableKey;
       model = "google/gemini-2.5-flash-lite";
+    } else if (provider === "openrouter") {
+      // OpenRouter API (Llama, Mistral, etc.)
+      apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+      apiKey = aiConfig.api_key_encrypted;
+      model = aiConfig.model_preference || "meta-llama/llama-4-maverick";
     } else {
-      // User's own key
+      // User's own OpenAI or custom key
       const userKey = aiConfig.api_key_encrypted;
       if (aiConfig.model_preference?.startsWith("openai/")) {
         apiUrl = "https://api.openai.com/v1/chat/completions";
         model = aiConfig.model_preference.replace("openai/", "");
-      } else if (aiConfig.model_preference?.startsWith("google/")) {
-        // Route through Lovable gateway with user preference but using their key approach
-        // For simplicity, use OpenAI-compatible endpoint
-        apiUrl = "https://api.openai.com/v1/chat/completions";
-        model = "gpt-4o-mini";
       } else {
         apiUrl = "https://api.openai.com/v1/chat/completions";
         model = aiConfig.model_preference || "gpt-4o-mini";

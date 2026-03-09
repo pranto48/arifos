@@ -13,7 +13,7 @@ interface AiIndicatorProps {
 
 export function AiIndicator({ variant = 'badge', loading, provider, remaining, className }: AiIndicatorProps) {
   const isFree = !provider || provider === 'free';
-  const label = isFree ? 'AI Free' : 'AI Pro';
+  const label = isFree ? 'AI Free' : provider === 'openrouter' ? 'AI Llama' : 'AI Pro';
 
   if (variant === 'dot') {
     return (
