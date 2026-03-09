@@ -81,6 +81,13 @@ export function NotificationBell() {
           </div>
         </div>
 
+        {/* AI Digest */}
+        {notifications.length > 2 && (
+          <div className="px-3 py-2 border-b border-border">
+            <AiNotificationDigest />
+          </div>
+        )}
+
         {/* Notifications list */}
         <ScrollArea className="max-h-80">
           {notifications.length === 0 ? (
