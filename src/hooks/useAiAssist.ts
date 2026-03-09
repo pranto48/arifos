@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { invokeEdgeFunction, isLocalModeFeature } from '@/lib/edgeFunctionHelper';
 
 export interface AiConfig {
   provider: 'free' | 'openai' | 'custom';
@@ -43,9 +44,18 @@ export function useAiAssist() {
     if (!user) return null;
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-assist', {
-        body: { type, context },
-      });
+      // Graceful fallback for self-hosted/Docker mode
+      if (isLocalModeFeature('ai-assist')) {
+        toast.info('AI features are not available in self-hosted mode');
+        return null;
+      }
+
+      const { data, error, localMode } = await invokeEdgeFunction('ai-assist', { type, context });
+
+      if (localMode) {
+        toast.info('AI features require cloud mode');
+        return null;
+      }
 
       if (error) {
         const msg = (error as any)?.message || 'AI request failed';

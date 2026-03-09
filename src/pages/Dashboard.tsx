@@ -25,6 +25,8 @@ const TaskCategoriesChart = lazy(() => import('@/components/dashboard/TaskCatego
 const DeviceCategoryChart = lazy(() => import('@/components/dashboard/DeviceCategoryChart').then(m => ({ default: m.DeviceCategoryChart })));
 const DeviceInventoryReport = lazy(() => import('@/components/dashboard/DeviceInventoryReport').then(m => ({ default: m.DeviceInventoryReport })));
 const GoalProgressChart = lazy(() => import('@/components/goals/GoalProgressChart'));
+const AiSmartSuggestions = lazy(() => import('@/components/dashboard/AiSmartSuggestions').then(m => ({ default: m.AiSmartSuggestions })));
+const AiAnomalyAlerts = lazy(() => import('@/components/dashboard/AiAnomalyAlerts').then(m => ({ default: m.AiAnomalyAlerts })));
 
 const ChartLoader = () => <Skeleton className="h-64 w-full rounded-lg" />;
 
@@ -268,6 +270,10 @@ export default function Dashboard() {
         );
       case 'family-events':
         return <Suspense key={widgetId} fallback={<ChartLoader />}><UpcomingFamilyEvents /></Suspense>;
+      case 'ai-suggestions':
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><AiSmartSuggestions /></Suspense>;
+      case 'ai-anomalies':
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><AiAnomalyAlerts /></Suspense>;
       default:
         return null;
     }
@@ -279,7 +285,7 @@ export default function Dashboard() {
   );
   
   const listWidgets = enabledWidgets.filter(w => 
-    ['recent-notes', 'upcoming-tasks', 'budget-summary', 'family-events'].includes(w.id)
+    ['recent-notes', 'upcoming-tasks', 'budget-summary', 'family-events', 'ai-suggestions', 'ai-anomalies'].includes(w.id)
   );
 
   const fullWidthWidgets = enabledWidgets.filter(w => 
