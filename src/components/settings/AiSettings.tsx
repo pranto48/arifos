@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAiAssist } from '@/hooks/useAiAssist';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AiIndicator } from '@/components/shared/AiIndicator';
+import { isSelfHosted } from '@/lib/selfHostedConfig';
 
 const PROVIDERS = [
   { id: 'free', name: 'Free (Built-in)', description: '10 AI calls/day using built-in models', icon: Sparkles },
