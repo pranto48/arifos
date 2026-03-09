@@ -267,7 +267,7 @@ export default function Dashboard() {
           </Card>
         );
       case 'family-events':
-        return <UpcomingFamilyEvents key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><UpcomingFamilyEvents /></Suspense>;
       default:
         return null;
     }
