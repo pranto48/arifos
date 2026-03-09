@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lifeos-v1';
+const CACHE_NAME = 'lifeos-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -30,50 +30,70 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache
+// Fetch event - stale-while-revalidate for assets, network-first for navigation
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api') || 
+
+  // Never cache OAuth, API, or Supabase calls
+  if (url.pathname.startsWith('/~oauth') ||
+      url.pathname.startsWith('/api') || 
       url.hostname.includes('supabase') ||
       url.hostname.includes('googleapis')) {
     return;
   }
 
+  // For navigation requests - network first with offline fallback
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          if (response.status === 200) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match('/').then(r => r || new Response('Offline', { status: 503 })))
+    );
+    return;
+  }
+
+  // For static assets - stale-while-revalidate
+  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|gif|woff2?|ttf|eot|ico)$/)) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        const fetchPromise = fetch(event.request).then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        }).catch(() => cached);
+
+        return cached || fetchPromise;
+      })
+    );
+    return;
+  }
+
+  // Default: network first
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        const responseClone = response.clone();
-        
         if (response.status === 200) {
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
-        
         return response;
       })
-      .catch(() => {
-        return caches.match(event.request).then((response) => {
-          if (response) {
-            return response;
-          }
-          
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
-          
-          return new Response('Offline', { status: 503 });
-        });
-      })
+      .catch(() => caches.match(event.request).then(r => r || new Response('Offline', { status: 503 })))
   );
 });
 
 // Handle push notifications
 self.addEventListener('push', (event) => {
-  console.log('Push event received:', event);
-  
   let data = {
     title: 'LifeOS',
     body: 'You have a new notification',
@@ -111,13 +131,9 @@ self.addEventListener('push', (event) => {
 
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
-  console.log('Notification clicked:', event);
-  
   event.notification.close();
 
-  if (event.action === 'dismiss') {
-    return;
-  }
+  if (event.action === 'dismiss') return;
 
   const urlToOpen = event.notification.data?.url || '/';
 
@@ -127,15 +143,24 @@ self.addEventListener('notificationclick', (event) => {
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
             client.focus();
-            if (urlToOpen !== '/') {
-              client.navigate(urlToOpen);
-            }
+            if (urlToOpen !== '/') client.navigate(urlToOpen);
             return;
           }
         }
-        if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
-        }
+        if (clients.openWindow) return clients.openWindow(urlToOpen);
       })
   );
+});
+
+// Background sync for offline queue
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'offline-sync') {
+    event.waitUntil(
+      clients.matchAll({ type: 'window' }).then((clientList) => {
+        for (const client of clientList) {
+          client.postMessage({ type: 'SYNC_OFFLINE_QUEUE' });
+        }
+      })
+    );
+  }
 });

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   User, Shield, Bell, Languages, Calendar, Database, Crown, 
   ChevronRight, ChevronDown, Settings, Fingerprint, Smartphone, KeyRound, Lock, Key,
-  LayoutGrid, Users, Briefcase, FormInput, ToggleLeft, Mail, Sparkles
+  LayoutGrid, Users, Briefcase, FormInput, ToggleLeft, Mail, Sparkles, MapPin
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ export type SettingsCategory =
   | 'backup' 
   | 'license'
   | 'ai'
+  | 'location'
   | 'admin'
   | 'admin-general'
   | 'admin-modules'
@@ -71,6 +72,7 @@ const navItems: NavItem[] = [
   { id: 'backup', labelEn: 'Backup & Restore', labelBn: 'ব্যাকআপ ও রিস্টোর', icon: <Database className="h-3.5 w-3.5 md:h-4 md:w-4" />, group: 'app' },
   { id: 'ai', labelEn: 'AI Settings', labelBn: 'AI সেটিংস', icon: <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" />, group: 'app' },
   { id: 'license', labelEn: 'License', labelBn: 'লাইসেন্স', icon: <Key className="h-3.5 w-3.5 md:h-4 md:w-4" />, group: 'app' },
+  { id: 'location', labelEn: 'Location Reminders', labelBn: 'লোকেশন রিমাইন্ডার', icon: <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4" />, group: 'app' },
   
   // Admin Group - Parent
   { id: 'admin', labelEn: 'Admin Panel', labelBn: 'এডমিন প্যানেল', icon: <Crown className="h-3.5 w-3.5 md:h-4 md:w-4" />, group: 'admin' },
