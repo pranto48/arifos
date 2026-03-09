@@ -733,6 +733,18 @@ export default function Tasks() {
       {/* Assignment History */}
       <TaskAssignmentHistory />
 
+      {viewMode === 'kanban' ? (
+        <TaskKanbanBoard
+          tasks={filteredTasks}
+          categories={categories}
+          priorityColors={priorityColors}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onMove={handleMove}
+          onAssign={handleAssign}
+          onStatusChange={handleKanbanStatusChange}
+        />
+      ) : (
       <div className="space-y-2">
         {filteredTasks.length === 0 ? (
           <Card className="bg-card border-border">
