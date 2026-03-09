@@ -21,6 +21,8 @@ import { encryptContent, decryptContent, validatePassphrase } from '@/lib/encryp
 import { format } from 'date-fns';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
 import { FieldVisibility } from '@/components/shared/FieldVisibility';
+import { MarkdownEditor } from '@/components/notes/MarkdownEditor';
+import ReactMarkdown from 'react-markdown';
 
 export default function Notes() {
   const { user } = useAuth();
@@ -344,8 +346,15 @@ export default function Notes() {
             </div>
           ) : (
             <div className="space-y-4 py-4">
-              <div className="bg-muted/30 rounded-lg p-4 min-h-[200px] whitespace-pre-wrap text-foreground">
-                {selectedNote?.is_vault ? decryptedContent : selectedNote?.content || t('notes.noContent')}
+              <div className="bg-muted/30 rounded-lg p-4 min-h-[200px] text-foreground">
+                <div className="prose prose-sm dark:prose-invert max-w-none text-foreground
+                  prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground
+                  prose-strong:text-foreground prose-a:text-primary prose-code:text-primary
+                  prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                  prose-pre:bg-muted prose-pre:border prose-pre:border-border
+                  prose-blockquote:border-primary prose-blockquote:text-muted-foreground">
+                  <ReactMarkdown>{selectedNote?.is_vault ? (decryptedContent || '') : (selectedNote?.content || t('notes.noContent'))}</ReactMarkdown>
+                </div>
               </div>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <div className="flex gap-1">
@@ -381,11 +390,11 @@ export default function Notes() {
             <FieldVisibility entityType="note" fieldName="content">
               <div className="space-y-2">
                 <Label>{t('notes.content')}</Label>
-                <Textarea
+                <MarkdownEditor
                   value={newContent}
-                  onChange={e => setNewContent(e.target.value)}
+                  onChange={setNewContent}
                   placeholder={t('notes.writeNote')}
-                  className="bg-muted/50 min-h-[150px]"
+                  minHeight="200px"
                 />
               </div>
             </FieldVisibility>

@@ -31,7 +31,37 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('ErrorBoundary caught an error:', error);
     console.error('Component stack:', errorInfo.componentStack);
     
-    // TODO: Send to error tracking service (e.g., Sentry)
+    // Log to audit_logs for authenticated users
+    this.logErrorToAuditLog(error, errorInfo);
+  }
+
+  private async logErrorToAuditLog(error: Error, errorInfo: ErrorInfo) {
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      if (!supabaseUrl || !supabaseKey) return;
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase.from('audit_logs').insert({
+        user_id: user.id,
+        action: 'error',
+        entity_type: 'frontend_error',
+        entity_id: user.id,
+        new_data: {
+          message: error.message,
+          stack: error.stack?.slice(0, 500),
+          component_stack: errorInfo.componentStack?.slice(0, 500),
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch {
+      // Silently fail - don't cause more errors
+    }
   }
 
   handleReload = () => {

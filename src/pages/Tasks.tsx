@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckSquare, Pencil, Trash2, GripVertical, MoreVertical, ChevronDown, ChevronUp, ArrowRightLeft, Repeat, FolderOpen, Settings2, CheckCheck, UserPlus, Flag, CalendarClock } from 'lucide-react';
+import { CheckSquare, Pencil, Trash2, GripVertical, MoreVertical, ChevronDown, ChevronUp, ArrowRightLeft, Repeat, FolderOpen, Settings2, CheckCheck, UserPlus, Flag, CalendarClock, LayoutGrid, List } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -28,6 +28,7 @@ import { PendingTaskAssignments } from '@/components/tasks/PendingTaskAssignment
 import { OutgoingTaskAssignments } from '@/components/tasks/OutgoingTaskAssignments';
 import { TaskAssignmentHistory } from '@/components/tasks/TaskAssignmentHistory';
 import { TaskFollowUp } from '@/components/tasks/TaskFollowUp';
+import { TaskKanbanBoard } from '@/components/tasks/TaskKanbanBoard';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
 import { ReportActions } from '@/components/shared/ReportActions';
 import { FieldVisibility } from '@/components/shared/FieldVisibility';
@@ -266,6 +267,7 @@ export default function Tasks() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -559,6 +561,16 @@ export default function Tasks() {
     }
   };
 
+  const handleKanbanStatusChange = async (taskId: string, newStatus: string) => {
+    const { error } = await supabase.from('tasks').update({
+      status: newStatus,
+      completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
+    }).eq('id', taskId);
+    if (!error) {
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    }
+  };
+
   const filteredTasks = tasks.filter((t) => {
     // Status filter
     if (filter === 'completed' && t.status !== 'completed') return false;
@@ -609,6 +621,24 @@ export default function Tasks() {
             ]}
           />
           <DataExportImportButton preset="tasks" />
+          <div className="flex items-center gap-0.5 bg-muted/30 rounded-md p-0.5">
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => setViewMode('kanban')}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </Button>
+          </div>
           <Button
             variant={selectionMode ? 'secondary' : 'ghost'}
             size="sm"
@@ -703,6 +733,18 @@ export default function Tasks() {
       {/* Assignment History */}
       <TaskAssignmentHistory />
 
+      {viewMode === 'kanban' ? (
+        <TaskKanbanBoard
+          tasks={filteredTasks}
+          categories={categories}
+          priorityColors={priorityColors}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onMove={handleMove}
+          onAssign={handleAssign}
+          onStatusChange={handleKanbanStatusChange}
+        />
+      ) : (
       <div className="space-y-2">
         {filteredTasks.length === 0 ? (
           <Card className="bg-card border-border">
@@ -773,6 +815,7 @@ export default function Tasks() {
           </>
         )}
       </div>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

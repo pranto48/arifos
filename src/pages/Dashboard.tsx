@@ -27,6 +27,8 @@ const DeviceInventoryReport = lazy(() => import('@/components/dashboard/DeviceIn
 const GoalProgressChart = lazy(() => import('@/components/goals/GoalProgressChart'));
 const AiSmartSuggestions = lazy(() => import('@/components/dashboard/AiSmartSuggestions').then(m => ({ default: m.AiSmartSuggestions })));
 const AiAnomalyAlerts = lazy(() => import('@/components/dashboard/AiAnomalyAlerts').then(m => ({ default: m.AiAnomalyAlerts })));
+const ActivityFeed = lazy(() => import('@/components/dashboard/ActivityFeed').then(m => ({ default: m.ActivityFeed })));
+const RecentTimeEntries = lazy(() => import('@/components/dashboard/RecentTimeEntries').then(m => ({ default: m.RecentTimeEntries })));
 
 const ChartLoader = () => <Skeleton className="h-64 w-full rounded-lg" />;
 
@@ -274,6 +276,10 @@ export default function Dashboard() {
         return <Suspense key={widgetId} fallback={<ChartLoader />}><AiSmartSuggestions /></Suspense>;
       case 'ai-anomalies':
         return <Suspense key={widgetId} fallback={<ChartLoader />}><AiAnomalyAlerts /></Suspense>;
+      case 'activity-feed':
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><ActivityFeed /></Suspense>;
+      case 'recent-time':
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><RecentTimeEntries /></Suspense>;
       default:
         return null;
     }
@@ -285,7 +291,7 @@ export default function Dashboard() {
   );
   
   const listWidgets = enabledWidgets.filter(w => 
-    ['recent-notes', 'upcoming-tasks', 'budget-summary', 'family-events', 'ai-suggestions', 'ai-anomalies'].includes(w.id)
+    ['recent-notes', 'upcoming-tasks', 'budget-summary', 'family-events', 'ai-suggestions', 'ai-anomalies', 'activity-feed', 'recent-time'].includes(w.id)
   );
 
   const fullWidthWidgets = enabledWidgets.filter(w => 

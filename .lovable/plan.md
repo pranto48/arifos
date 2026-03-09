@@ -1,91 +1,93 @@
 
 
-## LifeOS Codebase Analysis -- Gaps and Improvements
+## Analysis: Why Restored Data Does Not Appear in Docker
 
-After a thorough review of the entire codebase, database schema (50+ tables), all pages, hooks, components, and edge functions, here is what I found.
+### Root Cause (Critical Discovery)
 
----
+The restore operation **works correctly** — data IS successfully written to the PostgreSQL database via the backend API (`/api/data/:table/upsert`). The `user_id` is properly remapped on line 706 of DataExport.tsx and again on line 1165 of server.js.
 
-### What Already Exists (Fully Built)
-- **Core Modules**: Dashboard, Tasks, Notes, Calendar, Projects, Goals, Habits, Family
-- **Finance**: Budget/Transactions, Salary, Investments, Loans
-- **IT/Office**: Support Users, Device Inventory, Support Tickets
-- **Productivity**: Time Tracking + Pomodoro, Workflow Automation, AI Hub (OCR, NLP, Categorization, Predictions)
-- **Analytics**: Cross-module analytics with trend charts
-- **Mobile/PWA**: Offline sync, voice input, location reminders, service worker
-- **Security**: MFA (TOTP + Email OTP), biometric auth, trusted devices, session management, audit logs
-- **Infrastructure**: Self-hosted Docker support, i18n (English/Bengali), role-based access, custom form fields, data export/import, push notifications
+**The real problem**: Every page in the application (Tasks, Notes, Goals, Dashboard, etc.) fetches data using `supabase.from('tasks').select(...)` directly. In Docker mode, the Supabase client points to `http://localhost:9999` — a dummy URL that doesn't exist. This means:
 
----
+- Restore writes data to PostgreSQL via `/api/data/:table` — **works**
+- Pages read data via `supabase.from().select()` hitting `localhost:9999` — **fails silently**
+- Result: "restore complete" but nothing shows anywhere
 
-### Gaps and Improvements Identified
+The error logs confirm this: every single `localhost:9999/rest/v1/...` request fails with `ERR_CONNECTION_REFUSED`.
 
-#### 1. Activity Feed / Dashboard Timeline (Missing)
-No real-time activity feed showing recent actions across modules. The dashboard shows stats but lacks a chronological "what happened today" view.
+### Scope of the Problem
 
-**Plan**: Create an `ActivityFeed` component that queries recent entries from `tasks`, `notes`, `transactions`, `time_entries`, `habit_completions` sorted by timestamp, displayed as a unified timeline card on the dashboard.
+There are **167 `supabase.from()` calls across 9 page files** plus additional calls in hooks and components. Making every single page dual-mode is a massive undertaking that would touch virtually every file in the application.
 
-#### 2. Kanban Board View for Tasks/Projects (Missing)
-Tasks page is list-only. No board/column view for visual project management.
+### Proposed Solution: Proxy Supabase REST Calls Through the Backend
 
-**Plan**: Add a Kanban board component using `@dnd-kit` (already installed) with columns for `todo`, `in_progress`, `completed`. Toggle between list and board views on the Tasks page.
+Instead of rewriting every page, we intercept at the infrastructure level:
 
-#### 3. Notes Rich Text / Markdown Editor (Missing)
-Notes currently use plain `<Textarea>`. No formatting, no markdown preview.
+**1. Add a PostgREST-compatible proxy layer to the Docker backend (`docker/backend/server.js`)**
 
-**Plan**: Add `react-markdown` (already installed) for rendering note content. Add a split-pane editor with markdown preview using the existing `react-resizable-panels` package.
+Add a route handler for `/rest/v1/:table` that translates Supabase-style REST API calls into direct PostgreSQL queries. This way, when the Supabase client in Docker mode calls `localhost:9999/rest/v1/tasks?select=*&user_id=eq.xxx`, the nginx proxy routes it to the backend which executes the equivalent SQL query.
 
-#### 4. Dashboard Widget for Recent Time Entries (Missing)
-Time tracking exists but has no dashboard widget. Users must navigate to `/time-tracking` to see activity.
+The proxy will handle:
+- `GET /rest/v1/:table` — Parse PostgREST query params (`select`, `eq`, `order`, `limit`, `offset`, `in`, `not.is`, `gte`, `lte`, `like`, `neq`, `or`)
+- `POST /rest/v1/:table` — Insert rows (handle both single and array bodies)
+- `PATCH /rest/v1/:table` — Update rows with filter params
+- `DELETE /rest/v1/:table` — Delete rows with filter params
+- `HEAD /rest/v1/:table` — Return count headers (used by some operations)
 
-**Plan**: Create a `RecentTimeEntries` dashboard widget showing today's tracked time and active timer status. Register it in `DashboardCustomizer`.
+Auth will be extracted from the `apikey`/`Authorization` header that the Supabase client sends.
 
-#### 5. File/Document Attachments Viewer (Incomplete)
-`attachments` table exists in the database, but there is no general-purpose attachment upload/view UI on tasks, notes, or projects.
+**2. Update the Supabase client URL in Docker builds (`Dockerfile`)**
 
-**Plan**: Build a reusable `AttachmentManager` component that handles upload to storage bucket, displays attached files, and can be embedded in Task/Note/Project detail dialogs.
+Change `VITE_SUPABASE_URL` from `http://localhost:9999` to an empty string or a relative URL, and configure nginx to proxy `/rest/v1/` requests to the backend.
 
-#### 6. Recurring Transaction Auto-Generation (Missing Logic)
-Transactions have `is_recurring` and `recurring_pattern` fields but no backend logic to auto-generate them on schedule.
+**3. Update nginx proxy config (`nginx.conf`)**
 
-**Plan**: Create a `generate-recurring-transactions` edge function triggered on a schedule (or called from workflow engine) that scans recurring transactions and inserts new ones when due.
+Add a proxy rule so `/rest/v1/` requests are forwarded to the backend server alongside the existing `/api/` proxy.
 
-#### 7. Goal-to-Task Linking (Missing)
-Goals and tasks exist independently. No way to link tasks to a goal to auto-track progress.
+**4. Handle the `functions/v1/` calls**
 
-**Plan**: Add a `goal_id` column to `tasks` table. Update task creation UI to optionally link a goal. Update goal progress calculation to factor in linked task completion.
+Add a catch-all for `/functions/v1/` that returns graceful no-op responses in Docker mode (these are edge functions that don't exist in self-hosted).
 
-#### 8. Data Backup Scheduler Execution (Incomplete)
-`backup_schedules` table exists but there is no edge function that actually runs scheduled backups.
+### Technical Details
 
-**Plan**: Create a `run-scheduled-backup` edge function that exports user data per the schedule config and stores it in a storage bucket.
+**PostgREST query param parser** — the key translations needed:
 
-#### 9. Error Tracking Integration (TODO in code)
-`ErrorBoundary.tsx` has a `TODO: Send to error tracking service` comment at line 34.
+```text
+?select=*                          → SELECT *
+?select=id,title,status            → SELECT id, title, status
+&user_id=eq.{uuid}                 → WHERE user_id = '{uuid}'
+&status=neq.pending                → WHERE status != 'pending'
+&date=gte.2026-02-01               → WHERE date >= '2026-02-01'
+&order=created_at.desc             → ORDER BY created_at DESC
+&limit=20&offset=0                 → LIMIT 20 OFFSET 0
+&or=(col1.eq.val1,col2.eq.val2)    → WHERE (col1 = 'val1' OR col2 = 'val2')
+&col=in.(val1,val2)                → WHERE col IN ('val1', 'val2')
+&col=not.is.null                   → WHERE col IS NOT NULL
+```
 
-**Plan**: Implement error logging to the `audit_logs` table for authenticated users, providing a self-hosted error tracking solution.
+**Auth handling** — The Supabase client sends the anon key as `apikey` header plus the user's JWT in `Authorization: Bearer`. In Docker mode, the JWT is the self-hosted token. We need to:
+- Accept both the dummy anon key and the self-hosted JWT
+- Extract user identity from the self-hosted JWT via `verifyToken()`
+- Scope queries by user_id automatically for data tables
 
----
+**RPC calls** — Handle `POST /rest/v1/rpc/:function_name` for database functions like `get_support_users_safe`.
 
-### Recommended Priority Order
+### Files to modify
 
-| Priority | Feature | Impact | Effort |
-|----------|---------|--------|--------|
-| 1 | Kanban Board for Tasks | High -- visual productivity | Medium |
-| 2 | Activity Feed on Dashboard | High -- engagement | Low |
-| 3 | Notes Markdown Editor | Medium -- content quality | Low |
-| 4 | Attachments Manager | Medium -- missing core feature | Medium |
-| 5 | Goal-to-Task Linking | Medium -- cross-module value | Low |
-| 6 | Dashboard Time Widget | Low -- convenience | Low |
-| 7 | Recurring Transactions | Medium -- automation | Medium |
-| 8 | Backup Scheduler Execution | Low -- data safety | Medium |
-| 9 | Error Tracking | Low -- developer tool | Low |
+- `docker/backend/server.js` — Add PostgREST-compatible proxy routes (~200 lines)
+- `nginx.conf` — Add `/rest/v1/` and `/functions/v1/` proxy rules
+- `Dockerfile` — Change `VITE_SUPABASE_URL` to point to the app itself (e.g., `http://localhost:80` or use relative URL)
 
----
+### Why this approach
 
-### Technical Notes
-- `@dnd-kit` is already installed and used in Tasks for reordering -- Kanban can reuse the same setup
-- `react-markdown` is already a dependency -- just needs integration into Notes
-- `react-resizable-panels` is installed -- perfect for split-pane markdown editor
-- All new features follow existing patterns: Supabase queries via `useAuth` + RLS, bilingual translations, dashboard mode (personal/office) filtering
+- **Zero changes to any page or component** — all 167+ `supabase.from()` calls work as-is
+- **Backup, restore, AND normal page rendering** all work
+- **Future-proof** — any new pages automatically work in Docker mode
+- **Single point of maintenance** — the proxy layer in server.js
+
+### Risk mitigation
+
+- The PostgREST query parser doesn't need to be 100% complete — just the subset actually used by the app
+- Unknown query params are safely ignored
+- Tables are still whitelisted for security
+- User scoping is enforced server-side
 

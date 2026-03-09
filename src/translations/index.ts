@@ -500,6 +500,21 @@ export const translations = {
   'projects.progress': { bn: 'অগ্রগতি', en: 'Progress' },
   'projects.milestoneAdded': { bn: 'মাইলস্টোন যোগ হয়েছে!', en: 'Milestone added!' },
   'projects.milestoneDeleted': { bn: 'মাইলস্টোন মুছে ফেলা হয়েছে', en: 'Milestone deleted' },
+
+  // Tasks Kanban
+  'tasks.listView': { bn: 'তালিকা', en: 'List' },
+  'tasks.kanbanView': { bn: 'কানবান', en: 'Kanban' },
+
+  // Dashboard Activity
+  'dashboard.activityFeed': { bn: 'আজকের কার্যকলাপ', en: "Today's Activity" },
+  'dashboard.noActivity': { bn: 'আজ এখনো কোন কার্যকলাপ নেই', en: 'No activity today yet' },
+  'dashboard.timeTrackedToday': { bn: 'আজ ট্র্যাক করা সময়', en: 'Time Tracked Today' },
+
+  // Attachments
+  'attachments.title': { bn: 'সংযুক্তি', en: 'Attachments' },
+  'attachments.upload': { bn: 'আপলোড', en: 'Upload' },
+  'attachments.uploading': { bn: 'আপলোড হচ্ছে...', en: 'Uploading...' },
+  'attachments.delete': { bn: 'সংযুক্তি মুছুন?', en: 'Delete this attachment?' },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
