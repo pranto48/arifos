@@ -38,7 +38,7 @@ export function AiIndicator({ variant = 'badge', loading, provider, remaining, c
     return (
       <span className={cn(
         'inline-flex items-center gap-1 text-xs font-medium',
-        loading ? 'text-muted-foreground' : isFree ? 'text-blue-500' : 'text-amber-500',
+        loading ? 'text-muted-foreground' : isFree ? 'text-primary' : 'text-accent-foreground',
         className
       )}>
         {loading ? (
