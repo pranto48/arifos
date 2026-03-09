@@ -90,6 +90,8 @@ export default function Settings() {
         return <AiSettings />;
       case 'license':
         return <LicenseSettings />;
+      case 'location':
+        return <LocationReminders />;
       case 'admin':
         return <AdminSettings activeTab="general" onAdminStatusChange={() => recheckRoles()} />;
       default:
