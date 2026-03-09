@@ -15,6 +15,7 @@ import { isSelfHosted } from '@/lib/selfHostedConfig';
 const PROVIDERS = [
   { id: 'free', name: 'Free (Built-in)', description: '10 AI calls/day using built-in models', icon: Sparkles },
   { id: 'openai', name: 'OpenAI', description: 'Use your own OpenAI API key for unlimited access', icon: Zap },
+  { id: 'openrouter', name: 'OpenRouter', description: 'Access Llama, Mistral & 200+ models via OpenRouter', icon: Key },
   { id: 'custom', name: 'Custom API', description: 'Any OpenAI-compatible API endpoint', icon: Key },
 ];
 
@@ -24,6 +25,14 @@ const MODELS = {
     { id: 'gpt-4o-mini', name: 'GPT-4o Mini (Fast & Affordable)' },
     { id: 'gpt-4o', name: 'GPT-4o (Best Quality)' },
     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo (Budget)' },
+  ],
+  openrouter: [
+    { id: 'meta-llama/llama-4-maverick', name: 'Llama 4 Maverick (Latest)' },
+    { id: 'meta-llama/llama-4-scout', name: 'Llama 4 Scout (Fast)' },
+    { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B Instruct' },
+    { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B (Budget)' },
+    { id: 'mistralai/mistral-large-latest', name: 'Mistral Large' },
+    { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1 (Reasoning)' },
   ],
   custom: [{ id: 'auto', name: 'Default Model' }],
 };
