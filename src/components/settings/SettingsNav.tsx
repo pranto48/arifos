@@ -22,6 +22,7 @@ export type SettingsCategory =
   | 'calendar' 
   | 'backup' 
   | 'license'
+  | 'ai'
   | 'admin'
   | 'admin-general'
   | 'admin-modules'
