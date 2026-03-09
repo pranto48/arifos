@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { invokeEdgeFunction, isLocalModeFeature } from '@/lib/edgeFunctionHelper';
 
 export interface AiConfig {
-  provider: 'free' | 'openai' | 'custom';
+  provider: 'free' | 'openai' | 'openrouter' | 'custom';
   api_key_encrypted: string | null;
   model_preference: string;
   daily_usage_count: number;

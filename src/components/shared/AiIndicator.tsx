@@ -6,14 +6,14 @@ import { cn } from '@/lib/utils';
 interface AiIndicatorProps {
   variant?: 'badge' | 'dot' | 'inline';
   loading?: boolean;
-  provider?: 'free' | 'openai' | 'custom' | string;
+  provider?: 'free' | 'openai' | 'openrouter' | 'custom' | string;
   remaining?: number | null;
   className?: string;
 }
 
 export function AiIndicator({ variant = 'badge', loading, provider, remaining, className }: AiIndicatorProps) {
   const isFree = !provider || provider === 'free';
-  const label = isFree ? 'AI Free' : 'AI Pro';
+  const label = isFree ? 'AI Free' : provider === 'openrouter' ? 'AI Llama' : 'AI Pro';
 
   if (variant === 'dot') {
     return (

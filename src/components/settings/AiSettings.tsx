@@ -15,6 +15,7 @@ import { isSelfHosted } from '@/lib/selfHostedConfig';
 const PROVIDERS = [
   { id: 'free', name: 'Free (Built-in)', description: '10 AI calls/day using built-in models', icon: Sparkles },
   { id: 'openai', name: 'OpenAI', description: 'Use your own OpenAI API key for unlimited access', icon: Zap },
+  { id: 'openrouter', name: 'OpenRouter', description: 'Access Llama, Mistral & 200+ models via OpenRouter', icon: Key },
   { id: 'custom', name: 'Custom API', description: 'Any OpenAI-compatible API endpoint', icon: Key },
 ];
 
@@ -25,13 +26,21 @@ const MODELS = {
     { id: 'gpt-4o', name: 'GPT-4o (Best Quality)' },
     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo (Budget)' },
   ],
+  openrouter: [
+    { id: 'meta-llama/llama-4-maverick', name: 'Llama 4 Maverick (Latest)' },
+    { id: 'meta-llama/llama-4-scout', name: 'Llama 4 Scout (Fast)' },
+    { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B Instruct' },
+    { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B (Budget)' },
+    { id: 'mistralai/mistral-large-latest', name: 'Mistral Large' },
+    { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1 (Reasoning)' },
+  ],
   custom: [{ id: 'auto', name: 'Default Model' }],
 };
 
 export function AiSettings() {
   const { config, saveConfig, getRemainingCalls, loading } = useAiAssist();
   const { language } = useLanguage();
-  const [provider, setProvider] = useState<'free' | 'openai' | 'custom'>(config?.provider as any || 'free');
+  const [provider, setProvider] = useState<'free' | 'openai' | 'openrouter' | 'custom'>(config?.provider as any || 'free');
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState(config?.model_preference || 'auto');
   const [showKey, setShowKey] = useState(false);
@@ -97,7 +106,7 @@ export function AiSettings() {
               key={p.id}
               className={`cursor-pointer transition-all ${isActive ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
               onClick={() => {
-                setProvider(p.id as 'free' | 'openai' | 'custom');
+                setProvider(p.id as 'free' | 'openai' | 'openrouter' | 'custom');
                 setModel(MODELS[p.id as keyof typeof MODELS]?.[0]?.id || 'auto');
               }}
             >
@@ -137,13 +146,13 @@ export function AiSettings() {
       {provider !== 'free' && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>{provider === 'openai' ? 'OpenAI API Key' : 'API Key'}</Label>
+            <Label>{provider === 'openai' ? 'OpenAI API Key' : provider === 'openrouter' ? 'OpenRouter API Key' : 'API Key'}</Label>
             <div className="relative">
               <Input
                 type={showKey ? 'text' : 'password'}
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
-                placeholder={provider === 'openai' ? 'sk-...' : 'Enter your API key'}
+                placeholder={provider === 'openai' ? 'sk-...' : provider === 'openrouter' ? 'sk-or-...' : 'Enter your API key'}
                 className="pr-10"
               />
               <Button
@@ -159,6 +168,8 @@ export function AiSettings() {
             <p className="text-xs text-muted-foreground">
               {provider === 'openai'
                 ? 'Get your key from platform.openai.com/api-keys'
+                : provider === 'openrouter'
+                ? 'Get your key from openrouter.ai/keys'
                 : 'Enter your API key for the custom endpoint'}
             </p>
           </div>
