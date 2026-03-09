@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { 
   CheckSquare, FileText, Wallet, Target, 
@@ -11,17 +11,22 @@ import { useDashboardMode } from '@/contexts/DashboardModeContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { UpcomingFamilyEvents } from '@/components/dashboard/UpcomingFamilyEvents';
-import { TaskCompletionChart } from '@/components/dashboard/TaskCompletionChart';
-import { ExpenseBreakdownChart } from '@/components/dashboard/ExpenseBreakdownChart';
-import { GoalProgressCards } from '@/components/dashboard/GoalProgressCards';
-import { TasksBreakdownChart } from '@/components/dashboard/TasksBreakdownChart';
-import { TaskCategoriesChart } from '@/components/dashboard/TaskCategoriesChart';
-import { DeviceCategoryChart } from '@/components/dashboard/DeviceCategoryChart';
-import { DeviceInventoryReport } from '@/components/dashboard/DeviceInventoryReport';
 import { DashboardCustomizer } from '@/components/dashboard/DashboardCustomizer';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
-import GoalProgressChart from '@/components/goals/GoalProgressChart';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load heavy chart components
+const UpcomingFamilyEvents = lazy(() => import('@/components/dashboard/UpcomingFamilyEvents').then(m => ({ default: m.UpcomingFamilyEvents })));
+const TaskCompletionChart = lazy(() => import('@/components/dashboard/TaskCompletionChart').then(m => ({ default: m.TaskCompletionChart })));
+const ExpenseBreakdownChart = lazy(() => import('@/components/dashboard/ExpenseBreakdownChart').then(m => ({ default: m.ExpenseBreakdownChart })));
+const GoalProgressCards = lazy(() => import('@/components/dashboard/GoalProgressCards').then(m => ({ default: m.GoalProgressCards })));
+const TasksBreakdownChart = lazy(() => import('@/components/dashboard/TasksBreakdownChart').then(m => ({ default: m.TasksBreakdownChart })));
+const TaskCategoriesChart = lazy(() => import('@/components/dashboard/TaskCategoriesChart').then(m => ({ default: m.TaskCategoriesChart })));
+const DeviceCategoryChart = lazy(() => import('@/components/dashboard/DeviceCategoryChart').then(m => ({ default: m.DeviceCategoryChart })));
+const DeviceInventoryReport = lazy(() => import('@/components/dashboard/DeviceInventoryReport').then(m => ({ default: m.DeviceInventoryReport })));
+const GoalProgressChart = lazy(() => import('@/components/goals/GoalProgressChart'));
+
+const ChartLoader = () => <Skeleton className="h-64 w-full rounded-lg" />;
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -65,11 +70,11 @@ export default function Dashboard() {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
     
     const [tasksRes, notesRes, transactionsRes, goalsRes, projectsRes] = await Promise.all([
-      supabase.from('tasks').select('*').eq('user_id', user?.id),
-      supabase.from('notes').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
-      supabase.from('transactions').select('*').eq('user_id', user?.id).gte('date', startOfMonth.split('T')[0]),
-      supabase.from('goals').select('*').eq('user_id', user?.id).in('status', ['active', 'in_progress']).eq('goal_type', mode),
-      supabase.from('projects').select('id, project_type').eq('user_id', user?.id),
+      supabase.from('tasks').select('id,title,status,due_date,task_type,sort_order,category_id').eq('user_id', user?.id),
+      supabase.from('notes').select('id,title,note_type,created_at').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('transactions').select('id,amount,type').eq('user_id', user?.id).gte('date', startOfMonth.split('T')[0]),
+      supabase.from('goals').select('id,title,category,target_amount,current_amount,target_date,status').eq('user_id', user?.id).in('status', ['active', 'in_progress']).eq('goal_type', mode),
+      supabase.from('projects').select('id,project_type').eq('user_id', user?.id),
     ]);
 
     const tasks = tasksRes.data || [];
@@ -153,23 +158,23 @@ export default function Dashboard() {
   const renderWidget = (widgetId: string) => {
     switch (widgetId) {
       case 'task-completion':
-        return <TaskCompletionChart key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><TaskCompletionChart /></Suspense>;
       case 'tasks-breakdown':
-        return <TasksBreakdownChart key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><TasksBreakdownChart /></Suspense>;
       case 'task-categories':
-        return <TaskCategoriesChart key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><TaskCategoriesChart /></Suspense>;
       case 'device-categories':
-        return <DeviceCategoryChart key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><DeviceCategoryChart /></Suspense>;
       case 'device-report':
-        return <DeviceInventoryReport key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><DeviceInventoryReport /></Suspense>;
       case 'expense-breakdown':
-        return <ExpenseBreakdownChart key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><ExpenseBreakdownChart /></Suspense>;
       case 'goal-cards':
-        return <GoalProgressCards key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><GoalProgressCards /></Suspense>;
       case 'goal-chart':
-        return <GoalProgressChart key={widgetId} goals={stats.goals} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><GoalProgressChart goals={stats.goals} /></Suspense>;
       case 'goal-progress':
-        return <GoalProgressChart key={widgetId} goals={stats.goals} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><GoalProgressChart goals={stats.goals} /></Suspense>;
       case 'budget-summary':
         return (
           <Card key={widgetId} className="bg-card border-border">
@@ -262,7 +267,7 @@ export default function Dashboard() {
           </Card>
         );
       case 'family-events':
-        return <UpcomingFamilyEvents key={widgetId} />;
+        return <Suspense key={widgetId} fallback={<ChartLoader />}><UpcomingFamilyEvents /></Suspense>;
       default:
         return null;
     }

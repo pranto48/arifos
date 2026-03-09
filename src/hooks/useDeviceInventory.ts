@@ -90,15 +90,15 @@ export function useDeviceInventory() {
     const [categoriesRes, suppliersRes, devicesRes] = await Promise.all([
       supabase
         .from('device_categories')
-        .select('*')
+        .select('id,name,description,user_id,created_at,updated_at')
         .order('name'),
       supabase
         .from('device_suppliers')
-        .select('*')
+        .select('id,user_id,name,contact_person,phone,email,address,notes,is_active,created_at,updated_at')
         .order('name'),
       supabase
         .from('device_inventory')
-        .select('*')
+        .select('id,user_id,support_user_id,category_id,unit_id,supplier_id,device_name,device_number,serial_number,purchase_date,delivery_date,supplier_name,requisition_number,bod_number,warranty_date,price,bill_details,status,notes,ram_info,storage_info,has_ups,ups_info,monitor_info,webcam_info,headset_info,custom_specs,processor_info,created_at,updated_at')
         .order('created_at', { ascending: false }),
     ]);
 
