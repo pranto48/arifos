@@ -109,6 +109,7 @@ const AppContent = () => {
             <Route path="/device/:deviceNumber" element={<DeviceProfile />} />
             <Route path="/support-tickets" element={<AppLayout><SupportTickets /></AppLayout>} />
             <Route path="/submit-ticket" element={<SubmitTicket />} />
+            <Route path="/time-tracking" element={<AppLayout><TimeTracking /></AppLayout>} />
             <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

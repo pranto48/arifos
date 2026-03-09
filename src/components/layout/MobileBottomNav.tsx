@@ -61,6 +61,7 @@ const allNavItems: NavItem[] = [
   { titleKey: 'nav.loans', url: '/loans', icon: Landmark, personalOnly: true, moduleName: 'loans' },
   { titleKey: 'nav.goals', url: '/goals', icon: Target, moduleName: 'goals' },
   { titleKey: 'nav.projects', url: '/projects', icon: Lightbulb, moduleName: 'projects' },
+  { titleKey: 'nav.timeTracking', url: '/time-tracking', icon: Timer, moduleName: 'time_tracking' },
   { titleKey: 'nav.settings', url: '/settings', icon: Settings },
 ];
 
