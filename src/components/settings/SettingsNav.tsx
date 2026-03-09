@@ -23,6 +23,7 @@ export type SettingsCategory =
   | 'backup' 
   | 'license'
   | 'ai'
+  | 'location'
   | 'admin'
   | 'admin-general'
   | 'admin-modules'
