@@ -1019,6 +1019,10 @@ const POSTGREST_TABLES = new Set([
   'push_subscriptions', 'user_sessions', 'user_mfa_settings',
   'email_otp_codes', 'audit_logs', 'user_workspace_permissions',
   'qr_code_settings',
+  'ai_config', 'app_notifications', 'notification_preferences',
+  'pomodoro_settings', 'time_entries', 'custom_form_fields',
+  'form_field_config', 'module_config',
+  'workflow_rules', 'workflow_logs', 'webhook_configs', 'task_templates',
 ]);
 
 // Tables that should NOT be auto-scoped by user_id
@@ -1028,6 +1032,8 @@ const NO_USER_SCOPE_TABLES = new Set([
   'device_inventory', 'device_categories', 'device_service_history',
   'support_users', 'user_roles',
   'ticket_requesters',
+  'device_transfer_history', 'form_field_config', 'module_config',
+  'support_tickets', 'ticket_comments', 'ticket_activity_log',
 ]);
 
 function getRestAuthUser(req) {
