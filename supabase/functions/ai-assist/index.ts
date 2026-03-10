@@ -37,7 +37,7 @@ serve(async (req) => {
       .from("ai_config")
       .select("*")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     const provider = aiConfig?.provider || "free";
     const today = new Date().toISOString().split("T")[0];
@@ -228,7 +228,7 @@ Be thorough and precise with numbers and amounts.`;
       apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
       apiKey = lovableKey;
       // Use flash for most tasks, pro for OCR (needs vision)
-      model = type === "ocr_document" ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
+      model = type === "ocr_document" ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite";
     } else if (provider === "openrouter") {
       apiUrl = "https://openrouter.ai/api/v1/chat/completions";
       apiKey = aiConfig.api_key_encrypted;

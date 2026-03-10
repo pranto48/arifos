@@ -44,14 +44,15 @@ const USER_SCOPED_TABLES = [
 const SHARED_TABLES = [
   'support_units', 'support_departments', 'support_users',
   'device_categories', 'device_suppliers', 'device_inventory',
-  'device_service_history', 'device_transfer_history', 'device_disposals',
+  'device_service_history', 'device_disposals',
   'support_user_devices',
-  'custom_form_fields', 'form_field_config', 'module_config',
+  'custom_form_fields',
 ];
 
 // Tables without user_id
 const GLOBAL_TABLES = [
   'support_tickets', 'ticket_activity_log', 'ticket_requesters', 'ticket_categories',
+  'device_transfer_history', 'form_field_config', 'module_config',
 ];
 
 const ALL_BACKUP_TABLES = [...USER_SCOPED_TABLES, ...SHARED_TABLES, ...GLOBAL_TABLES];

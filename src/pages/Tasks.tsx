@@ -607,20 +607,8 @@ export default function Tasks() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h1>
-        <div className="flex flex-wrap gap-2">
-          <ReportActions
-            variant="compact"
-            headers={['Title', 'Priority', 'Status', 'Due Date', 'Category']}
-            rows={tasks.map(t => [t.title, t.priority || '', t.status || '', t.due_date || '', categories.find(c => c.id === t.category_id)?.name || ''])}
-            filename={`lifeos-tasks-${new Date().toISOString().split('T')[0]}`}
-            title="Tasks Report"
-            summaryCards={[
-              { label: 'Total', value: tasks.length },
-              { label: 'Completed', value: tasks.filter(t => t.status === 'completed').length },
-              { label: 'Active', value: tasks.filter(t => t.status !== 'completed').length },
-            ]}
-          />
-          <DataExportImportButton preset="tasks" />
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* View Toggle */}
           <div className="flex items-center gap-0.5 bg-muted/30 rounded-md p-0.5">
             <Button
               variant={viewMode === 'list' ? 'secondary' : 'ghost'}
@@ -639,27 +627,8 @@ export default function Tasks() {
               <LayoutGrid className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <Button
-            variant={selectionMode ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => {
-              setSelectionMode(!selectionMode);
-              setSelectedTaskIds([]);
-            }}
-            className="gap-1"
-          >
-            <CheckCheck className="h-4 w-4" />
-            Bulk Edit
-          </Button>
-          <Button
-            variant={showCategoryManager ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setShowCategoryManager(!showCategoryManager)}
-            className="gap-1"
-          >
-            <Settings2 className="h-4 w-4" />
-            Categories
-          </Button>
+
+          {/* Status Filters */}
           {['all', 'active', 'completed', 'follow-up'].map((f) => (
             <Button
               key={f}
@@ -672,6 +641,51 @@ export default function Tasks() {
               {filterLabels[f]}
             </Button>
           ))}
+
+          {/* Actions Submenu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                <Settings2 className="h-4 w-4" />
+                Actions
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => {
+                setSelectionMode(!selectionMode);
+                setSelectedTaskIds([]);
+              }}>
+                <CheckCheck className="h-4 w-4 mr-2" />
+                {selectionMode ? 'Exit Bulk Edit' : 'Bulk Edit'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowCategoryManager(!showCategoryManager)}>
+                <FolderOpen className="h-4 w-4 mr-2" />
+                {showCategoryManager ? 'Hide Categories' : 'Manage Categories'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <div className="p-0">
+                  <ReportActions
+                    variant="compact"
+                    headers={['Title', 'Priority', 'Status', 'Due Date', 'Category']}
+                    rows={tasks.map(t => [t.title, t.priority || '', t.status || '', t.due_date || '', categories.find(c => c.id === t.category_id)?.name || ''])}
+                    filename={`lifeos-tasks-${new Date().toISOString().split('T')[0]}`}
+                    title="Tasks Report"
+                    summaryCards={[
+                      { label: 'Total', value: tasks.length },
+                      { label: 'Completed', value: tasks.filter(t => t.status === 'completed').length },
+                      { label: 'Active', value: tasks.filter(t => t.status !== 'completed').length },
+                    ]}
+                  />
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <div className="p-0">
+                  <DataExportImportButton preset="tasks" />
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
