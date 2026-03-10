@@ -1841,8 +1841,11 @@ async function handleDataUpdate(req, res, tableName) {
       }
     }
 
-    let whereClauses = [`user_id = $${idx++}`];
-    params.push(user.sub);
+    let whereClauses = [];
+    if (!DATA_NO_USER_SCOPE.has(tableName)) {
+      whereClauses.push(`user_id = $${idx++}`);
+      params.push(user.sub);
+    }
 
     if (filters) {
       for (const [key, val] of Object.entries(filters)) {
