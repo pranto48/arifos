@@ -32,7 +32,15 @@ export function AiReportSummary({ title, headers, rows, summaryCards }: AiReport
     });
 
     if (result?.content) {
-      setSummary(result.content);
+      // Clean markdown artifacts from AI response
+      const raw = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+      const cleaned = raw
+        .replace(/```[a-z]*\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .replace(/\*\*/g, '')
+        .replace(/^#+\s*/gm, '')
+        .trim();
+      setSummary(cleaned);
     }
   };
 
