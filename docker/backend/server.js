@@ -1803,7 +1803,11 @@ async function handleDataDelete(req, res, tableName) {
   if (!user) { sendJson(res, 401, { message: 'Not authenticated' }); return; }
 
   try {
-    await query(`DELETE FROM ${tableName} WHERE user_id = $1`, [user.sub]);
+    if (DATA_NO_USER_SCOPE.has(tableName)) {
+      await query(`DELETE FROM ${tableName}`);
+    } else {
+      await query(`DELETE FROM ${tableName} WHERE user_id = $1`, [user.sub]);
+    }
     sendJson(res, 200, { success: true });
   } catch (err) {
     sendJson(res, 500, { message: err.message });
