@@ -52,6 +52,7 @@ const SHARED_TABLES = [
 // Tables without user_id
 const GLOBAL_TABLES = [
   'support_tickets', 'ticket_activity_log', 'ticket_requesters', 'ticket_categories',
+  'device_transfer_history', 'form_field_config', 'module_config',
 ];
 
 const ALL_BACKUP_TABLES = [...USER_SCOPED_TABLES, ...SHARED_TABLES, ...GLOBAL_TABLES];

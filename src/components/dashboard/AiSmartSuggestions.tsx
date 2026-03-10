@@ -55,10 +55,27 @@ export function AiSmartSuggestions() {
     const result = await callAi('smart_suggestions', context);
     if (result?.content) {
       try {
-        const parsed = JSON.parse(result.content);
+        const raw = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+        // Strip markdown code blocks
+        const cleaned = raw
+          .replace(/```json\s*/gi, '')
+          .replace(/```\s*/g, '')
+          .trim();
+        // Find JSON array boundaries
+        const start = cleaned.indexOf('[');
+        const end = cleaned.lastIndexOf(']');
+        const jsonStr = start !== -1 && end !== -1 ? cleaned.substring(start, end + 1) : cleaned;
+        const parsed = JSON.parse(jsonStr);
         setSuggestions(Array.isArray(parsed) ? parsed.slice(0, 4) : []);
       } catch {
-        setSuggestions([{ title: 'AI Insight', description: result.content }]);
+        // Show as plain text, stripping any remaining markdown artifacts
+        const cleanText = (typeof result.content === 'string' ? result.content : JSON.stringify(result.content))
+          .replace(/```json\s*/gi, '')
+          .replace(/```\s*/g, '')
+          .replace(/^\s*\[?\s*\{?\s*/, '')
+          .replace(/\s*\}?\s*\]?\s*$/, '')
+          .trim();
+        setSuggestions([{ title: 'AI Insight', description: cleanText }]);
       }
     }
     setFetched(true);
