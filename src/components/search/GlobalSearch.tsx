@@ -46,7 +46,7 @@ export function GlobalSearch() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Keyboard shortcut: "/" to open search
   useEffect(() => {

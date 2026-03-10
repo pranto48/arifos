@@ -1019,6 +1019,10 @@ const POSTGREST_TABLES = new Set([
   'push_subscriptions', 'user_sessions', 'user_mfa_settings',
   'email_otp_codes', 'audit_logs', 'user_workspace_permissions',
   'qr_code_settings',
+  'ai_config', 'app_notifications', 'notification_preferences',
+  'pomodoro_settings', 'time_entries', 'custom_form_fields',
+  'form_field_config', 'module_config',
+  'workflow_rules', 'workflow_logs', 'webhook_configs', 'task_templates',
 ]);
 
 // Tables that should NOT be auto-scoped by user_id
@@ -1028,6 +1032,8 @@ const NO_USER_SCOPE_TABLES = new Set([
   'device_inventory', 'device_categories', 'device_service_history',
   'support_users', 'user_roles',
   'ticket_requesters',
+  'device_transfer_history', 'form_field_config', 'module_config',
+  'support_tickets', 'ticket_comments', 'ticket_activity_log',
 ]);
 
 function getRestAuthUser(req) {
@@ -1613,6 +1619,11 @@ const ALLOWED_DATA_TABLES = new Set([
   'google_calendar_sync', 'synced_calendar_events',
   'push_subscriptions', 'email_otp_codes', 'audit_logs',
   'qr_code_settings', 'user_roles',
+  'ai_config', 'app_notifications', 'notification_preferences',
+  'pomodoro_settings', 'time_entries', 'custom_form_fields',
+  'form_field_config', 'module_config',
+  'workflow_rules', 'workflow_logs', 'webhook_configs', 'task_templates',
+  'user_mfa_settings', 'user_workspace_permissions',
 ]);
 
 function validateTable(tableName) {
@@ -1668,6 +1679,8 @@ const DATA_NO_USER_SCOPE = new Set([
   'device_categories', 'device_suppliers', 'device_inventory', 'device_service_history',
   'user_roles', 'app_settings', 'ticket_categories', 'ticket_form_fields',
   'ticket_requesters',
+  'device_transfer_history', 'form_field_config', 'module_config',
+  'support_tickets', 'ticket_comments', 'ticket_activity_log',
 ]);
 
 async function handleDataSelect(req, res, tableName) {
@@ -1790,7 +1803,11 @@ async function handleDataDelete(req, res, tableName) {
   if (!user) { sendJson(res, 401, { message: 'Not authenticated' }); return; }
 
   try {
-    await query(`DELETE FROM ${tableName} WHERE user_id = $1`, [user.sub]);
+    if (DATA_NO_USER_SCOPE.has(tableName)) {
+      await query(`DELETE FROM ${tableName}`);
+    } else {
+      await query(`DELETE FROM ${tableName} WHERE user_id = $1`, [user.sub]);
+    }
     sendJson(res, 200, { success: true });
   } catch (err) {
     sendJson(res, 500, { message: err.message });
@@ -1824,8 +1841,11 @@ async function handleDataUpdate(req, res, tableName) {
       }
     }
 
-    let whereClauses = [`user_id = $${idx++}`];
-    params.push(user.sub);
+    let whereClauses = [];
+    if (!DATA_NO_USER_SCOPE.has(tableName)) {
+      whereClauses.push(`user_id = $${idx++}`);
+      params.push(user.sub);
+    }
 
     if (filters) {
       for (const [key, val] of Object.entries(filters)) {
