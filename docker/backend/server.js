@@ -1619,6 +1619,11 @@ const ALLOWED_DATA_TABLES = new Set([
   'google_calendar_sync', 'synced_calendar_events',
   'push_subscriptions', 'email_otp_codes', 'audit_logs',
   'qr_code_settings', 'user_roles',
+  'ai_config', 'app_notifications', 'notification_preferences',
+  'pomodoro_settings', 'time_entries', 'custom_form_fields',
+  'form_field_config', 'module_config',
+  'workflow_rules', 'workflow_logs', 'webhook_configs', 'task_templates',
+  'user_mfa_settings', 'user_workspace_permissions',
 ]);
 
 function validateTable(tableName) {
@@ -1674,6 +1679,8 @@ const DATA_NO_USER_SCOPE = new Set([
   'device_categories', 'device_suppliers', 'device_inventory', 'device_service_history',
   'user_roles', 'app_settings', 'ticket_categories', 'ticket_form_fields',
   'ticket_requesters',
+  'device_transfer_history', 'form_field_config', 'module_config',
+  'support_tickets', 'ticket_comments', 'ticket_activity_log',
 ]);
 
 async function handleDataSelect(req, res, tableName) {
