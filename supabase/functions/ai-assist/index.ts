@@ -37,7 +37,7 @@ serve(async (req) => {
       .from("ai_config")
       .select("*")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     const provider = aiConfig?.provider || "free";
     const today = new Date().toISOString().split("T")[0];
