@@ -29,7 +29,7 @@ export function DashboardModeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [mode, setModeState] = useState<DashboardMode>('office');
   const [isPersonalUnlocked, setIsPersonalUnlocked] = useState(false);
-  const autoLockTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [permissions, setPermissions] = useState<WorkspacePermissions>({
     office_enabled: true,
     personal_enabled: true,
