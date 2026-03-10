@@ -15,7 +15,7 @@ import { isSelfHosted } from '@/lib/selfHostedConfig';
 const PROVIDERS = [
   { id: 'free', name: 'Free (Built-in)', description: '10 AI calls/day using built-in models', icon: Sparkles },
   { id: 'openai', name: 'OpenAI', description: 'Use your own OpenAI API key for unlimited access', icon: Zap },
-  { id: 'openrouter', name: 'OpenRouter', description: 'Access Llama, Mistral & 200+ models via OpenRouter', icon: Key },
+  { id: 'openrouter', name: 'OpenRouter', description: 'Access 200+ models including many free options', icon: Key },
   { id: 'custom', name: 'Custom API', description: 'Any OpenAI-compatible API endpoint', icon: Key },
 ];
 
@@ -27,12 +27,30 @@ const MODELS = {
     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo (Budget)' },
   ],
   openrouter: [
-    { id: 'meta-llama/llama-4-maverick', name: 'Llama 4 Maverick (Latest)' },
-    { id: 'meta-llama/llama-4-scout', name: 'Llama 4 Scout (Fast)' },
-    { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B Instruct' },
-    { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B (Budget)' },
+    // --- Free Models ---
+    { id: 'meta-llama/llama-4-maverick:free', name: '🆓 Llama 4 Maverick (Free)' },
+    { id: 'meta-llama/llama-4-scout:free', name: '🆓 Llama 4 Scout (Free)' },
+    { id: 'meta-llama/llama-3.3-70b-instruct:free', name: '🆓 Llama 3.3 70B (Free)' },
+    { id: 'meta-llama/llama-3.1-8b-instruct:free', name: '🆓 Llama 3.1 8B (Free)' },
+    { id: 'google/gemma-3-27b-it:free', name: '🆓 Gemma 3 27B (Free)' },
+    { id: 'google/gemma-3-12b-it:free', name: '🆓 Gemma 3 12B (Free)' },
+    { id: 'google/gemma-3-4b-it:free', name: '🆓 Gemma 3 4B (Free)' },
+    { id: 'mistralai/mistral-small-3.1-24b-instruct:free', name: '🆓 Mistral Small 3.1 (Free)' },
+    { id: 'qwen/qwen3-30b-a3b:free', name: '🆓 Qwen3 30B (Free)' },
+    { id: 'qwen/qwen3-32b:free', name: '🆓 Qwen3 32B (Free)' },
+    { id: 'qwen/qwen3-14b:free', name: '🆓 Qwen3 14B (Free)' },
+    { id: 'qwen/qwen3-8b:free', name: '🆓 Qwen3 8B (Free)' },
+    { id: 'qwen/qwen-2.5-72b-instruct:free', name: '🆓 Qwen 2.5 72B (Free)' },
+    { id: 'deepseek/deepseek-r1:free', name: '🆓 DeepSeek R1 (Free)' },
+    { id: 'deepseek/deepseek-chat-v3-0324:free', name: '🆓 DeepSeek V3 (Free)' },
+    { id: 'microsoft/phi-4:free', name: '🆓 Microsoft Phi-4 (Free)' },
+    { id: 'nvidia/llama-3.1-nemotron-70b-instruct:free', name: '🆓 Nemotron 70B (Free)' },
+    { id: 'moonshotai/kimi-vl-a3b-thinking:free', name: '🆓 Kimi VL Thinking (Free)' },
+    // --- Paid Models ---
+    { id: 'meta-llama/llama-4-maverick', name: 'Llama 4 Maverick' },
+    { id: 'meta-llama/llama-4-scout', name: 'Llama 4 Scout' },
     { id: 'mistralai/mistral-large-latest', name: 'Mistral Large' },
-    { id: 'mistralai/mistral-small-latest', name: 'Mistral Small (Fast)' },
+    { id: 'mistralai/mistral-small-latest', name: 'Mistral Small' },
     { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1 (Reasoning)' },
     { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat (V3)' },
     { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
@@ -40,7 +58,6 @@ const MODELS = {
     { id: 'anthropic/claude-sonnet-4', name: 'Claude Sonnet 4' },
     { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini' },
     { id: 'openai/gpt-4o', name: 'GPT-4o' },
-    { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B' },
   ],
   custom: [{ id: 'auto', name: 'Default Model' }],
 };
@@ -177,7 +194,7 @@ export function AiSettings() {
               {provider === 'openai'
                 ? 'Get your key from platform.openai.com/api-keys'
                 : provider === 'openrouter'
-                ? 'Get your key from openrouter.ai/keys'
+                ? 'Get your key from openrouter.ai/keys — Free models marked with 🆓'
                 : 'Enter your API key for the custom endpoint'}
             </p>
           </div>

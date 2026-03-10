@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight, Loader2, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,13 +16,41 @@ interface Suggestion {
   link?: string;
 }
 
+const STORAGE_KEY = 'lifeos_smart_suggestions';
+
+function loadCachedSuggestions(): Suggestion[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function saveSuggestions(suggestions: Suggestion[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(suggestions));
+  } catch {}
+}
+
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/#{1,6}\s+/g, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .trim();
+}
+
 export function AiSmartSuggestions() {
   const { user } = useAuth();
   const { callAi, loading, config, isAvailable } = useAiAssist();
   const { language } = useLanguage();
   const navigate = useNavigate();
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [fetched, setFetched] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>(loadCachedSuggestions);
+  const hasCached = suggestions.length > 0;
 
   const fetchSuggestions = async () => {
     if (!user) return;
@@ -54,31 +82,24 @@ export function AiSmartSuggestions() {
 
     const result = await callAi('smart_suggestions', context);
     if (result?.content) {
+      let parsed: Suggestion[] = [];
       try {
         const raw = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
-        // Strip markdown code blocks
-        const cleaned = raw
-          .replace(/```json\s*/gi, '')
-          .replace(/```\s*/g, '')
-          .trim();
-        // Find JSON array boundaries
+        const cleaned = stripMarkdown(raw);
         const start = cleaned.indexOf('[');
         const end = cleaned.lastIndexOf(']');
         const jsonStr = start !== -1 && end !== -1 ? cleaned.substring(start, end + 1) : cleaned;
-        const parsed = JSON.parse(jsonStr);
-        setSuggestions(Array.isArray(parsed) ? parsed.slice(0, 4) : []);
+        const data = JSON.parse(jsonStr);
+        parsed = Array.isArray(data) ? data.slice(0, 4) : [];
       } catch {
-        // Show as plain text, stripping any remaining markdown artifacts
-        const cleanText = (typeof result.content === 'string' ? result.content : JSON.stringify(result.content))
-          .replace(/```json\s*/gi, '')
-          .replace(/```\s*/g, '')
-          .replace(/^\s*\[?\s*\{?\s*/, '')
-          .replace(/\s*\}?\s*\]?\s*$/, '')
-          .trim();
-        setSuggestions([{ title: 'AI Insight', description: cleanText }]);
+        const cleanText = stripMarkdown(
+          typeof result.content === 'string' ? result.content : JSON.stringify(result.content)
+        );
+        parsed = [{ title: language === 'bn' ? 'AI ইনসাইট' : 'AI Insight', description: cleanText }];
       }
+      setSuggestions(parsed);
+      saveSuggestions(parsed);
     }
-    setFetched(true);
   };
 
   const linkMap: Record<string, string> = {
@@ -99,9 +120,9 @@ export function AiSmartSuggestions() {
           </CardTitle>
           <div className="flex items-center gap-2">
             <AiIndicator variant="dot" loading={loading} provider={config?.provider} unavailable={!isAvailable} />
-            {fetched && isAvailable && (
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchSuggestions} disabled={loading}>
-                <RefreshCw className="h-3 w-3" />
+            {isAvailable && (
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchSuggestions} disabled={loading} title={language === 'bn' ? 'আবার তৈরি করুন' : 'Regenerate'}>
+                <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
               </Button>
             )}
           </div>
@@ -115,7 +136,14 @@ export function AiSmartSuggestions() {
               {language === 'bn' ? 'AI ফিচার সেলফ-হোস্টেড মোডে পাওয়া যায় না' : 'AI features are not available in self-hosted mode'}
             </p>
           </div>
-        ) : !fetched && !loading ? (
+        ) : loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="ml-2 text-sm text-muted-foreground">
+              {language === 'bn' ? 'বিশ্লেষণ করা হচ্ছে...' : 'Analyzing your data...'}
+            </span>
+          </div>
+        ) : suggestions.length === 0 ? (
           <div className="flex flex-col items-center py-6 gap-3">
             <p className="text-sm text-muted-foreground text-center">
               {language === 'bn' ? 'আপনার কার্যকলাপের উপর ভিত্তি করে AI সাজেশন পান' : 'Get AI-powered suggestions based on your activity'}
@@ -125,17 +153,6 @@ export function AiSmartSuggestions() {
               {language === 'bn' ? 'সাজেশন তৈরি করুন' : 'Generate Suggestions'}
             </Button>
           </div>
-        ) : loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="ml-2 text-sm text-muted-foreground">
-              {language === 'bn' ? 'বিশ্লেষণ করা হচ্ছে...' : 'Analyzing your data...'}
-            </span>
-          </div>
-        ) : suggestions.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            {language === 'bn' ? 'কোনো সাজেশন নেই' : 'No suggestions available right now'}
-          </p>
         ) : (
           <div className="space-y-2">
             {suggestions.map((s, i) => (

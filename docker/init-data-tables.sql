@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS public.tasks (
     completed_at TIMESTAMPTZ,
     category_id UUID,
     project_id UUID,
+    goal_id UUID,
     is_recurring BOOLEAN DEFAULT false,
     recurring_pattern TEXT,
     tags TEXT[],
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS public.tasks (
     sort_order INTEGER DEFAULT 0,
     estimated_time INTEGER,
     support_user_id UUID,
+    custom_fields JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -38,6 +40,7 @@ CREATE TABLE IF NOT EXISTS public.notes (
     is_vault BOOLEAN DEFAULT false,
     note_type TEXT DEFAULT 'note',
     project_id UUID,
+    custom_fields JSONB,
     search_vector TSVECTOR,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -77,6 +80,7 @@ CREATE TABLE IF NOT EXISTS public.goals (
     current_amount NUMERIC DEFAULT 0,
     target_date DATE,
     is_next_year_plan BOOLEAN DEFAULT false,
+    custom_fields JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -110,6 +114,7 @@ CREATE TABLE IF NOT EXISTS public.projects (
     project_type TEXT DEFAULT 'office',
     tags TEXT[] DEFAULT '{}',
     target_date DATE,
+    custom_fields JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -579,7 +584,203 @@ CREATE TABLE IF NOT EXISTS public.qr_code_settings (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add supplier_id column to device_inventory if missing
+-- ========================
+-- Additional Tables (previously missing in Docker init)
+-- ========================
+
+-- AI Configuration
+CREATE TABLE IF NOT EXISTS public.ai_config (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL UNIQUE,
+    provider TEXT DEFAULT 'free',
+    api_key_encrypted TEXT,
+    model_preference TEXT,
+    daily_usage_count INTEGER DEFAULT 0,
+    last_usage_date TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- App Notifications
+CREATE TABLE IF NOT EXISTS public.app_notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT,
+    entity_id TEXT,
+    entity_type TEXT,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Notification Preferences
+CREATE TABLE IF NOT EXISTS public.notification_preferences (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL UNIQUE,
+    task_reminders BOOLEAN DEFAULT true,
+    habit_reminders BOOLEAN DEFAULT true,
+    family_event_reminders BOOLEAN DEFAULT true,
+    loan_reminders BOOLEAN DEFAULT true,
+    follow_up_reminders BOOLEAN DEFAULT true,
+    task_assignment_alerts BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Pomodoro Settings
+CREATE TABLE IF NOT EXISTS public.pomodoro_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL UNIQUE,
+    work_duration INTEGER DEFAULT 25,
+    short_break INTEGER DEFAULT 5,
+    long_break INTEGER DEFAULT 15,
+    sessions_before_long_break INTEGER DEFAULT 4,
+    auto_start_breaks BOOLEAN DEFAULT false,
+    auto_start_work BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Time Entries
+CREATE TABLE IF NOT EXISTS public.time_entries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    task_id UUID,
+    project_id UUID,
+    description TEXT,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ,
+    duration INTEGER,
+    is_running BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Custom Form Fields
+CREATE TABLE IF NOT EXISTS public.custom_form_fields (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    entity_type TEXT NOT NULL,
+    field_name TEXT NOT NULL,
+    field_label TEXT NOT NULL,
+    field_type TEXT DEFAULT 'text',
+    field_options JSONB,
+    is_required BOOLEAN DEFAULT false,
+    is_active BOOLEAN DEFAULT true,
+    default_value TEXT,
+    placeholder TEXT,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Form Field Config (global, no user_id)
+CREATE TABLE IF NOT EXISTS public.form_field_config (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    entity_type TEXT NOT NULL,
+    field_name TEXT NOT NULL,
+    is_enabled BOOLEAN DEFAULT true,
+    is_custom BOOLEAN DEFAULT false,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_by UUID
+);
+
+-- Module Config (global, no user_id)
+CREATE TABLE IF NOT EXISTS public.module_config (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    module_name TEXT NOT NULL,
+    is_enabled BOOLEAN DEFAULT true,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_by UUID
+);
+
+-- Workflow Rules
+CREATE TABLE IF NOT EXISTS public.workflow_rules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    trigger_type TEXT NOT NULL,
+    trigger_config JSONB DEFAULT '{}',
+    action_type TEXT NOT NULL,
+    action_config JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    last_triggered_at TIMESTAMPTZ,
+    trigger_count INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Workflow Logs
+CREATE TABLE IF NOT EXISTS public.workflow_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    rule_id UUID,
+    rule_name TEXT,
+    trigger_type TEXT,
+    action_type TEXT,
+    status TEXT DEFAULT 'success',
+    details JSONB,
+    error_message TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Webhook Configs
+CREATE TABLE IF NOT EXISTS public.webhook_configs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    secret TEXT,
+    events TEXT[] DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    last_triggered_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Task Templates
+CREATE TABLE IF NOT EXISTS public.task_templates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    template_data JSONB NOT NULL DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- User MFA Settings
+CREATE TABLE IF NOT EXISTS public.user_mfa_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL UNIQUE,
+    totp_secret TEXT,
+    totp_enabled BOOLEAN DEFAULT false,
+    email_otp_enabled BOOLEAN DEFAULT false,
+    backup_codes JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- User Workspace Permissions
+CREATE TABLE IF NOT EXISTS public.user_workspace_permissions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    permission TEXT NOT NULL,
+    granted_by UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, permission)
+);
+
+-- Device Transfer History (already in init-db.sql but ensure it exists here too)
+-- Note: device_transfer_history does NOT have a user_id column
+
+-- ========================
+-- Add missing columns to existing tables
+-- ========================
+
 DO $$ BEGIN
     ALTER TABLE public.device_inventory ADD COLUMN IF NOT EXISTS supplier_id UUID;
 EXCEPTION WHEN others THEN NULL;
@@ -587,6 +788,12 @@ END $$;
 
 DO $$ BEGIN
     ALTER TABLE public.device_inventory ADD COLUMN IF NOT EXISTS processor_info VARCHAR(255);
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+-- Fix support_users ip_address type (INET -> TEXT for compatibility)
+DO $$ BEGIN
+    ALTER TABLE public.support_users ALTER COLUMN ip_address TYPE TEXT;
 EXCEPTION WHEN others THEN NULL;
 END $$;
 
@@ -608,3 +815,7 @@ CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON public.support_tickets(
 CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON public.ticket_comments(ticket_id);
 CREATE INDEX IF NOT EXISTS idx_attachments_entity ON public.attachments(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON public.audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_time_entries_user_id ON public.time_entries(user_id);
+CREATE INDEX IF NOT EXISTS idx_app_notifications_user_id ON public.app_notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_workflow_rules_user_id ON public.workflow_rules(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_config_user_id ON public.ai_config(user_id);
