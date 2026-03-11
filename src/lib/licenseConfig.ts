@@ -87,7 +87,16 @@ const _SK = {
 export function getInstallationId(): string {
   let id = localStorage.getItem(_SK.ii);
   if (!id) {
-    id = 'LIFEOS-' + crypto.randomUUID();
+    // Use crypto.randomUUID if available, otherwise fallback for Docker/edge environments
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      id = 'LIFEOS-' + crypto.randomUUID();
+    } else {
+      id = 'LIFEOS-' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      });
+    }
     localStorage.setItem(_SK.ii, id);
   }
   return id;
@@ -98,6 +107,16 @@ export function getInstallationId(): string {
  * This is NOT a security boundary (client can read it), but raises the bar
  * for casual tampering — the real check happens server-side.
  */
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
 async function computeIntegrity(data: Record<string, unknown>): Promise<string> {
   const payload = JSON.stringify([
     data.licenseKey,
@@ -107,13 +126,17 @@ async function computeIntegrity(data: Record<string, unknown>): Promise<string> 
     data._iat,
     getInstallationId(),
   ]);
-  const buf = await crypto.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode(payload)
-  );
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+  if (typeof crypto !== 'undefined' && crypto.subtle) {
+    const buf = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(payload)
+    );
+    return Array.from(new Uint8Array(buf))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+  // Fallback for non-secure contexts (e.g. Docker over HTTP)
+  return simpleHash(payload);
 }
 
 /** Store license info with integrity marker */
