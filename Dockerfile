@@ -7,9 +7,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY bun.lockb ./
 
-# Install dependencies
-# Ensure devDependencies are installed (vite is a devDependency)
-RUN npm ci --include=dev
+# Install dependencies (using npm install since project uses bun.lockb, not package-lock.json)
+RUN npm install --include=dev
 
 # Copy source code
 COPY . .
