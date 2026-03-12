@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { isSelfHosted, selfHostedApi } from '@/lib/selfHostedConfig';
+import { exportToXlsx } from '@/lib/xlsxHelpers';
 
 export type ExportableEntity = 
   | 'tasks' | 'task_categories' | 'task_checklists' | 'task_follow_up_notes'
