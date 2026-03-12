@@ -192,7 +192,17 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
   const displayLabel = label || config?.label || preset;
 
   // ---- Download example file ----
-  const handleDownloadExample = () => {
+  const handleDownloadExample = (format: 'json' | 'xlsx' = 'json') => {
+    if (format === 'xlsx') {
+      try {
+        const blob = generateExampleXlsx(preset);
+        downloadBlob(blob, `lifeos-${preset}-example.xlsx`);
+        toast.success('Example Excel file downloaded! Edit it and import.');
+      } catch (err: any) {
+        toast.error(`Failed to generate example: ${err.message}`);
+      }
+      return;
+    }
     const example = generateExampleFile(preset);
     const blob = new Blob([JSON.stringify(example, null, 2)], { type: 'application/json' });
     downloadBlob(blob, `lifeos-${preset}-example.json`);
