@@ -270,8 +270,9 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
     setImportEntity('Parsing file...');
 
     try {
-      // Parse file once, reuse payload throughout
-      const payload = await parseImportFile(file);
+      // Parse file - handle xlsx separately
+      const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+      const payload = isXlsx ? await parseXlsxFile(file, preset) : await parseImportFile(file);
 
       if (!payload?.data || !payload?.exportType) {
         throw new Error('Invalid export file.');
