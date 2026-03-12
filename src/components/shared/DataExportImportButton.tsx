@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Download, Upload, FileJson, FileCode, Loader2, Check, AlertTriangle, RefreshCw, SkipForward, Replace, FileDown, Info } from 'lucide-react';
+import { Download, Upload, FileJson, FileCode, Loader2, Check, AlertTriangle, RefreshCw, SkipForward, Replace, FileDown, Info, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
@@ -21,6 +21,7 @@ import {
   type ExportableEntity,
   EXPORT_PRESETS,
 } from '@/lib/dataExportImport';
+import { generateExampleXlsx, parseXlsxFile } from '@/lib/xlsxHelpers';
 
 interface DataExportImportButtonProps {
   preset: string;
@@ -191,7 +192,17 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
   const displayLabel = label || config?.label || preset;
 
   // ---- Download example file ----
-  const handleDownloadExample = () => {
+  const handleDownloadExample = (format: 'json' | 'xlsx' = 'json') => {
+    if (format === 'xlsx') {
+      try {
+        const blob = generateExampleXlsx(preset);
+        downloadBlob(blob, `lifeos-${preset}-example.xlsx`);
+        toast.success('Example Excel file downloaded! Edit it and import.');
+      } catch (err: any) {
+        toast.error(`Failed to generate example: ${err.message}`);
+      }
+      return;
+    }
     const example = generateExampleFile(preset);
     const blob = new Blob([JSON.stringify(example, null, 2)], { type: 'application/json' });
     downloadBlob(blob, `lifeos-${preset}-example.json`);
@@ -249,8 +260,8 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (!file.name.endsWith('.json') && !file.name.endsWith('.xml')) {
-      toast.error('Please select a JSON or XML file');
+    if (!file.name.endsWith('.json') && !file.name.endsWith('.xml') && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast.error('Please select a JSON, XML, or Excel (.xlsx) file');
       return;
     }
 
@@ -259,8 +270,9 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
     setImportEntity('Parsing file...');
 
     try {
-      // Parse file once, reuse payload throughout
-      const payload = await parseImportFile(file);
+      // Parse file - handle xlsx separately
+      const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+      const payload = isXlsx ? await parseXlsxFile(file, preset) : await parseImportFile(file);
 
       if (!payload?.data || !payload?.exportType) {
         throw new Error('Invalid export file.');
@@ -360,6 +372,10 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
               <FileCode className="h-4 w-4 mr-2" />
               Export as XML
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openCategoryPicker('xlsx')}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Export as Excel (.xlsx)
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -372,13 +388,27 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
           {importing ? 'Importing...' : `Import ${displayLabel}`}
         </Button>
 
-        <Button variant="ghost" size="sm" onClick={handleDownloadExample} title="Download example import file">
-          <FileDown className="h-4 w-4 mr-2" />
-          Example File
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" title="Download example import file">
+              <FileDown className="h-4 w-4 mr-2" />
+              Example File
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleDownloadExample('json')}>
+              <FileJson className="h-4 w-4 mr-2" />
+              Example JSON
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleDownloadExample('xlsx')}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Example Excel (.xlsx)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      <input ref={fileInputRef} type="file" accept=".json,.xml" className="hidden" onChange={handleFileChange} />
+      <input ref={fileInputRef} type="file" accept=".json,.xml,.xlsx,.xls" className="hidden" onChange={handleFileChange} />
 
       {/* Export Category Picker */}
       <Dialog open={showCategoryPicker} onOpenChange={setShowCategoryPicker}>
