@@ -8,7 +8,7 @@ export type ExportableEntity =
   | 'projects' | 'project_milestones'
   | 'profiles' | 'user_roles';
 
-export type ExportFormat = 'json' | 'xml';
+export type ExportFormat = 'json' | 'xml' | 'xlsx';
 
 interface ExportConfig {
   entities: ExportableEntity[];
