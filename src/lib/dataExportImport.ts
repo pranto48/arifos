@@ -155,6 +155,9 @@ export async function exportData(
   if (format === 'json') {
     const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
     return { blob, filename: `lifeos-${preset}-${dateStr}.json` };
+  } else if (format === 'xlsx') {
+    const blob = exportToXlsx(result, preset);
+    return { blob, filename: `lifeos-${preset}-${dateStr}.xlsx` };
   } else {
     const xml = jsonToXml(exportPayload, 'LifeOSExport');
     const blob = new Blob([xml], { type: 'application/xml' });
