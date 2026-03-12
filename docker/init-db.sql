@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS public.support_users (
     is_active BOOLEAN DEFAULT true,
     extension_number VARCHAR(50),
     extension_password VARCHAR(255),
-    ip_address INET,
+    ip_address TEXT,
     device_info TEXT,
     device_assign_date DATE,
     device_handover_date DATE,
@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS public.device_inventory (
     category_id UUID REFERENCES public.device_categories(id) ON DELETE SET NULL,
     unit_id UUID REFERENCES public.support_units(id) ON DELETE SET NULL,
     support_user_id UUID REFERENCES public.support_users(id) ON DELETE SET NULL,
+    supplier_id UUID,
     device_name VARCHAR(255) NOT NULL,
     device_number VARCHAR(100),
     serial_number VARCHAR(255),
@@ -138,6 +139,7 @@ CREATE TABLE IF NOT EXISTS public.device_inventory (
     status VARCHAR(50) DEFAULT 'available',
     notes TEXT,
     -- Hardware specifications
+    processor_info VARCHAR(255),
     ram_info VARCHAR(255),
     storage_info VARCHAR(255),
     has_ups BOOLEAN DEFAULT false,
@@ -149,6 +151,9 @@ CREATE TABLE IF NOT EXISTS public.device_inventory (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add FK for supplier_id after device_suppliers table is created
+-- (deferred via ALTER TABLE below)
 
 -- Device Transfer History
 CREATE TABLE IF NOT EXISTS public.device_transfer_history (
@@ -199,6 +204,23 @@ CREATE INDEX IF NOT EXISTS idx_device_inventory_unit_id ON public.device_invento
 CREATE INDEX IF NOT EXISTS idx_device_inventory_support_user_id ON public.device_inventory(support_user_id);
 CREATE INDEX IF NOT EXISTS idx_device_inventory_status ON public.device_inventory(status);
 CREATE INDEX IF NOT EXISTS idx_device_inventory_supplier ON public.device_inventory(supplier_name);
+CREATE INDEX IF NOT EXISTS idx_device_inventory_supplier_id ON public.device_inventory(supplier_id);
+
+-- Add FK constraint for supplier_id now that device_suppliers exists
+DO $$
+BEGIN
+    ALTER TABLE public.device_inventory
+        ADD CONSTRAINT device_inventory_supplier_id_fkey
+        FOREIGN KEY (supplier_id) REFERENCES public.device_suppliers(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- Ensure ip_address on support_users is TEXT (not INET) for compatibility
+DO $$
+BEGIN
+    ALTER TABLE public.support_users ALTER COLUMN ip_address TYPE TEXT USING ip_address::TEXT;
+EXCEPTION WHEN others THEN NULL;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_support_users_department_id ON public.support_users(department_id);
 CREATE INDEX IF NOT EXISTS idx_support_departments_unit_id ON public.support_departments(unit_id);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON public.user_sessions(user_id);
@@ -218,10 +240,10 @@ DO $$
 DECLARE
     t text;
 BEGIN
-    FOR t IN 
-        SELECT table_name 
-        FROM information_schema.columns 
-        WHERE column_name = 'updated_at' 
+    FOR t IN
+        SELECT table_name
+        FROM information_schema.columns
+        WHERE column_name = 'updated_at'
         AND table_schema = 'public'
     LOOP
         EXECUTE format('
@@ -246,7 +268,7 @@ CREATE TABLE IF NOT EXISTS public.app_settings (
 );
 
 -- Insert default app settings (setup_complete=false so setup wizard or seedDefaultAdmin handles first run)
-INSERT INTO public.app_settings (id, setup_complete, db_type) 
+INSERT INTO public.app_settings (id, setup_complete, db_type)
 VALUES ('default', false, 'postgresql')
 ON CONFLICT (id) DO NOTHING;
 
