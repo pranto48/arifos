@@ -372,6 +372,10 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
               <FileCode className="h-4 w-4 mr-2" />
               Export as XML
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openCategoryPicker('xlsx')}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Export as Excel (.xlsx)
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -384,13 +388,27 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
           {importing ? 'Importing...' : `Import ${displayLabel}`}
         </Button>
 
-        <Button variant="ghost" size="sm" onClick={handleDownloadExample} title="Download example import file">
-          <FileDown className="h-4 w-4 mr-2" />
-          Example File
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" title="Download example import file">
+              <FileDown className="h-4 w-4 mr-2" />
+              Example File
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleDownloadExample('json')}>
+              <FileJson className="h-4 w-4 mr-2" />
+              Example JSON
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleDownloadExample('xlsx')}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Example Excel (.xlsx)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      <input ref={fileInputRef} type="file" accept=".json,.xml" className="hidden" onChange={handleFileChange} />
+      <input ref={fileInputRef} type="file" accept=".json,.xml,.xlsx,.xls" className="hidden" onChange={handleFileChange} />
 
       {/* Export Category Picker */}
       <Dialog open={showCategoryPicker} onOpenChange={setShowCategoryPicker}>
