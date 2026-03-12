@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Download, Upload, FileJson, FileCode, Loader2, Check, AlertTriangle, RefreshCw, SkipForward, Replace, FileDown, Info } from 'lucide-react';
+import { Download, Upload, FileJson, FileCode, Loader2, Check, AlertTriangle, RefreshCw, SkipForward, Replace, FileDown, Info, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
@@ -21,6 +21,7 @@ import {
   type ExportableEntity,
   EXPORT_PRESETS,
 } from '@/lib/dataExportImport';
+import { generateExampleXlsx, parseXlsxFile } from '@/lib/xlsxHelpers';
 
 interface DataExportImportButtonProps {
   preset: string;
