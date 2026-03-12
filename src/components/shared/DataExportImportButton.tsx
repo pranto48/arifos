@@ -260,8 +260,8 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (!file.name.endsWith('.json') && !file.name.endsWith('.xml')) {
-      toast.error('Please select a JSON or XML file');
+    if (!file.name.endsWith('.json') && !file.name.endsWith('.xml') && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast.error('Please select a JSON, XML, or Excel (.xlsx) file');
       return;
     }
 
