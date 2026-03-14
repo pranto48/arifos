@@ -50,13 +50,14 @@ serve(async (req) => {
     if (provider === "free" && dailyCount >= FREE_DAILY_LIMIT) {
       return new Response(
         JSON.stringify({
-          error: "Daily AI limit reached. Configure your own API key in Settings → AI to unlock unlimited usage.",
+          error:
+            "Daily AI limit reached. Configure your own API key in Settings → AI to unlock unlimited usage.",
           limit_reached: true,
         }),
         {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -80,7 +81,7 @@ serve(async (req) => {
         break;
       case "smart_suggestions":
         systemPrompt =
-          'You are a productivity coach. Based on user activity data, suggest 2-4 actionable items. Return as JSON array: [{title, description, action?, link?}]. link can be: tasks, goals, budget, notes, habits.';
+          "You are a productivity coach. Based on user activity data, suggest 2-4 actionable items. Return as JSON array: [{title, description, action?, link?}]. link can be: tasks, goals, budget, notes, habits.";
         userPrompt = `Activity summary:\n${JSON.stringify(context)}`;
         break;
       case "anomaly_detection":
@@ -107,103 +108,295 @@ Be thorough and precise with numbers and amounts.`;
         break;
 
       case "smart_categorize":
-        systemPrompt = "You are a task organization expert. Analyze the provided tasks and suggest optimal category assignments.";
+        systemPrompt =
+          "You are a task organization expert. Analyze the provided tasks and suggest optimal category assignments.";
         userPrompt = `Here are tasks that need categorization. Available categories: ${JSON.stringify(context.categories)}.\n\nTasks to categorize:\n${JSON.stringify(context.tasks)}`;
         useToolCalling = true;
-        tools = [{
-          type: "function",
-          function: {
-            name: "categorize_tasks",
-            description: "Assign categories to tasks based on their content",
-            parameters: {
-              type: "object",
-              properties: {
-                assignments: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      task_id: { type: "string" },
-                      category_id: { type: "string" },
-                      confidence: { type: "number", description: "0-1 confidence score" },
-                      reason: { type: "string" },
+        tools = [
+          {
+            type: "function",
+            function: {
+              name: "categorize_tasks",
+              description: "Assign categories to tasks based on their content",
+              parameters: {
+                type: "object",
+                properties: {
+                  assignments: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        task_id: { type: "string" },
+                        category_id: { type: "string" },
+                        confidence: {
+                          type: "number",
+                          description: "0-1 confidence score",
+                        },
+                        reason: { type: "string" },
+                      },
+                      required: ["task_id", "category_id", "confidence"],
+                      additionalProperties: false,
                     },
-                    required: ["task_id", "category_id", "confidence"],
-                    additionalProperties: false,
                   },
                 },
+                required: ["assignments"],
+                additionalProperties: false,
               },
-              required: ["assignments"],
-              additionalProperties: false,
             },
           },
-        }];
-        toolChoice = { type: "function", function: { name: "categorize_tasks" } };
+        ];
+        toolChoice = {
+          type: "function",
+          function: { name: "categorize_tasks" },
+        };
         break;
 
       case "predictive_insights":
         systemPrompt = `You are a predictive analytics expert. Analyze the user's historical data and provide actionable forecasts.`;
         userPrompt = `Analyze this data and provide predictions:\n${JSON.stringify(context)}`;
         useToolCalling = true;
-        tools = [{
-          type: "function",
-          function: {
-            name: "generate_predictions",
-            description: "Generate predictive insights from user data",
-            parameters: {
-              type: "object",
-              properties: {
-                predictions: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      title: { type: "string" },
-                      description: { type: "string" },
-                      category: { type: "string", enum: ["deadline", "budget", "productivity", "goal"] },
-                      confidence: { type: "number" },
-                      severity: { type: "string", enum: ["info", "warning", "critical"] },
-                      suggested_action: { type: "string" },
+        tools = [
+          {
+            type: "function",
+            function: {
+              name: "generate_predictions",
+              description: "Generate predictive insights from user data",
+              parameters: {
+                type: "object",
+                properties: {
+                  predictions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { type: "string" },
+                        description: { type: "string" },
+                        category: {
+                          type: "string",
+                          enum: ["deadline", "budget", "productivity", "goal"],
+                        },
+                        confidence: { type: "number" },
+                        severity: {
+                          type: "string",
+                          enum: ["info", "warning", "critical"],
+                        },
+                        suggested_action: { type: "string" },
+                      },
+                      required: [
+                        "title",
+                        "description",
+                        "category",
+                        "confidence",
+                        "severity",
+                      ],
+                      additionalProperties: false,
                     },
-                    required: ["title", "description", "category", "confidence", "severity"],
-                    additionalProperties: false,
                   },
                 },
+                required: ["predictions"],
+                additionalProperties: false,
               },
-              required: ["predictions"],
-              additionalProperties: false,
             },
           },
-        }];
-        toolChoice = { type: "function", function: { name: "generate_predictions" } };
+        ];
+        toolChoice = {
+          type: "function",
+          function: { name: "generate_predictions" },
+        };
         break;
 
       case "natural_language_task":
-        systemPrompt = "You are a task parsing assistant. Parse natural language into structured task data. Interpret relative dates based on today's date.";
+        systemPrompt =
+          "You are a task parsing assistant. Parse natural language into structured task data. Interpret relative dates based on today's date.";
         userPrompt = `Today is ${new Date().toISOString().split("T")[0]}. Parse this into a task:\n"${context.input}"\n\nAvailable categories: ${JSON.stringify(context.categories || [])}`;
         useToolCalling = true;
-        tools = [{
-          type: "function",
-          function: {
-            name: "create_task",
-            description: "Create a structured task from natural language",
-            parameters: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                description: { type: "string" },
-                priority: { type: "string", enum: ["low", "medium", "high", "urgent"] },
-                due_date: { type: "string", description: "ISO date string YYYY-MM-DD" },
-                category_name: { type: "string", description: "Best matching category name" },
-                is_recurring: { type: "boolean" },
-                recurring_pattern: { type: "string", enum: ["daily", "weekly", "biweekly", "monthly", "quarterly", "yearly"] },
+        tools = [
+          {
+            type: "function",
+            function: {
+              name: "create_task",
+              description: "Create a structured task from natural language",
+              parameters: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  description: { type: "string" },
+                  priority: {
+                    type: "string",
+                    enum: ["low", "medium", "high", "urgent"],
+                  },
+                  due_date: {
+                    type: "string",
+                    description: "ISO date string YYYY-MM-DD",
+                  },
+                  category_name: {
+                    type: "string",
+                    description: "Best matching category name",
+                  },
+                  is_recurring: { type: "boolean" },
+                  recurring_pattern: {
+                    type: "string",
+                    enum: [
+                      "daily",
+                      "weekly",
+                      "biweekly",
+                      "monthly",
+                      "quarterly",
+                      "yearly",
+                    ],
+                  },
+                },
+                required: ["title", "priority"],
+                additionalProperties: false,
               },
-              required: ["title", "priority"],
-              additionalProperties: false,
             },
           },
-        }];
+        ];
         toolChoice = { type: "function", function: { name: "create_task" } };
+        break;
+
+      case "daily_planner":
+        systemPrompt =
+          "You are an expert daily planning assistant. Build a realistic, focused day plan from the user's tasks, calendar, habits, and priorities. Balance urgency, energy, and workload. Return structured JSON only.";
+        userPrompt = `Today is ${new Date().toISOString().split("T")[0]}. Create a daily plan from this context:\n${JSON.stringify(context)}`;
+        useToolCalling = true;
+        tools = [
+          {
+            type: "function",
+            function: {
+              name: "generate_daily_plan",
+              description:
+                "Generate a practical daily plan with focus blocks, top priorities, and quick wins",
+              parameters: {
+                type: "object",
+                properties: {
+                  summary: { type: "string" },
+                  focus: { type: "string" },
+                  top_priorities: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  quick_wins: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  schedule_blocks: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { type: "string" },
+                        time: { type: "string" },
+                        reason: { type: "string" },
+                      },
+                      required: ["title", "time"],
+                      additionalProperties: false,
+                    },
+                  },
+                  risks: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                },
+                required: ["summary", "top_priorities", "schedule_blocks"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ];
+        toolChoice = {
+          type: "function",
+          function: { name: "generate_daily_plan" },
+        };
+        break;
+
+      case "task_breakdown":
+        systemPrompt =
+          "You are a project execution assistant. Break a task into clear, actionable subtasks that are practical and logically ordered. Keep them concise and implementation-ready. Return structured JSON only.";
+        userPrompt = `Break down this task into subtasks:\n${JSON.stringify(context)}`;
+        useToolCalling = true;
+        tools = [
+          {
+            type: "function",
+            function: {
+              name: "break_down_task",
+              description: "Break a task into actionable subtasks",
+              parameters: {
+                type: "object",
+                properties: {
+                  overview: { type: "string" },
+                  subtasks: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { type: "string" },
+                        reason: { type: "string" },
+                        priority: {
+                          type: "string",
+                          enum: ["low", "medium", "high", "urgent"],
+                        },
+                      },
+                      required: ["title"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["subtasks"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ];
+        toolChoice = {
+          type: "function",
+          function: { name: "break_down_task" },
+        };
+        break;
+
+      case "note_to_tasks":
+        systemPrompt =
+          "You are a productivity assistant that extracts actionable tasks from notes. Convert note content into concrete tasks only when action is implied. Avoid vague or duplicate tasks. Return structured JSON only.";
+        userPrompt = `Extract actionable tasks from this note:\n${JSON.stringify(context)}`;
+        useToolCalling = true;
+        tools = [
+          {
+            type: "function",
+            function: {
+              name: "extract_note_tasks",
+              description: "Extract structured actionable tasks from a note",
+              parameters: {
+                type: "object",
+                properties: {
+                  summary: { type: "string" },
+                  tasks: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { type: "string" },
+                        description: { type: "string" },
+                        priority: {
+                          type: "string",
+                          enum: ["low", "medium", "high", "urgent"],
+                        },
+                        category_name: { type: "string" },
+                      },
+                      required: ["title"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["tasks"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ];
+        toolChoice = {
+          type: "function",
+          function: { name: "extract_note_tasks" },
+        };
         break;
 
       default:
@@ -212,7 +405,7 @@ Be thorough and precise with numbers and amounts.`;
           {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          },
         );
     }
 
@@ -223,12 +416,14 @@ Be thorough and precise with numbers and amounts.`;
 
     if (provider === "free" || !aiConfig?.api_key_encrypted) {
       const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-      if (!lovableKey)
-        throw new Error("LOVABLE_API_KEY is not configured");
+      if (!lovableKey) throw new Error("LOVABLE_API_KEY is not configured");
       apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
       apiKey = lovableKey;
       // Use flash for most tasks, pro for OCR (needs vision)
-      model = type === "ocr_document" ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite";
+      model =
+        type === "ocr_document"
+          ? "google/gemini-2.5-flash"
+          : "google/gemini-2.5-flash-lite";
     } else if (provider === "openrouter") {
       apiUrl = "https://openrouter.ai/api/v1/chat/completions";
       apiKey = aiConfig.api_key_encrypted;
@@ -246,9 +441,7 @@ Be thorough and precise with numbers and amounts.`;
     }
 
     // Build messages - support multimodal for OCR
-    const messages: any[] = [
-      { role: "system", content: systemPrompt },
-    ];
+    const messages: any[] = [{ role: "system", content: systemPrompt }];
 
     if (type === "ocr_document" && context.imageBase64) {
       messages.push({
@@ -257,7 +450,9 @@ Be thorough and precise with numbers and amounts.`;
           { type: "text", text: userPrompt },
           {
             type: "image_url",
-            image_url: { url: `data:${context.mimeType || "image/jpeg"};base64,${context.imageBase64}` },
+            image_url: {
+              url: `data:${context.mimeType || "image/jpeg"};base64,${context.imageBase64}`,
+            },
           },
         ],
       });
@@ -268,8 +463,13 @@ Be thorough and precise with numbers and amounts.`;
     const requestBody: any = {
       model,
       messages,
-      max_tokens: type === "ocr_document" ? 2000 : 800,
-      temperature: 0.3,
+      max_tokens:
+        type === "ocr_document"
+          ? 2000
+          : ["daily_planner", "task_breakdown", "note_to_tasks"].includes(type)
+            ? 1200
+            : 800,
+      temperature: type === "daily_planner" ? 0.4 : 0.3,
     };
 
     if (useToolCalling) {
@@ -289,14 +489,22 @@ Be thorough and precise with numbers and amounts.`;
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: "AI rate limit exceeded. Please try again later." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({
+            error: "AI rate limit exceeded. Please try again later.",
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: "AI credits exhausted. Please add funds." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
       const errText = await response.text();
@@ -324,7 +532,7 @@ Be thorough and precise with numbers and amounts.`;
     // Update usage count
     const serviceClient = createClient(
       supabaseUrl,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     if (aiConfig) {
@@ -348,11 +556,12 @@ Be thorough and precise with numbers and amounts.`;
       JSON.stringify({
         content,
         provider,
-        remaining: provider === "free" ? FREE_DAILY_LIMIT - dailyCount - 1 : null,
+        remaining:
+          provider === "free" ? FREE_DAILY_LIMIT - dailyCount - 1 : null,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (e) {
     console.error("ai-assist error:", e);
@@ -363,7 +572,7 @@ Be thorough and precise with numbers and amounts.`;
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   }
 });
