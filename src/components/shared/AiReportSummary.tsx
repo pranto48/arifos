@@ -1,10 +1,14 @@
-import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { useAiAssist } from '@/hooks/useAiAssist';
-import { AiIndicator } from './AiIndicator';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useState } from "react";
+import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useAiAssist } from "@/hooks/useAiAssist";
+import { AiIndicator } from "./AiIndicator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AiReportSummaryProps {
   title: string;
@@ -13,32 +17,43 @@ interface AiReportSummaryProps {
   summaryCards?: { label: string; value: string | number }[];
 }
 
-export function AiReportSummary({ title, headers, rows, summaryCards }: AiReportSummaryProps) {
-  const { callAi, loading, config, isAvailable } = useAiAssist();
+export function AiReportSummary({
+  title,
+  headers,
+  rows,
+  summaryCards,
+}: AiReportSummaryProps) {
+  const { callAi, loading, config, getRemainingCalls, isAvailable } =
+    useAiAssist();
   const [summary, setSummary] = useState<string | null>(null);
 
   const handleGenerate = async () => {
-    const dataPreview = rows.slice(0, 20).map(row =>
-      headers.map((h, i) => `${h}: ${row[i]}`).join(', ')
-    ).join('\n');
+    const dataPreview = rows
+      .slice(0, 20)
+      .map((row) => headers.map((h, i) => `${h}: ${row[i]}`).join(", "))
+      .join("\n");
 
     const summaryContext = summaryCards
-      ? '\nSummary: ' + summaryCards.map(c => `${c.label}: ${c.value}`).join(', ')
-      : '';
+      ? "\nSummary: " +
+        summaryCards.map((c) => `${c.label}: ${c.value}`).join(", ")
+      : "";
 
-    const result = await callAi('report_summary', {
+    const result = await callAi("report_summary", {
       title,
       data: `${dataPreview}${summaryContext}\nTotal rows: ${rows.length}`,
     });
 
     if (result?.content) {
       // Clean markdown artifacts from AI response
-      const raw = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+      const raw =
+        typeof result.content === "string"
+          ? result.content
+          : JSON.stringify(result.content);
       const cleaned = raw
-        .replace(/```[a-z]*\s*/gi, '')
-        .replace(/```\s*/g, '')
-        .replace(/\*\*/g, '')
-        .replace(/^#+\s*/gm, '')
+        .replace(/```[a-z]*\s*/gi, "")
+        .replace(/```\s*/g, "")
+        .replace(/\*\*/g, "")
+        .replace(/^#+\s*/gm, "")
         .trim();
       setSummary(cleaned);
     }
@@ -54,7 +69,7 @@ export function AiReportSummary({ title, headers, rows, summaryCards }: AiReport
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -65,18 +80,20 @@ export function AiReportSummary({ title, headers, rows, summaryCards }: AiReport
               className="gap-1.5"
             >
               <Sparkles className="h-3.5 w-3.5" />
-              {loading ? 'Generating...' : 'AI Summary'}
+              {loading ? "Generating..." : "AI Summary"}
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Generate AI-powered insights from this report</TooltipContent>
+          <TooltipContent>
+            Generate AI-powered insights from this report
+          </TooltipContent>
         </Tooltip>
-        {(loading || summary) && (
-          <AiIndicator
-            variant="inline"
-            loading={loading}
-            provider={config?.provider}
-          />
-        )}
+        <AiIndicator
+          variant="inline"
+          loading={loading}
+          provider={config?.provider}
+          remaining={getRemainingCalls()}
+          unavailable={!isAvailable}
+        />
       </div>
 
       {summary && (
@@ -84,7 +101,9 @@ export function AiReportSummary({ title, headers, rows, summaryCards }: AiReport
           <CardContent className="p-3">
             <div className="flex items-start gap-2">
               <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-              <div className="text-sm whitespace-pre-line leading-relaxed">{summary}</div>
+              <div className="text-sm whitespace-pre-line leading-relaxed">
+                {summary}
+              </div>
             </div>
           </CardContent>
         </Card>
