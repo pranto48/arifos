@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { DashboardCustomizer } from '@/components/dashboard/DashboardCustomizer';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AiDailyPlanner } from '@/components/dashboard/AiDailyPlanner';
 
 // Lazy load heavy chart components
 const UpcomingFamilyEvents = lazy(() => import('@/components/dashboard/UpcomingFamilyEvents').then(m => ({ default: m.UpcomingFamilyEvents })));
@@ -344,6 +345,9 @@ export default function Dashboard() {
           </motion.div>
         ))}
       </div>
+
+      {/* AI Daily Planner */}
+      <AiDailyPlanner />
 
       {/* Mode-specific counts */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
