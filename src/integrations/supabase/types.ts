@@ -50,6 +50,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          input_summary: string | null
+          result_summary: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          input_summary?: string | null
+          result_summary?: string | null
+          source: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          input_summary?: string | null
+          result_summary?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_notifications: {
         Row: {
           created_at: string

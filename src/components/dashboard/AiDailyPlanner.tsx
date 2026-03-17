@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardMode } from '@/contexts/DashboardModeContext';
+import { logAiUsage } from '@/lib/aiUsageLogger';
 
 interface TaskRow {
   id: string;
@@ -73,16 +74,25 @@ export function AiDailyPlanner() {
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const loadTasks = async () => {
+  const loadTasks = async (trigger: 'auto' | 'manual' = 'auto') => {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('tasks')
       .select('id,title,due_date,priority,status')
       .eq('user_id', user.id)
       .eq('task_type', mode)
       .neq('status', 'completed')
       .limit(40);
+
+    if (trigger === 'manual') {
+      await logAiUsage({
+        userId: user.id,
+        actionType: 'planner_refresh',
+        inputSummary: `mode:${mode}`,
+        resultSummary: error ? 'failed_to_refresh_plan' : `tasks_loaded:${(data || []).length}`,
+      });
+    }
 
     setTasks((data as TaskRow[]) || []);
     setLoading(false);
@@ -130,7 +140,7 @@ export function AiDailyPlanner() {
           </div>
         )}
 
-        <Button size="sm" variant="outline" onClick={loadTasks} className="w-full">
+        <Button size="sm" variant="outline" onClick={() => loadTasks('manual')} className="w-full">
           <Sparkles className="h-3.5 w-3.5 mr-1" /> AI Assist: Refresh Plan
         </Button>
       </CardContent>
