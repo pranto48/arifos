@@ -90,6 +90,33 @@ const FOREIGN_KEY_REMAP: Record<string, Record<string, string>> = {
   },
 };
 
+export interface ImportPreviewWarning {
+  entity: string;
+  rowIndex: number;
+  message: string;
+}
+
+export interface ImportPreviewRelationRemap {
+  entity: string;
+  fkColumn: string;
+  targetEntity: string;
+  count: number;
+}
+
+export interface ImportPreviewSummary {
+  fixedPayload: any;
+  idAutoConverted: number;
+  relationshipsRemapped: number;
+  relationRemapDetails: ImportPreviewRelationRemap[];
+  warnings: ImportPreviewWarning[];
+  schemaSummary: {
+    entitiesDetected: number;
+    rowsDetected: number;
+    missingEntities: string[];
+    invalidEntityShapes: string[];
+  };
+}
+
 function buildIdRemapMap(entities: ExportableEntity[], data: Record<string, any>): Record<string, Map<string, string>> {
   const maps: Record<string, Map<string, string>> = {};
 
@@ -132,6 +159,124 @@ function applyIdAndFkRemap(row: any, entity: string, idRemapMap: Record<string, 
   }
 
   return next;
+}
+
+export function buildImportPreview(payload: any, userId: string): ImportPreviewSummary {
+  if (!payload?.data || !payload?.exportType) {
+    throw new Error('Invalid export file. Missing "data" or "exportType" field.');
+  }
+
+  const preset = EXPORT_PRESETS[payload.exportType];
+  if (!preset) {
+    throw new Error(`Unknown export type: ${payload.exportType}`);
+  }
+
+  const idRemapMap = buildIdRemapMap(preset.entities, payload.data);
+  const fixedData: Record<string, any[]> = {};
+  const warnings: ImportPreviewWarning[] = [];
+  const relationRemapCounter = new Map<string, ImportPreviewRelationRemap>();
+
+  let rowsDetected = 0;
+  let entitiesDetected = 0;
+  let idAutoConverted = 0;
+  for (const remap of Object.values(idRemapMap)) {
+    idAutoConverted += remap.size;
+  }
+
+  const missingEntities: string[] = [];
+  const invalidEntityShapes: string[] = [];
+
+  for (const entity of preset.entities) {
+    const rows = payload.data[entity];
+    if (rows === undefined) {
+      missingEntities.push(entity);
+      fixedData[entity] = [];
+      continue;
+    }
+
+    if (!Array.isArray(rows)) {
+      invalidEntityShapes.push(entity);
+      warnings.push({
+        entity,
+        rowIndex: -1,
+        message: `Expected an array for ${entity}, received ${typeof rows}`,
+      });
+      fixedData[entity] = [];
+      continue;
+    }
+
+    entitiesDetected++;
+    rowsDetected += rows.length;
+
+    fixedData[entity] = rows.map((row: any, rowIndex: number) => {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) {
+        warnings.push({
+          entity,
+          rowIndex,
+          message: 'Row is not an object and will be imported as-is.',
+        });
+        return row;
+      }
+
+      const { search_vector, ...rest } = row;
+      const remapped = applyIdAndFkRemap(rest, entity, idRemapMap);
+      if (remapped.user_id) {
+        remapped.user_id = userId;
+      }
+
+      if (typeof row.id !== 'string' || row.id.trim() === '') {
+        warnings.push({
+          entity,
+          rowIndex,
+          message: 'Missing or invalid "id" value.',
+        });
+      }
+
+      const fkMap = FOREIGN_KEY_REMAP[entity] || {};
+      for (const [fkColumn, targetEntity] of Object.entries(fkMap)) {
+        const originalValue = row[fkColumn];
+        const remappedValue = remapped[fkColumn];
+        if (typeof originalValue === 'string' && typeof remappedValue === 'string' && originalValue !== remappedValue) {
+          const key = `${entity}:${fkColumn}:${targetEntity}`;
+          const existing = relationRemapCounter.get(key);
+          if (existing) {
+            existing.count += 1;
+          } else {
+            relationRemapCounter.set(key, {
+              entity,
+              fkColumn,
+              targetEntity,
+              count: 1,
+            });
+          }
+        }
+      }
+
+      return remapped;
+    });
+  }
+
+  const fixedPayload = {
+    ...payload,
+    data: fixedData,
+  };
+
+  const relationRemapDetails = Array.from(relationRemapCounter.values()).sort((a, b) => b.count - a.count);
+  const relationshipsRemapped = relationRemapDetails.reduce((sum, item) => sum + item.count, 0);
+
+  return {
+    fixedPayload,
+    idAutoConverted,
+    relationshipsRemapped,
+    relationRemapDetails,
+    warnings,
+    schemaSummary: {
+      entitiesDetected,
+      rowsDetected,
+      missingEntities,
+      invalidEntityShapes,
+    },
+  };
 }
 
 export async function fetchEntityData(entity: ExportableEntity, userId: string): Promise<any[]> {
@@ -297,24 +442,17 @@ export async function importData(
   conflictResolution: 'overwrite' | 'skip' = 'overwrite',
   existingDataMap?: Record<string, any[]>,
 ): Promise<{ imported: number; errors: string[] }> {
-  if (!payload?.data || !payload?.exportType) {
-    throw new Error('Invalid export file. Missing "data" or "exportType" field.');
-  }
-
-  const preset = EXPORT_PRESETS[payload.exportType];
-  if (!preset) {
-    throw new Error(`Unknown export type: ${payload.exportType}`);
-  }
+  const preview = buildImportPreview(payload, userId);
+  const preset = EXPORT_PRESETS[preview.fixedPayload.exportType];
 
   let imported = 0;
   const errors: string[] = [];
   const isShared = (entity: string) => SHARED_TABLES.has(entity as ExportableEntity);
   const total = preset.entities.length;
-  const idRemapMap = buildIdRemapMap(preset.entities, payload.data);
 
   for (let idx = 0; idx < total; idx++) {
     const entity = preset.entities[idx];
-    const rows = payload.data[entity];
+    const rows = preview.fixedPayload.data[entity];
     if (!Array.isArray(rows) || rows.length === 0) {
       onPct?.(((idx + 1) / total) * 100);
       continue;
@@ -340,14 +478,7 @@ export async function importData(
       continue;
     }
 
-    const cleaned = filteredRows.map((row: any) => {
-      const { search_vector, ...rest } = row;
-      const remapped = applyIdAndFkRemap(rest, entity, idRemapMap);
-      if (remapped.user_id) {
-        remapped.user_id = userId;
-      }
-      return remapped;
-    });
+    const cleaned = filteredRows;
 
     const onConflictKey = getOnConflictKey(entity);
     const BATCH_SIZE = isSelfHosted() ? 50 : 200;
