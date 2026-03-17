@@ -227,6 +227,13 @@ const bottomNavItems: { titleKey: TranslationKey; url: string; icon: any }[] = [
 
 const STORAGE_KEY = "sidebar-groups-state";
 
+const brandBadgeClass = "w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center";
+const avatarBadgeClass = "w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0";
+const expandedNavItemClass = "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all relative";
+const collapsedNavItemClass = "flex items-center justify-center p-2.5 rounded-lg transition-all relative";
+const activeNavItemClass = "bg-sidebar-accent text-sidebar-primary";
+const inactiveNavItemClass = "text-sidebar-foreground hover:bg-sidebar-accent/50";
+
 export function AppSidebar() {
   const { signOut, user } = useAuth();
   const { t, language } = useLanguage();
@@ -290,7 +297,7 @@ export function AppSidebar() {
               exit={{ opacity: 0 }}
               className="flex items-center gap-3"
             >
-              <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+              <div className={brandBadgeClass}>
                 <span className="text-primary font-bold text-sm">L</span>
               </div>
               <span className="font-semibold text-sidebar-foreground">
@@ -328,10 +335,10 @@ export function AppSidebar() {
                     key={item.url}
                     to={item.url}
                     className={cn(
-                      "flex items-center justify-center p-2.5 rounded-lg transition-all relative",
+                      collapsedNavItemClass,
                       isActive(item.url)
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+                        ? activeNavItemClass
+                        : inactiveNavItemClass,
                     )}
                     title={t(item.titleKey)}
                   >
@@ -376,10 +383,10 @@ export function AppSidebar() {
                     key={item.url}
                     to={item.url}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all relative",
+                      expandedNavItemClass,
                       isActive(item.url)
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+                        ? activeNavItemClass
+                        : inactiveNavItemClass,
                     )}
                   >
                     <item.icon
@@ -418,8 +425,8 @@ export function AppSidebar() {
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
               isActive(item.url)
-                ? "bg-sidebar-accent text-sidebar-primary"
-                : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+                ? activeNavItemClass
+                : inactiveNavItemClass,
               collapsed && "justify-center",
             )}
           >
@@ -452,7 +459,7 @@ export function AppSidebar() {
             collapsed && "justify-center",
           )}
         >
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+          <div className={avatarBadgeClass}>
             <span className="text-primary text-xs font-semibold">
               {user?.email?.charAt(0).toUpperCase() || "U"}
             </span>
