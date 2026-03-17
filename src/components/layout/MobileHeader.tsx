@@ -14,6 +14,11 @@ import { QuickAddButton } from "@/components/quick-add/QuickAddButton";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AiStatusWidget } from "./AiStatusWidget";
 import { AiQuickActionBar } from '@/components/ai/AiQuickActionBar';
+import {
+  getFrequentQuickActionIds,
+  recordQuickActionUsage,
+  useQuickActions,
+} from '@/components/ai/quickActions';
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -26,6 +31,29 @@ export function MobileHeader() {
   const { signOut, user } = useAuth();
   const { t } = useLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [topQuickActionIds, setTopQuickActionIds] = useState<string[]>([]);
+  const { actionById } = useQuickActions();
+
+  useEffect(() => {
+    setTopQuickActionIds(getFrequentQuickActionIds(3));
+  }, []);
+
+  const topQuickActions = useMemo(
+    () =>
+      topQuickActionIds
+        .map((id) => actionById[id])
+        .filter((action): action is NonNullable<typeof action> => Boolean(action)),
+    [actionById, topQuickActionIds],
+  );
+
+  const handleTopQuickAction = async (actionId: string) => {
+    const action = actionById[actionId];
+    if (!action) return;
+
+    await action.run();
+    recordQuickActionUsage(actionId);
+    setTopQuickActionIds(getFrequentQuickActionIds(3));
+  };
 
   return (
     <header className={mobileHeaderClass}>
@@ -39,7 +67,7 @@ export function MobileHeader() {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <AiStatusWidget collapsed />
           <AiQuickActionBar compact />
           <DashboardModeSwitcher />
@@ -105,8 +133,24 @@ export function MobileHeader() {
       </div>
 
       {/* Search Bar */}
-      <div className="px-4 pb-3">
+      <div className="px-4 pb-3 space-y-2">
         <GlobalSearch />
+        {topQuickActions.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {topQuickActions.map((action) => (
+              <Button
+                key={action.id}
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="h-7 px-2.5 text-xs"
+                onClick={() => handleTopQuickAction(action.id)}
+              >
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
     </header>
   );

@@ -30,6 +30,7 @@ import { TaskAssignmentHistory } from '@/components/tasks/TaskAssignmentHistory'
 import { TaskFollowUp } from '@/components/tasks/TaskFollowUp';
 import { TaskKanbanBoard } from '@/components/tasks/TaskKanbanBoard';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
+import { logAiUsage } from '@/lib/aiUsageLogger';
 import { ReportActions } from '@/components/shared/ReportActions';
 import { FieldVisibility } from '@/components/shared/FieldVisibility';
 import {
@@ -80,6 +81,13 @@ interface SupportUserInfo {
   department_name: string;
   unit_name: string;
 }
+
+
+const triggerHaptic = (pattern: number | number[] = 10) => {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
+};
 
 interface SortableTaskProps {
   task: Task;
@@ -447,12 +455,14 @@ export default function Tasks() {
   };
 
   const toggleTask = async (id: string, completed: boolean) => {
+    triggerHaptic(completed ? 14 : 8);
     await supabase.from('tasks').update({
       status: completed ? 'completed' : 'todo',
       completed_at: completed ? new Date().toISOString() : null,
     }).eq('id', id);
     // Update local state instead of full reload
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: completed ? 'completed' : 'todo' } : t));
+    toast.success(completed ? 'Task marked complete' : 'Task marked active');
   };
 
   const handleEdit = (task: Task) => {
@@ -573,6 +583,12 @@ export default function Tasks() {
 
     if (newItems.length === 0) {
       toast.info('Checklist already contains these breakdown steps');
+      await logAiUsage({
+        userId: user.id,
+        actionType: 'task_breakdown',
+        inputSummary: `task:${task.title}`,
+        resultSummary: 'no_new_checklist_items',
+      });
       return;
     }
 
@@ -587,10 +603,22 @@ export default function Tasks() {
     const { error } = await supabase.from('task_checklists').insert(rows as any);
     if (error) {
       toast.error('Failed to auto-generate checklist');
+      await logAiUsage({
+        userId: user.id,
+        actionType: 'task_breakdown',
+        inputSummary: `task:${task.title}`,
+        resultSummary: 'failed_to_insert_checklist_items',
+      });
       return;
     }
 
     toast.success(`AI Assist added ${newItems.length} subtask${newItems.length > 1 ? 's' : ''}`);
+    await logAiUsage({
+      userId: user.id,
+      actionType: 'task_breakdown',
+      inputSummary: `task:${task.title}`,
+      resultSummary: `created_subtasks:${newItems.length}`,
+    });
     loadData(0, true);
   };
 
