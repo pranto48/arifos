@@ -70,6 +70,17 @@ export default function Dashboard() {
     if (user) loadDashboardData();
   }, [user, mode]);
 
+
+  useEffect(() => {
+    const handler = () => {
+      loadDashboardData();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('ai-plan-my-day', handler);
+    return () => window.removeEventListener('ai-plan-my-day', handler);
+  }, [user, mode]);
+
   const loadDashboardData = async () => {
     const today = new Date().toISOString().split('T')[0];
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
