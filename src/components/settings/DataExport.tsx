@@ -77,6 +77,7 @@ const USER_SCOPED_TABLES = [
   "task_checklists",
   "task_follow_up_notes",
   "app_notifications",
+  "ai_usage_log",
   "family_member_connections",
   "family_documents",
 ];
@@ -133,6 +134,7 @@ const LEGACY_KEY_MAP: Record<string, string> = {
   habitCompletions: "habit_completions",
   goalMilestones: "goal_milestones",
   projectMilestones: "project_milestones",
+  aiUsageLog: "ai_usage_log",
 };
 
 // Delete order: children before parents
@@ -153,6 +155,7 @@ const DELETE_ORDER = [
   "family_documents",
   "family_events",
   "app_notifications",
+  "ai_usage_log",
   "budgets",
   "transactions",
   "tasks",
@@ -418,6 +421,7 @@ export function DataExport() {
       habitCompletions: tables.habit_completions || [],
       goalMilestones: tables.goal_milestones || [],
       projectMilestones: tables.project_milestones || [],
+      aiUsageLog: tables.ai_usage_log || [],
     };
   };
 
@@ -763,6 +767,7 @@ export function DataExport() {
         !data.tasks &&
         !data.notes &&
         !data.goals &&
+        !data.aiUsageLog &&
         !data.tables
       ) {
         throw new Error(
@@ -873,6 +878,7 @@ export function DataExport() {
         !data.tasks &&
         !data.notes &&
         !data.goals &&
+        !data.aiUsageLog &&
         !data.tables
       ) {
         throw new Error(

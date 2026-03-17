@@ -513,3 +513,108 @@ annotations:
 ## License
 
 MIT License - see LICENSE file for details
+
+## Docker First-Run Operations
+
+### 1) Copy environment file
+
+```bash
+cp .env.example .env
+```
+
+Required secrets before production use:
+- `POSTGRES_PASSWORD`
+- `JWT_SECRET`
+- `ADMIN_PASSWORD` (if pre-seeding admin)
+
+### 2) Start services (dev/prod profiles)
+
+```bash
+# Production-style run (default)
+docker compose --profile prod up -d
+
+# Development-style run
+# (same stack, faster health probing, foreground logs)
+docker compose --profile dev up --build
+```
+
+### 3) Open URL
+
+- App URL: `http://localhost:3377`
+- If you changed `APP_PORT`, use `http://localhost:<APP_PORT>`.
+
+### 4) Admin bootstrap
+
+Choose one:
+- Wizard flow: complete admin creation in UI on first load.
+- Headless flow: set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env` before first boot.
+
+### 5) Backup strategy
+
+Recommended:
+
+```bash
+# Logical backup
+mkdir -p backups
+
+docker compose exec -T postgres \
+  pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  > "backups/lifeos-$(date +%F-%H%M%S).sql"
+
+# Restore example
+cat backups/lifeos-YYYY-MM-DD-HHMMSS.sql | docker compose exec -T postgres \
+  psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+```
+
+For disaster recovery, combine:
+- Scheduled `pg_dump` snapshots (daily/hourly based on RPO).
+- Off-site encrypted backup copy (object storage or secure NAS).
+- Periodic restore drills in a staging environment.
+
+## Troubleshooting (Self-Hosted Docker)
+
+### Auth issues (login fails, invalid token)
+
+- Verify backend secret consistency (`JWT_SECRET`) and restart services:
+  ```bash
+  docker compose down
+  docker compose up -d
+  ```
+- If users were created with a previous JWT secret, rotate tokens by logging out/in.
+- Confirm backend health:
+  ```bash
+  docker compose ps
+  docker compose logs backend --tail=200
+  ```
+
+### Import problems (UUID mapping conflicts)
+
+Symptoms: duplicate key, foreign-key mismatch, or missing references after import.
+
+- Validate source/export keeps original UUIDs for parent+child records.
+- Import parent tables first, then dependent tables.
+- If remapping UUIDs, maintain a temporary old→new UUID map and rewrite foreign keys before insert.
+- Check failing constraints directly:
+  ```bash
+  docker compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\d"
+  docker compose logs backend --tail=200
+  ```
+
+### Database connectivity errors
+
+- Ensure `postgres` is healthy:
+  ```bash
+  docker compose ps
+  docker compose logs postgres --tail=200
+  ```
+- Confirm `.env` values align across services (`DB_HOST`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`).
+- From backend container, test connectivity path:
+  ```bash
+  docker compose exec backend sh -lc 'nc -zv postgres 5432'
+  ```
+- If credentials changed after initial boot, recreate stack volumes only when safe:
+  ```bash
+  docker compose down
+  docker volume ls | grep lifeos
+  # WARNING: deleting DB volume removes data
+  ```

@@ -24,6 +24,7 @@ import { useDashboardMode } from '@/contexts/DashboardModeContext';
 import { useModuleConfig } from '@/hooks/useModuleConfig';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { TranslationKey } from '@/translations';
 
@@ -72,6 +73,14 @@ export function MobileBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { toast } = useToast();
+
+
+  const triggerHaptic = (pattern: number | number[] = 10) => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(pattern);
+    }
+  };
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -92,21 +101,22 @@ export function MobileBottomNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-sidebar/95 backdrop-blur-xl border-t border-sidebar-border safe-area-pb">
-      <div className="flex items-center justify-around h-16 px-2">
+      <div className="flex items-center justify-around h-[4.5rem] px-2.5 pb-1">
         {filteredPrimaryItems.map(item => (
           <NavLink
             key={item.url}
             to={item.url}
+            onClick={() => triggerHaptic(8)}
             className={cn(
-              'flex flex-col items-center justify-center gap-1 flex-1 py-2 rounded-lg transition-all active:scale-95 relative',
+              'flex flex-col items-center justify-center gap-1.5 flex-1 min-h-[52px] py-2.5 rounded-xl transition-all duration-200 active:scale-[0.97] relative',
               isActive(item.url)
-                ? 'text-primary'
+                ? 'text-primary bg-primary/10 shadow-sm'
                 : 'text-muted-foreground'
             )}
           >
             <item.icon className={cn(
-              'h-5 w-5',
-              isActive(item.url) && 'text-primary'
+              'h-5 w-5 transition-transform duration-200',
+              isActive(item.url) && 'text-primary scale-105'
             )} />
             <span className="text-[10px] font-medium">{t(item.titleKey)}</span>
             {isActive(item.url) && (
@@ -119,9 +129,16 @@ export function MobileBottomNav() {
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
             <button
+              onClick={() => {
+                triggerHaptic([10, 15, 10]);
+                toast({
+                  title: 'Navigation menu open',
+                  description: 'Use one tap to jump to any feature.',
+                });
+              }}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 flex-1 py-2 rounded-lg transition-all active:scale-95',
-                menuOpen ? 'text-primary' : 'text-muted-foreground'
+                'flex flex-col items-center justify-center gap-1.5 flex-1 min-h-[52px] py-2.5 rounded-xl transition-all duration-200 active:scale-[0.97]',
+                menuOpen ? 'text-primary bg-primary/10 shadow-sm' : 'text-muted-foreground'
               )}
             >
               <Menu className="h-5 w-5" />
@@ -139,11 +156,12 @@ export function MobileBottomNav() {
                 <button
                   key={item.url}
                   onClick={() => {
+                    triggerHaptic(12);
                     setMenuOpen(false);
                     navigate(item.url);
                   }}
                   className={cn(
-                    'flex flex-col items-center justify-center gap-2 p-3 rounded-2xl transition-all active:scale-95',
+                    'flex flex-col items-center justify-center gap-2 p-3 min-h-[88px] rounded-2xl transition-all duration-200 active:scale-[0.97]',
                     isActive(item.url)
                       ? 'bg-primary/20 text-primary'
                       : 'bg-secondary/50 text-sidebar-foreground hover:bg-secondary'

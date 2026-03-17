@@ -21,6 +21,7 @@ import { LocationReminders } from '@/components/pwa/LocationReminders';
 import { CalendarIntegrationSettings } from '@/components/settings/CalendarIntegrationSettings';
 import { AdminSettings } from '@/components/settings/AdminSettings';
 import { AiSettings } from '@/components/settings/AiSettings';
+import { AiHistory } from '@/components/settings/AiHistory';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsAdmin } from '@/hooks/useUserRoles';
 import { SectionErrorBoundary } from '@/components/ErrorBoundary';
@@ -88,6 +89,8 @@ export default function Settings() {
         return <DataExport />;
       case 'ai':
         return <AiSettings />;
+      case 'ai-history':
+        return <AiHistory />;
       case 'license':
         return <LicenseSettings />;
       case 'location':
@@ -116,6 +119,7 @@ export default function Settings() {
       license: { en: 'License', bn: 'লাইসেন্স' },
       admin: { en: 'Admin Panel', bn: 'এডমিন প্যানেল' },
       ai: { en: 'AI Settings', bn: 'AI সেটিংস' },
+      'ai-history': { en: 'AI History', bn: 'AI ইতিহাস' },
       'admin-general': { en: 'Admin — General', bn: 'এডমিন — সাধারণ' },
       'admin-modules': { en: 'Admin — Modules', bn: 'এডমিন — মডিউল' },
       'admin-users': { en: 'Admin — Users & Roles', bn: 'এডমিন — ইউজার ও রোল' },

@@ -2,8 +2,9 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { 
   CheckSquare, FileText, Wallet, Target, 
-  Calendar, Clock, ArrowUpRight, ArrowDownRight, Lightbulb, Settings2
+  Calendar, Clock, ArrowUpRight, ArrowDownRight, Lightbulb, Settings2, Sparkles, ListTodo, Timer
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -34,6 +35,7 @@ const RecentTimeEntries = lazy(() => import('@/components/dashboard/RecentTimeEn
 const ChartLoader = () => <Skeleton className="h-64 w-full rounded-lg" />;
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useLanguage();
   const { mode } = useDashboardMode();
@@ -86,7 +88,7 @@ export default function Dashboard() {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
     
     const [tasksRes, notesRes, transactionsRes, goalsRes, projectsRes] = await Promise.all([
-      supabase.from('tasks').select('id,title,status,due_date,task_type,sort_order,category_id').eq('user_id', user?.id),
+      supabase.from('tasks').select('id,title,status,due_date,priority,task_type,sort_order,category_id').eq('user_id', user?.id),
       supabase.from('notes').select('id,title,note_type,created_at').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(20),
       supabase.from('transactions').select('id,amount,type').eq('user_id', user?.id).gte('date', startOfMonth.split('T')[0]),
       supabase.from('goals').select('id,title,category,target_amount,current_amount,target_date,status').eq('user_id', user?.id).in('status', ['active', 'in_progress']).eq('goal_type', mode),
@@ -169,6 +171,24 @@ export default function Dashboard() {
         { title: 'Personal Notes', value: stats.personalNotes, icon: FileText, color: 'text-primary' },
         { title: 'Personal Projects', value: stats.personalProjects, icon: Lightbulb, color: 'text-primary' },
       ];
+
+  const topPriorityTasks = [...stats.upcomingTasks]
+    .sort((a, b) => {
+      const priorityScore = { urgent: 4, high: 3, medium: 2, low: 1 } as const;
+      const scoreA = priorityScore[(a.priority || 'low') as keyof typeof priorityScore] || 1;
+      const scoreB = priorityScore[(b.priority || 'low') as keyof typeof priorityScore] || 1;
+
+      if (scoreB !== scoreA) return scoreB - scoreA;
+
+      const dateA = a.due_date ? new Date(a.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+      const dateB = b.due_date ? new Date(b.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+      return dateA - dateB;
+    })
+    .slice(0, 3);
+
+  const handlePlanMyDay = () => {
+    window.dispatchEvent(new Event('ai-plan-my-day'));
+  };
 
   // Render widget by ID
   const renderWidget = (widgetId: string) => {
@@ -334,6 +354,56 @@ export default function Dashboard() {
           <Settings2 className="h-4 w-4" />
         </Button>
       </div>
+
+      <Card className="border-primary/25 bg-gradient-to-br from-primary/15 via-card to-card shadow-sm">
+        <CardContent className="p-5 md:p-6 space-y-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-wider text-primary/80 font-semibold">Dashboard Focus</p>
+              <h2 className="text-2xl md:text-3xl font-bold leading-tight text-foreground">Your top priorities today</h2>
+              <p className="text-sm text-muted-foreground">Stay on track with the most important items and jump into action instantly.</p>
+            </div>
+            <div className="flex flex-wrap gap-2 md:justify-end">
+              <div className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs font-medium">
+                Overdue <span className="font-mono text-foreground ml-1">{stats.overdueTasks}</span>
+              </div>
+              <div className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs font-medium">
+                Open Tasks <span className="font-mono text-foreground ml-1">{stats.todayTasks + stats.overdueTasks}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+            {topPriorityTasks.length === 0 ? (
+              <p className="text-sm text-muted-foreground md:col-span-3 rounded-lg border border-dashed border-border/70 bg-background/40 px-3 py-3">
+                No active priority tasks found. You're all clear.
+              </p>
+            ) : (
+              topPriorityTasks.map((task, index) => (
+                <div key={task.id} className="rounded-lg border border-border/60 bg-background/60 px-3 py-3">
+                  <p className="text-xs text-muted-foreground">Priority #{index + 1}</p>
+                  <p className="text-sm font-semibold text-foreground truncate mt-1">{task.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {task.due_date ? `Due ${format(new Date(task.due_date), 'MMM d')}` : 'No due date'}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => navigate('/time-tracking')}>
+              <Timer className="h-4 w-4 mr-1" /> Start Focus
+            </Button>
+            <Button size="sm" variant="secondary" onClick={handlePlanMyDay}>
+              <Sparkles className="h-4 w-4 mr-1" /> Plan My Day
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate('/tasks')}>
+              <ListTodo className="h-4 w-4 mr-1" /> Open Tasks
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Grid */}
       <div className={`grid ${mode === 'office' ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-4'} gap-4`}>

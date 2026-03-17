@@ -46,6 +46,18 @@ CREATE TABLE IF NOT EXISTS public.notes (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+
+-- AI Usage Log
+CREATE TABLE IF NOT EXISTS public.ai_usage_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    action_type TEXT NOT NULL,
+    input_summary TEXT,
+    result_summary TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    source TEXT NOT NULL CHECK (source IN ('web', 'docker'))
+);
+
 -- Transactions
 CREATE TABLE IF NOT EXISTS public.transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
