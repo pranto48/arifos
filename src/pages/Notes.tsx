@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
 import { FieldVisibility } from '@/components/shared/FieldVisibility';
 import { MarkdownEditor } from '@/components/notes/MarkdownEditor';
+import { logAiUsage } from '@/lib/aiUsageLogger';
 import ReactMarkdown from 'react-markdown';
 
 
@@ -221,12 +222,24 @@ export default function Notes() {
     if (!user) return;
     if (note.is_vault) {
       toast({ title: 'Vault note', description: 'Unlock and copy content first for task conversion.', variant: 'destructive' });
+      await logAiUsage({
+        userId: user.id,
+        actionType: 'note_to_task',
+        inputSummary: `note:${note.title}`,
+        resultSummary: 'blocked_vault_note',
+      });
       return;
     }
 
     const titles = extractTaskTitles(note.content || '');
     if (titles.length === 0) {
       toast({ title: 'No action items', description: 'AI could not detect actionable items in this note.' });
+      await logAiUsage({
+        userId: user.id,
+        actionType: 'note_to_task',
+        inputSummary: `note:${note.title}`,
+        resultSummary: 'no_action_items_detected',
+      });
       return;
     }
 
@@ -254,12 +267,24 @@ export default function Notes() {
     if (error) {
       triggerHaptic([20, 30, 20]);
       toast({ title: 'Error', description: 'Failed to convert note to tasks', variant: 'destructive' });
+      await logAiUsage({
+        userId: user.id,
+        actionType: 'note_to_task',
+        inputSummary: `note:${note.title}`,
+        resultSummary: 'failed_to_create_tasks',
+      });
       return;
     }
 
     window.dispatchEvent(new Event('tasks-updated'));
     triggerHaptic(14);
     toast({ title: 'AI Assist complete', description: `${rows.length} task${rows.length > 1 ? 's' : ''} created from note.` });
+    await logAiUsage({
+      userId: user.id,
+      actionType: 'note_to_task',
+      inputSummary: `note:${note.title}`,
+      resultSummary: `created_tasks:${rows.length}`,
+    });
   };
 
   return (
