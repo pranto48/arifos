@@ -794,7 +794,12 @@ export function DataExport() {
         const rows = tables[tableName];
         if (!rows?.length) continue;
 
-        const isUserScoped = TABLES_WITH_USER_ID.has(tableName);
+        const isUserScoped =
+          TABLES_WITH_USER_ID.has(tableName) ||
+          rows.some(
+            (item: any) =>
+              item && typeof item === "object" && "user_id" in item,
+          );
         const isGlobal = !isUserScoped;
 
         const cleaned = rows.map((item: any) => {
@@ -1168,7 +1173,10 @@ export function DataExport() {
 
         const items = tables[table].map((item: any) => {
           const cleaned = { ...item };
-          if (TABLES_WITH_USER_ID.has(table)) {
+          if (
+            TABLES_WITH_USER_ID.has(table) ||
+            (item && typeof item === "object" && "user_id" in item)
+          ) {
             cleaned.user_id = user.id;
           }
           for (const field of STRIP_FIELDS) delete cleaned[field];
