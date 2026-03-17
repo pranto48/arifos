@@ -54,6 +54,86 @@ const SHARED_TABLES = new Set([
   'user_roles',
 ]);
 
+
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidUuid(value: unknown): value is string {
+  return typeof value === 'string' && UUID_V4_REGEX.test(value);
+}
+
+function makeUuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback for older environments
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.floor(Math.random() * 16);
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+const FOREIGN_KEY_REMAP: Record<string, Record<string, string>> = {
+  support_departments: { unit_id: 'support_units' },
+  support_users: { department_id: 'support_departments' },
+  task_checklists: { task_id: 'tasks' },
+  task_follow_up_notes: { task_id: 'tasks' },
+  project_milestones: { project_id: 'projects' },
+  device_inventory: {
+    category_id: 'device_categories',
+    supplier_id: 'device_suppliers',
+    support_user_id: 'support_users',
+  },
+  device_service_history: {
+    device_id: 'device_inventory',
+    task_id: 'tasks',
+  },
+};
+
+function buildIdRemapMap(entities: ExportableEntity[], data: Record<string, any>): Record<string, Map<string, string>> {
+  const maps: Record<string, Map<string, string>> = {};
+
+  for (const entity of entities) {
+    const rows = data?.[entity];
+    if (!Array.isArray(rows)) continue;
+
+    const remap = new Map<string, string>();
+    for (const row of rows) {
+      const id = row?.id;
+      if (typeof id === 'string' && id.length > 0 && !isValidUuid(id)) {
+        if (!remap.has(id)) {
+          remap.set(id, makeUuid());
+        }
+      }
+    }
+    if (remap.size > 0) {
+      maps[entity] = remap;
+    }
+  }
+
+  return maps;
+}
+
+function applyIdAndFkRemap(row: any, entity: string, idRemapMap: Record<string, Map<string, string>>): any {
+  const next = { ...row };
+
+  const idMap = idRemapMap[entity];
+  if (idMap && typeof next.id === 'string' && idMap.has(next.id)) {
+    next.id = idMap.get(next.id);
+  }
+
+  const fkMap = FOREIGN_KEY_REMAP[entity] || {};
+  for (const [fkColumn, targetEntity] of Object.entries(fkMap)) {
+    const value = next[fkColumn];
+    const targetMap = idRemapMap[targetEntity];
+    if (targetMap && typeof value === 'string' && targetMap.has(value)) {
+      next[fkColumn] = targetMap.get(value);
+    }
+  }
+
+  return next;
+}
+
 export async function fetchEntityData(entity: ExportableEntity, userId: string): Promise<any[]> {
   if (isSelfHosted()) {
     const isShared = SHARED_TABLES.has(entity);
@@ -230,6 +310,7 @@ export async function importData(
   const errors: string[] = [];
   const isShared = (entity: string) => SHARED_TABLES.has(entity as ExportableEntity);
   const total = preset.entities.length;
+  const idRemapMap = buildIdRemapMap(preset.entities, payload.data);
 
   for (let idx = 0; idx < total; idx++) {
     const entity = preset.entities[idx];
@@ -261,10 +342,11 @@ export async function importData(
 
     const cleaned = filteredRows.map((row: any) => {
       const { search_vector, ...rest } = row;
-      if (rest.user_id) {
-        rest.user_id = userId;
+      const remapped = applyIdAndFkRemap(rest, entity, idRemapMap);
+      if (remapped.user_id) {
+        remapped.user_id = userId;
       }
-      return rest;
+      return remapped;
     });
 
     const onConflictKey = getOnConflictKey(entity);

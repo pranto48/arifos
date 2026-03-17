@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { isSelfHosted, selfHostedApi } from '@/lib/selfHostedConfig';
 
 type DashboardMode = 'office' | 'personal';
 
@@ -151,8 +152,20 @@ export function DashboardModeProvider({ children }: { children: ReactNode }) {
     if (!permissions.personal_enabled) return false;
     
     try {
+      // Self-hosted mode does not support Supabase password reauth routes.
+      // Verify by re-running login against the local backend.
+      if (isSelfHosted()) {
+        const result = await selfHostedApi.login(user.email, password);
+        if (result?.user?.id === user.id) {
+          setIsPersonalUnlocked(true);
+          setModeState('personal');
+          return true;
+        }
+        return false;
+      }
+
       // Use reauthenticate to verify password without creating a new session
-      const { error } = await supabase.auth.reauthenticate();
+      await supabase.auth.reauthenticate();
       
       // Reauthenticate sends a nonce, so we verify with signInWithPassword
       // but the session should already exist

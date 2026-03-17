@@ -47,7 +47,7 @@ function generateExampleFile(preset: string): object {
     switch (entity) {
       case 'tasks':
         exampleData.tasks = [{
-          id: 'example-task-id-1',
+          id: '11111111-1111-4111-8111-111111111111',
           title: 'Example Task',
           description: 'This is an example task for import reference',
           status: 'pending',
@@ -59,7 +59,7 @@ function generateExampleFile(preset: string): object {
         break;
       case 'task_categories':
         exampleData.task_categories = [{
-          id: 'example-cat-id-1',
+          id: '22222222-2222-4222-8222-222222222222',
           name: 'Example Category',
           color: '#3b82f6',
           icon: 'Briefcase',
@@ -69,7 +69,7 @@ function generateExampleFile(preset: string): object {
         break;
       case 'notes':
         exampleData.notes = [{
-          id: 'example-note-id-1',
+          id: '33333333-3333-4333-8333-333333333333',
           title: 'Example Note',
           content: 'This is an example note content for import reference.',
           note_type: 'office',
@@ -81,7 +81,7 @@ function generateExampleFile(preset: string): object {
         break;
       case 'support_units':
         exampleData.support_units = [{
-          id: 'example-unit-id-1',
+          id: '44444444-4444-4444-8444-444444444444',
           name: 'Example Unit',
           description: 'Example organizational unit',
           user_id: 'YOUR_USER_ID',
@@ -89,18 +89,18 @@ function generateExampleFile(preset: string): object {
         break;
       case 'support_departments':
         exampleData.support_departments = [{
-          id: 'example-dept-id-1',
+          id: '55555555-5555-4555-8555-555555555555',
           name: 'Example Department',
-          unit_id: 'example-unit-id-1',
+          unit_id: '44444444-4444-4444-8444-444444444444',
           user_id: 'YOUR_USER_ID',
         }];
         break;
       case 'support_users':
         exampleData.support_users = [{
-          id: 'example-suser-id-1',
+          id: '66666666-6666-4666-8666-666666666666',
           name: 'John Doe',
           email: 'john@example.com',
-          department_id: 'example-dept-id-1',
+          department_id: '55555555-5555-4555-8555-555555555555',
           designation: 'Engineer',
           is_active: true,
           user_id: 'YOUR_USER_ID',
@@ -108,7 +108,7 @@ function generateExampleFile(preset: string): object {
         break;
       case 'device_categories':
         exampleData.device_categories = [{
-          id: 'example-dcat-id-1',
+          id: '77777777-7777-4777-8777-777777777777',
           name: 'Laptop',
           description: 'Portable computers',
           user_id: 'YOUR_USER_ID',
@@ -116,17 +116,17 @@ function generateExampleFile(preset: string): object {
         break;
       case 'device_inventory':
         exampleData.device_inventory = [{
-          id: 'example-device-id-1',
+          id: '88888888-8888-4888-8888-888888888888',
           device_name: 'Dell Latitude 5540',
           serial_number: 'SN-EXAMPLE-001',
           status: 'available',
-          category_id: 'example-dcat-id-1',
+          category_id: '77777777-7777-4777-8777-777777777777',
           user_id: 'YOUR_USER_ID',
         }];
         break;
       case 'projects':
         exampleData.projects = [{
-          id: 'example-project-id-1',
+          id: '99999999-9999-4999-8999-999999999999',
           title: 'Example Project',
           description: 'An example project for import reference',
           status: 'active',
@@ -137,7 +137,7 @@ function generateExampleFile(preset: string): object {
         break;
       case 'profiles':
         exampleData.profiles = [{
-          id: 'example-profile-id-1',
+          id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
           full_name: 'Example User',
           email: 'user@example.com',
           user_id: 'YOUR_USER_ID',
@@ -145,7 +145,7 @@ function generateExampleFile(preset: string): object {
         break;
       case 'user_roles':
         exampleData.user_roles = [{
-          id: 'example-role-id-1',
+          id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
           role: 'admin',
           user_id: 'YOUR_USER_ID',
         }];

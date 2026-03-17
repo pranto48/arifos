@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowRightLeft } from 'lucide-react';
-import { FileText, Pin, Star, Search, Lock, LockOpen, Plus, X, Eye, EyeOff, Trash2, MoreVertical } from 'lucide-react';
+import { FileText, Pin, Star, Search, Lock, LockOpen, Plus, X, Eye, EyeOff, Trash2, MoreVertical, Sparkles } from 'lucide-react';
 import { ReportActions } from '@/components/shared/ReportActions';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -191,6 +191,66 @@ export default function Notes() {
     }
   };
 
+  const extractTaskTitles = (content: string): string[] => {
+    const checklist = content
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => /^[-*]\s+|^\d+[.)]\s+/.test(line))
+      .map((line) => line.replace(/^[-*]\s+|^\d+[.)]\s+/, '').trim())
+      .filter(Boolean);
+
+    if (checklist.length > 0) return checklist.slice(0, 8);
+
+    return content
+      .split(/\.|\n|;|,/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 12)
+      .slice(0, 8);
+  };
+
+  const handleConvertToTasks = async (note: any) => {
+    if (!user) return;
+    if (note.is_vault) {
+      toast({ title: 'Vault note', description: 'Unlock and copy content first for task conversion.', variant: 'destructive' });
+      return;
+    }
+
+    const titles = extractTaskTitles(note.content || '');
+    if (titles.length === 0) {
+      toast({ title: 'No action items', description: 'AI could not detect actionable items in this note.' });
+      return;
+    }
+
+    const { data: existing } = await supabase
+      .from('tasks')
+      .select('sort_order')
+      .eq('user_id', user.id)
+      .eq('task_type', mode)
+      .order('sort_order', { ascending: false })
+      .limit(1);
+
+    const baseSort = existing?.[0]?.sort_order || 0;
+
+    const rows = titles.map((title, idx) => ({
+      user_id: user.id,
+      task_type: mode,
+      title,
+      description: `Generated from note: ${note.title}`,
+      status: 'todo',
+      priority: 'medium',
+      sort_order: baseSort + idx + 1,
+    }));
+
+    const { error } = await supabase.from('tasks').insert(rows as any);
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to convert note to tasks', variant: 'destructive' });
+      return;
+    }
+
+    window.dispatchEvent(new Event('tasks-updated'));
+    toast({ title: 'AI Assist complete', description: `${rows.length} task${rows.length > 1 ? 's' : ''} created from note.` });
+  };
+
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -272,6 +332,12 @@ export default function Notes() {
                                         >
                                           <ArrowRightLeft className="h-4 w-4 mr-2" />
                                           Move to {note.note_type === 'office' ? 'Personal' : 'Office'}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem 
+                                          onClick={(e) => { e.stopPropagation(); handleConvertToTasks(note); }}
+                                        >
+                                          <Sparkles className="h-4 w-4 mr-2" />
+                                          AI Assist: Note → Tasks
                                         </DropdownMenuItem>
                                         <DropdownMenuItem 
                                           onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}

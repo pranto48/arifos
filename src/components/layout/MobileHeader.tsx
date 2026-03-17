@@ -13,6 +13,7 @@ import { DashboardModeSwitcher } from "./DashboardModeSwitcher";
 import { QuickAddButton } from "@/components/quick-add/QuickAddButton";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AiStatusWidget } from "./AiStatusWidget";
+import { AiQuickActionBar } from '@/components/ai/AiQuickActionBar';
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -35,6 +36,7 @@ export function MobileHeader() {
         {/* Right Actions */}
         <div className="flex items-center gap-1.5">
           <AiStatusWidget collapsed />
+          <AiQuickActionBar compact />
           <DashboardModeSwitcher />
           <NotificationBell />
           <QuickAddButton />
