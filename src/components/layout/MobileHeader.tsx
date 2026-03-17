@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { LogOut, User } from "lucide-react";
 import {
   Sheet,
@@ -22,6 +22,10 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+
+const mobileHeaderClass = "md:hidden sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt";
+const brandBadgeClass = "w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center";
+const avatarBadgeClass = "w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center";
 
 export function MobileHeader() {
   const { signOut, user } = useAuth();
@@ -52,11 +56,11 @@ export function MobileHeader() {
   };
 
   return (
-    <header className="md:hidden sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt">
-      <div className="flex items-center justify-between h-16 px-3.5">
+    <header className={mobileHeaderClass}>
+      <div className="flex items-center justify-between h-14 px-4">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+          <div className={brandBadgeClass}>
             <span className="text-primary font-bold text-sm">L</span>
           </div>
           <span className="font-semibold text-foreground">LifeOS</span>
@@ -73,12 +77,12 @@ export function MobileHeader() {
           {/* User Profile Sheet */}
           <Sheet open={profileOpen} onOpenChange={setProfileOpen}>
             <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-11 w-11 rounded-full transition-all duration-200 active:scale-95"
-                >
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full"
+              >
+                <div className={avatarBadgeClass}>
                   <span className="text-primary text-xs font-semibold">
                     {user?.email?.charAt(0).toUpperCase() || "U"}
                   </span>
