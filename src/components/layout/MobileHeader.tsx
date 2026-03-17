@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, LogOut, User } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -17,6 +17,7 @@ import { AiQuickActionBar } from '@/components/ai/AiQuickActionBar';
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+
 export function MobileHeader() {
   const { signOut, user } = useAuth();
   const { t } = useLanguage();
@@ -24,7 +25,7 @@ export function MobileHeader() {
 
   return (
     <header className="md:hidden sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt">
-      <div className="flex items-center justify-between h-14 px-4">
+      <div className="flex items-center justify-between h-16 px-3.5">
         {/* Logo */}
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
@@ -34,7 +35,7 @@ export function MobileHeader() {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <AiStatusWidget collapsed />
           <AiQuickActionBar compact />
           <DashboardModeSwitcher />
@@ -44,11 +45,11 @@ export function MobileHeader() {
           {/* User Profile Sheet */}
           <Sheet open={profileOpen} onOpenChange={setProfileOpen}>
             <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-full"
-              >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 rounded-full transition-all duration-200 active:scale-95"
+                >
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                   <span className="text-primary text-xs font-semibold">
                     {user?.email?.charAt(0).toUpperCase() || "U"}

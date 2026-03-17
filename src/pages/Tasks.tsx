@@ -81,6 +81,13 @@ interface SupportUserInfo {
   unit_name: string;
 }
 
+
+const triggerHaptic = (pattern: number | number[] = 10) => {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
+};
+
 interface SortableTaskProps {
   task: Task;
   checklists: ChecklistItem[];
@@ -447,12 +454,14 @@ export default function Tasks() {
   };
 
   const toggleTask = async (id: string, completed: boolean) => {
+    triggerHaptic(completed ? 14 : 8);
     await supabase.from('tasks').update({
       status: completed ? 'completed' : 'todo',
       completed_at: completed ? new Date().toISOString() : null,
     }).eq('id', id);
     // Update local state instead of full reload
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: completed ? 'completed' : 'todo' } : t));
+    toast.success(completed ? 'Task marked complete' : 'Task marked active');
   };
 
   const handleEdit = (task: Task) => {

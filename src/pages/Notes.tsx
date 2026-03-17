@@ -24,6 +24,13 @@ import { FieldVisibility } from '@/components/shared/FieldVisibility';
 import { MarkdownEditor } from '@/components/notes/MarkdownEditor';
 import ReactMarkdown from 'react-markdown';
 
+
+const triggerHaptic = (pattern: number | number[] = 10) => {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
+};
+
 export default function Notes() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -209,6 +216,8 @@ export default function Notes() {
   };
 
   const handleConvertToTasks = async (note: any) => {
+    triggerHaptic([8, 16, 8]);
+    toast({ title: 'AI Assist started', description: 'Converting note into actionable tasks…' });
     if (!user) return;
     if (note.is_vault) {
       toast({ title: 'Vault note', description: 'Unlock and copy content first for task conversion.', variant: 'destructive' });
@@ -243,11 +252,13 @@ export default function Notes() {
 
     const { error } = await supabase.from('tasks').insert(rows as any);
     if (error) {
+      triggerHaptic([20, 30, 20]);
       toast({ title: 'Error', description: 'Failed to convert note to tasks', variant: 'destructive' });
       return;
     }
 
     window.dispatchEvent(new Event('tasks-updated'));
+    triggerHaptic(14);
     toast({ title: 'AI Assist complete', description: `${rows.length} task${rows.length > 1 ? 's' : ''} created from note.` });
   };
 
