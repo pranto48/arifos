@@ -80,6 +80,7 @@ export default {
         8: "var(--space-8)",
         10: "var(--space-10)",
         12: "var(--space-12)",
+        16: "var(--space-16)",
       },
       fontSize: {
         xs: ["var(--text-xs)", { lineHeight: "var(--leading-xs)" }],
@@ -88,8 +89,10 @@ export default {
         lg: ["var(--text-lg)", { lineHeight: "var(--leading-lg)" }],
         xl: ["var(--text-xl)", { lineHeight: "var(--leading-xl)" }],
         "2xl": ["var(--text-2xl)", { lineHeight: "var(--leading-2xl)" }],
+        "3xl": ["var(--text-3xl)", { lineHeight: "var(--leading-3xl)" }],
       },
       borderRadius: {
+        xl: "var(--radius-xl)",
         lg: "var(--radius-lg)",
         md: "var(--radius-md)",
         sm: "var(--radius-sm)",

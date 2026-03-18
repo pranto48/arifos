@@ -50,6 +50,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { pageHeaderClass, pageShellClass, pageTitleClass, surfaceCardClass } from '@/lib/design-tokens';
 
 interface ChecklistItem {
   id: string;
@@ -131,7 +132,7 @@ function SortableTask({ task, checklists, categories, supportUserInfo, onToggle,
     <Card
       ref={setNodeRef}
       style={style}
-      className={`bg-card border-border hover:bg-muted/30 transition-colors ${isSelected ? 'ring-2 ring-primary' : ''}`}
+      className={`${surfaceCardClass} hover:bg-muted/30 transition-colors ${isSelected ? 'ring-2 ring-primary' : ''}`}
     >
       <CardContent className="p-4">
         <div className="flex items-center gap-2 md:gap-4 flex-wrap">
@@ -690,9 +691,9 @@ export default function Tasks() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h1>
+    <div className={pageShellClass}>
+      <div className={pageHeaderClass}>
+        <h1 className={`${pageTitleClass} text-2xl`}>{t('tasks.title')}</h1>
         <div className="flex flex-wrap gap-2 items-center">
           {/* View Toggle */}
           <div className="flex items-center gap-0.5 bg-muted/30 rounded-md p-0.5">
@@ -847,7 +848,7 @@ export default function Tasks() {
       ) : (
       <div className="space-y-2">
         {filteredTasks.length === 0 ? (
-          <Card className="bg-card border-border">
+          <Card className={surfaceCardClass}>
             <CardContent className="py-12 text-center">
               <CheckSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">{t('tasks.noTasksYet')}</p>

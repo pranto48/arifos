@@ -21,12 +21,10 @@ import {
 } from '@/components/ai/quickActions';
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
+import { avatarBadgeClass, floatingHeaderClass, iconBadgeClass, sidebarPanelClass } from "@/lib/design-tokens";
 
-
-const mobileHeaderClass = "md:hidden sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt";
-const brandBadgeClass = "h-10 w-10 rounded-xl bg-primary/15 ring-1 ring-primary/10 flex items-center justify-center shadow-sm";
-const avatarBadgeClass = "h-10 w-10 rounded-full bg-primary/15 ring-1 ring-primary/10 flex items-center justify-center transition-transform duration-200 group-data-[state=open]:scale-95";
-const utilityButtonClass = "h-11 w-11 rounded-2xl transition-all duration-200 active:scale-[0.96] data-[state=open]:scale-[0.98] data-[state=open]:bg-primary/10 data-[state=open]:text-primary";
+const mobileHeaderClass = `${floatingHeaderClass} safe-area-pt md:hidden z-40`;
 
 export function MobileHeader() {
   const { signOut, user } = useAuth();
@@ -60,8 +58,8 @@ export function MobileHeader() {
     <header className={mobileHeaderClass}>
       <div className="flex items-center justify-between gap-3 min-h-[4rem] px-4 py-2">
         {/* Logo */}
-        <div className="flex min-w-0 items-center gap-3">
-          <div className={brandBadgeClass}>
+        <div className="flex items-center gap-2">
+          <div className={iconBadgeClass}>
             <span className="text-primary font-bold text-sm">L</span>
           </div>
           <div className="min-w-0">
@@ -95,7 +93,7 @@ export function MobileHeader() {
             </SheetTrigger>
             <SheetContent
               side="right"
-              className="w-[280px] bg-sidebar border-sidebar-border z-[60]"
+              className={cn("z-[60] w-[280px] border-sidebar-border", sidebarPanelClass)}
             >
               <SheetHeader>
                 <SheetTitle className="text-sidebar-foreground">

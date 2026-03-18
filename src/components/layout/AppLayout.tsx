@@ -12,14 +12,15 @@ import { MobileHeader } from './MobileHeader';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { AiQuickActionBar } from '@/components/ai/AiQuickActionBar';
 import { Loader2 } from 'lucide-react';
+import { floatingHeaderClass } from '@/lib/design-tokens';
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 const appShellClass = 'min-h-screen bg-background';
-const desktopHeaderClass = 'hidden md:flex sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-xl items-center justify-between px-6';
-const contentWrapperClass = 'p-4 md:p-6';
+const desktopHeaderClass = `${floatingHeaderClass} hidden h-16 items-center justify-between px-6 md:flex`;
+const contentWrapperClass = 'app-page-shell p-4 md:p-6';
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { user, loading } = useAuth();
