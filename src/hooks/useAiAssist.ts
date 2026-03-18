@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { invokeEdgeFunction, isLocalModeFeature } from '@/lib/edgeFunctionHelper';
+import { PRODUCT_ANALYTICS_EVENTS, trackProductAnalyticsEvent } from '@/lib/productAnalytics';
 
 export interface AiConfig {
   provider: 'free' | 'openai' | 'openrouter' | 'custom';
@@ -69,6 +70,10 @@ export function useAiAssist() {
       }
 
       // Update local config
+      if (data) {
+        void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.aiActionRun);
+      }
+
       if (data?.remaining !== null && data?.remaining !== undefined) {
         setConfig(prev => prev ? {
           ...prev,

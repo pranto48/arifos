@@ -23,8 +23,9 @@ import { DataExportImportButton } from '@/components/shared/DataExportImportButt
 import { FieldVisibility } from '@/components/shared/FieldVisibility';
 import { MarkdownEditor } from '@/components/notes/MarkdownEditor';
 import { logAiUsage } from '@/lib/aiUsageLogger';
+import { PRODUCT_ANALYTICS_EVENTS, trackProductAnalyticsEvent } from '@/lib/productAnalytics';
 import ReactMarkdown from 'react-markdown';
-
+import { pageHeaderClass, pageShellClass, pageTitleClass, surfaceCardClass } from '@/lib/design-tokens';
 
 const triggerHaptic = (pattern: number | number[] = 10) => {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -217,29 +218,15 @@ export default function Notes() {
   };
 
   const handleConvertToTasks = async (note: any) => {
-    triggerHaptic([8, 16, 8]);
-    toast({ title: 'AI Assist started', description: 'Converting note into actionable tasks…' });
     if (!user) return;
     if (note.is_vault) {
       toast({ title: 'Vault note', description: 'Unlock and copy content first for task conversion.', variant: 'destructive' });
-      await logAiUsage({
-        userId: user.id,
-        actionType: 'note_to_task',
-        inputSummary: `note:${note.title}`,
-        resultSummary: 'blocked_vault_note',
-      });
       return;
     }
 
     const titles = extractTaskTitles(note.content || '');
     if (titles.length === 0) {
       toast({ title: 'No action items', description: 'AI could not detect actionable items in this note.' });
-      await logAiUsage({
-        userId: user.id,
-        actionType: 'note_to_task',
-        inputSummary: `note:${note.title}`,
-        resultSummary: 'no_action_items_detected',
-      });
       return;
     }
 
@@ -265,32 +252,18 @@ export default function Notes() {
 
     const { error } = await supabase.from('tasks').insert(rows as any);
     if (error) {
-      triggerHaptic([20, 30, 20]);
       toast({ title: 'Error', description: 'Failed to convert note to tasks', variant: 'destructive' });
-      await logAiUsage({
-        userId: user.id,
-        actionType: 'note_to_task',
-        inputSummary: `note:${note.title}`,
-        resultSummary: 'failed_to_create_tasks',
-      });
       return;
     }
 
     window.dispatchEvent(new Event('tasks-updated'));
-    triggerHaptic(14);
     toast({ title: 'AI Assist complete', description: `${rows.length} task${rows.length > 1 ? 's' : ''} created from note.` });
-    await logAiUsage({
-      userId: user.id,
-      actionType: 'note_to_task',
-      inputSummary: `note:${note.title}`,
-      resultSummary: `created_tasks:${rows.length}`,
-    });
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold text-foreground">{t('notes.title')}</h1>
+    <div className={pageShellClass}>
+      <div className={pageHeaderClass}>
+        <h1 className={pageTitleClass}>{t('notes.title')}</h1>
         <div className="flex items-center gap-2 flex-wrap">
           <ReportActions
             variant="compact"
@@ -324,7 +297,7 @@ export default function Notes() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.length === 0 ? (
-          <Card className="bg-card border-border col-span-full">
+          <Card className={`${surfaceCardClass} col-span-full`}>
             <CardContent className="py-12 text-center">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">{t('notes.noNotesYet')}</p>
@@ -334,7 +307,7 @@ export default function Notes() {
           filtered.map(note => (
             <Card 
               key={note.id} 
-              className="bg-card border-border hover:bg-muted/30 transition-colors cursor-pointer group"
+              className={`${surfaceCardClass} group cursor-pointer transition-colors hover:bg-muted/30`}
               onClick={() => handleViewNote(note)}
             >
               <CardContent className="p-4 space-y-2">
@@ -408,7 +381,7 @@ export default function Notes() {
 
       {/* View Note Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-card border-border">
+        <DialogContent className={`sm:max-w-[600px] ${surfaceCardClass}`}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
               {selectedNote?.is_vault && <Lock className="h-5 w-5 text-primary" />}
@@ -473,7 +446,7 @@ export default function Notes() {
 
       {/* Create Note Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-card border-border">
+        <DialogContent className={`sm:max-w-[600px] ${surfaceCardClass}`}>
           <DialogHeader>
             <DialogTitle className="text-foreground">{t('notes.createNewNote')}</DialogTitle>
           </DialogHeader>

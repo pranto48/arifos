@@ -25,6 +25,7 @@ import { AiHistory } from '@/components/settings/AiHistory';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsAdmin } from '@/hooks/useUserRoles';
 import { SectionErrorBoundary } from '@/components/ErrorBoundary';
+import { floatingHeaderClass, pageTitleClass, surfaceCardClass } from '@/lib/design-tokens';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -139,7 +140,7 @@ export default function Settings() {
     <div className="flex h-full min-h-[calc(100vh-8rem)]">
       {/* Desktop Sidebar */}
       {!isMobile && (
-        <aside className="w-64 border-r border-border bg-card/50 flex-shrink-0">
+        <aside className={`w-64 flex-shrink-0 border-r border-border/80 bg-card/60 backdrop-blur-sm ${surfaceCardClass}`}>
           <div className="p-4 border-b border-border">
             <h1 className="text-lg font-semibold flex items-center gap-2">
               <SettingsIcon className="h-5 w-5" />
@@ -158,7 +159,7 @@ export default function Settings() {
       <main className="flex-1 overflow-auto">
         {/* Mobile Header */}
         {isMobile && (
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border p-4 flex items-center gap-3">
+          <div className={`${floatingHeaderClass} z-10 flex items-center gap-3 p-4`}>
             <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -183,10 +184,11 @@ export default function Settings() {
           </div>
         )}
 
-        <div className="p-4 md:p-6 max-w-2xl">
+        <div className="app-page-shell max-w-2xl p-4 md:p-6">
           {!isMobile && (
-            <h2 className="text-xl font-semibold mb-6">{getCategoryTitle()}</h2>
+            <h2 className={`${pageTitleClass} mb-6 text-xl`}>{getCategoryTitle()}</h2>
           )}
+          {isSelfHosted() ? <SelfHostedHealthCard /> : null}
           <SectionErrorBoundary sectionName={getCategoryTitle()}>
             {renderContent()}
           </SectionErrorBoundary>

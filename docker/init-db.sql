@@ -261,6 +261,7 @@ $$;
 CREATE TABLE IF NOT EXISTS public.app_settings (
     id TEXT PRIMARY KEY DEFAULT 'default',
     onboarding_enabled BOOLEAN DEFAULT true,
+    internal_analytics_enabled BOOLEAN DEFAULT true,
     setup_complete BOOLEAN DEFAULT false,
     db_type VARCHAR(20) DEFAULT 'postgresql',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -285,3 +286,26 @@ CREATE INDEX IF NOT EXISTS idx_license_settings_key ON public.license_settings(s
 
 -- Admin user seeding is handled by the backend server on startup.
 -- See docker/backend/server.js seedDefaultAdmin() function.
+
+
+CREATE TABLE IF NOT EXISTS public.product_analytics_daily (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  metric_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  event_key TEXT NOT NULL CHECK (event_key IN (
+    'quick_action_open',
+    'ai_action_run',
+    'planner_refresh',
+    'note_to_task_conversion',
+    'import_completed',
+    'import_failed'
+  )),
+  event_count INTEGER NOT NULL DEFAULT 0 CHECK (event_count >= 0),
+  source TEXT NOT NULL DEFAULT 'web',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, metric_date, event_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_analytics_daily_user_date
+  ON public.product_analytics_daily(user_id, metric_date DESC);

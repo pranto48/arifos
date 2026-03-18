@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, X, CheckSquare, FileText, Wallet, Target, Mic } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, CheckSquare, FileText, Wallet, Target, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,6 +22,7 @@ export function QuickAddButton() {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('task');
   const [pressed, setPressed] = useState(false);
+  const [announceOpen, setAnnounceOpen] = useState(false);
   const { toast } = useToast();
 
 
@@ -38,6 +38,7 @@ export function QuickAddButton() {
     setPressed(true);
     window.setTimeout(() => setPressed(false), 180);
     setOpen(true);
+    setAnnounceOpen(true);
     toast({ title: 'Quick action open', description: 'Choose what you want to add.' });
   };
 
@@ -62,8 +63,16 @@ export function QuickAddButton() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open]);
 
+  useEffect(() => {
+    if (!announceOpen) return;
+
+    const timer = window.setTimeout(() => setAnnounceOpen(false), 220);
+    return () => window.clearTimeout(timer);
+  }, [announceOpen]);
+
   const handleClose = () => {
     setOpen(false);
+    setAnnounceOpen(false);
   };
 
   return (
@@ -71,7 +80,7 @@ export function QuickAddButton() {
       <Button
         onClick={() => handleOpen()}
         size="icon"
-        className={`bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-11 md:h-10 md:w-auto md:px-4 transition-transform duration-200 active:scale-95 ${pressed ? 'scale-95' : 'scale-100'}`}
+        className={`h-11 w-11 rounded-2xl bg-primary text-primary-foreground shadow-sm transition-all duration-200 hover:bg-primary/90 active:scale-95 md:h-10 md:w-auto md:px-4 ${pressed ? 'scale-95 shadow-inner' : 'scale-100'} ${announceOpen || open ? 'ring-2 ring-primary/30 ring-offset-2 ring-offset-background' : ''}`}
       >
         <Plus className="h-5 w-5 md:h-4 md:w-4" />
         <span className="hidden md:inline ml-2">Quick Add</span>

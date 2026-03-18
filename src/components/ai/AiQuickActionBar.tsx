@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles, Wand2, CalendarRange, ClipboardList, NotebookPen } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useDashboardMode } from '@/contexts/DashboardModeContext';
 import { Button } from '@/components/ui/button';
 import {
   CommandDialog,
@@ -10,12 +14,7 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command';
-import {
-  getQuickActionHistory,
-  QUICK_ACTION_GROUP_LABELS,
-  recordQuickActionUsage,
-  useQuickActions,
-} from '@/components/ai/quickActions';
+import { toast } from 'sonner';
 
 interface AiQuickActionBarProps {
   compact?: boolean;
@@ -23,8 +22,9 @@ interface AiQuickActionBarProps {
 
 export function AiQuickActionBar({ compact = false }: AiQuickActionBarProps) {
   const [open, setOpen] = useState(false);
-  const [history, setHistory] = useState(getQuickActionHistory());
-  const { actions, actionById } = useQuickActions();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { mode } = useDashboardMode();
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -38,38 +38,86 @@ export function AiQuickActionBar({ compact = false }: AiQuickActionBarProps) {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  useEffect(() => {
-    if (open) {
-      setHistory(getQuickActionHistory());
+  const runSummarizeOverdue = async () => {
+    if (!user) return;
+
+    const nowIso = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('title,due_date')
+      .eq('user_id', user.id)
+      .eq('task_type', mode)
+      .neq('status', 'completed')
+      .lt('due_date', nowIso)
+      .order('due_date', { ascending: true })
+      .limit(5);
+
+    if (error) {
+      toast.error('Could not summarize overdue tasks');
+      return;
     }
-  }, [open]);
 
-  const groupedActions = useMemo(() => {
-    return {
-      navigation: actions.filter((action) => action.group === 'navigation'),
-      createActions: actions.filter((action) => action.group === 'create-actions'),
-      aiActions: actions.filter((action) => action.group === 'ai-actions'),
-      adminSystem: actions.filter((action) => action.group === 'admin-system'),
-    };
-  }, [actions]);
+    const count = data?.length || 0;
+    if (count === 0) {
+      toast.success('Great! You have no overdue tasks.');
+      return;
+    }
 
-  const recentActions = useMemo(
-    () =>
-      history
-        .map((entry) => ({ ...entry, action: actionById[entry.id] }))
-        .filter((entry): entry is typeof entry & { action: NonNullable<typeof entry.action> } => Boolean(entry.action)),
-    [actionById, history],
-  );
-
-  const runAction = async (actionId: string) => {
-    const action = actionById[actionId];
-    if (!action) return;
-
-    setOpen(false);
-    await action.run();
-    recordQuickActionUsage(action.id);
-    setHistory(getQuickActionHistory());
+    const top = data?.map((t) => t.title).slice(0, 3).join(' · ');
+    toast.warning(`${count} overdue task(s). Top: ${top}`);
   };
+
+  const runPlanMyDay = async () => {
+    navigate('/');
+    window.dispatchEvent(new Event('ai-plan-my-day'));
+    toast.success('AI planner ready: check Daily Planner on Dashboard');
+  };
+
+  const runWeeklyReview = async () => {
+    navigate('/analytics');
+    toast.info('Weekly review prep: open Analytics + Reports for summary export');
+  };
+
+  const actions = useMemo(
+    () => [
+      {
+        id: 'plan-day',
+        label: 'Plan my day',
+        hint: 'Prioritize tasks and focus list',
+        icon: Wand2,
+        run: runPlanMyDay,
+      },
+      {
+        id: 'overdue',
+        label: 'Summarize overdue tasks',
+        hint: 'Quick overdue digest',
+        icon: ClipboardList,
+        run: runSummarizeOverdue,
+      },
+      {
+        id: 'weekly-review',
+        label: 'Prepare weekly review',
+        hint: 'Open analytics workflow',
+        icon: CalendarRange,
+        run: runWeeklyReview,
+      },
+      {
+        id: 'goto-tasks',
+        label: 'Go to Tasks',
+        hint: 'Open task workspace',
+        icon: ClipboardList,
+        run: () => navigate('/tasks'),
+      },
+      {
+        id: 'goto-notes',
+        label: 'Go to Notes',
+        hint: 'Open notes workspace',
+        icon: NotebookPen,
+        run: () => navigate('/notes'),
+      },
+    ],
+    [mode, user?.id],
+  );
 
   return (
     <>
@@ -85,115 +133,27 @@ export function AiQuickActionBar({ compact = false }: AiQuickActionBarProps) {
       </Button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Try: weekly report, review, overdue, create task" />
+        <CommandInput placeholder="Try: plan my day, summarize overdue tasks, prepare weekly review" />
         <CommandList>
           <CommandEmpty>No action found.</CommandEmpty>
-
-          {recentActions.length > 0 && (
-            <>
-              <CommandGroup heading="Recent Commands">
-                {recentActions.map(({ executedAt, action }, index) => (
-                  <CommandItem
-                    key={`${action.id}-${executedAt}-${index}`}
-                    value={`${action.label} ${action.aliases.join(' ')} recent`}
-                    onSelect={() => runAction(action.id)}
-                  >
-                    <action.icon className="h-4 w-4 mr-2" />
-                    <div className="flex flex-1 items-center justify-between gap-3">
-                      <div className="flex flex-col">
-                        <span>{action.label}</span>
-                        <span className="text-xs text-muted-foreground">{action.hint}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">Recent</span>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-              <CommandSeparator />
-            </>
-          )}
-
-          <CommandGroup heading={QUICK_ACTION_GROUP_LABELS.navigation}>
-            {groupedActions.navigation.map((action) => (
+          <CommandGroup heading="AI Actions">
+            {actions.map((action) => (
               <CommandItem
                 key={action.id}
-                value={`${action.label} ${action.aliases.join(' ')} ${action.group}`}
-                onSelect={() => runAction(action.id)}
+                onSelect={() => {
+                  setOpen(false);
+                  action.run();
+                }}
               >
                 <action.icon className="h-4 w-4 mr-2" />
-                <div className="flex flex-1 items-center justify-between gap-3">
-                  <div className="flex flex-col">
-                    <span>{action.label}</span>
-                    <span className="text-xs text-muted-foreground">{action.hint}</span>
-                  </div>
-                  <kbd className="text-xs text-muted-foreground border px-1.5 py-0.5 rounded">{action.shortcut}</kbd>
+                <div className="flex flex-col">
+                  <span>{action.label}</span>
+                  <span className="text-xs text-muted-foreground">{action.hint}</span>
                 </div>
               </CommandItem>
             ))}
           </CommandGroup>
-
           <CommandSeparator />
-
-          <CommandGroup heading={QUICK_ACTION_GROUP_LABELS['create-actions']}>
-            {groupedActions.createActions.map((action) => (
-              <CommandItem
-                key={action.id}
-                value={`${action.label} ${action.aliases.join(' ')} ${action.group}`}
-                onSelect={() => runAction(action.id)}
-              >
-                <action.icon className="h-4 w-4 mr-2" />
-                <div className="flex flex-1 items-center justify-between gap-3">
-                  <div className="flex flex-col">
-                    <span>{action.label}</span>
-                    <span className="text-xs text-muted-foreground">{action.hint}</span>
-                  </div>
-                  <kbd className="text-xs text-muted-foreground border px-1.5 py-0.5 rounded">{action.shortcut}</kbd>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-
-          <CommandSeparator />
-
-          <CommandGroup heading={QUICK_ACTION_GROUP_LABELS['ai-actions']}>
-            {groupedActions.aiActions.map((action) => (
-              <CommandItem
-                key={action.id}
-                value={`${action.label} ${action.aliases.join(' ')} ${action.group}`}
-                onSelect={() => runAction(action.id)}
-              >
-                <action.icon className="h-4 w-4 mr-2" />
-                <div className="flex flex-1 items-center justify-between gap-3">
-                  <div className="flex flex-col">
-                    <span>{action.label}</span>
-                    <span className="text-xs text-muted-foreground">{action.hint}</span>
-                  </div>
-                  <kbd className="text-xs text-muted-foreground border px-1.5 py-0.5 rounded">{action.shortcut}</kbd>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-
-          <CommandSeparator />
-
-          <CommandGroup heading={QUICK_ACTION_GROUP_LABELS['admin-system']}>
-            {groupedActions.adminSystem.map((action) => (
-              <CommandItem
-                key={action.id}
-                value={`${action.label} ${action.aliases.join(' ')} ${action.group}`}
-                onSelect={() => runAction(action.id)}
-              >
-                <action.icon className="h-4 w-4 mr-2" />
-                <div className="flex flex-1 items-center justify-between gap-3">
-                  <div className="flex flex-col">
-                    <span>{action.label}</span>
-                    <span className="text-xs text-muted-foreground">{action.hint}</span>
-                  </div>
-                  <kbd className="text-xs text-muted-foreground border px-1.5 py-0.5 rounded">{action.shortcut}</kbd>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
         </CommandList>
       </CommandDialog>
     </>
