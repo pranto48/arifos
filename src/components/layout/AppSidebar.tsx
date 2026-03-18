@@ -32,6 +32,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useDashboardMode } from "@/contexts/DashboardModeContext";
 import { useModuleConfig } from "@/hooks/useModuleConfig";
 import { cn } from "@/lib/utils";
+import { avatarBadgeClass, iconBadgeClass, sidebarNavItemActiveClass, sidebarNavItemCollapsedClass, sidebarNavItemExpandedClass, sidebarNavItemInactiveClass, sidebarPanelClass } from "@/lib/design-tokens";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -227,12 +228,6 @@ const bottomNavItems: { titleKey: TranslationKey; url: string; icon: any }[] = [
 
 const STORAGE_KEY = "sidebar-groups-state";
 
-const brandBadgeClass = "w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center";
-const avatarBadgeClass = "w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0";
-const expandedNavItemClass = "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all relative";
-const collapsedNavItemClass = "flex items-center justify-center p-2.5 rounded-lg transition-all relative";
-const activeNavItemClass = "bg-sidebar-accent text-sidebar-primary";
-const inactiveNavItemClass = "text-sidebar-foreground hover:bg-sidebar-accent/50";
 
 export function AppSidebar() {
   const { signOut, user } = useAuth();
@@ -285,7 +280,7 @@ export function AppSidebar() {
       initial={false}
       animate={{ width: collapsed ? 72 : 240 }}
       transition={{ duration: 0.2, ease: "easeInOut" }}
-      className="hidden md:flex fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex-col z-40"
+      className={cn("fixed left-0 top-0 z-40 hidden h-screen flex-col border-r border-sidebar-border md:flex", sidebarPanelClass)}
     >
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
@@ -297,7 +292,7 @@ export function AppSidebar() {
               exit={{ opacity: 0 }}
               className="flex items-center gap-3"
             >
-              <div className={brandBadgeClass}>
+              <div className={iconBadgeClass}>
                 <span className="text-primary font-bold text-sm">L</span>
               </div>
               <span className="font-semibold text-sidebar-foreground">
@@ -310,7 +305,7 @@ export function AppSidebar() {
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="text-sidebar-foreground hover:bg-sidebar-accent h-8 w-8"
+          className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
         >
           {collapsed ? (
             <ChevronRight className="h-4 w-4" />
@@ -335,10 +330,10 @@ export function AppSidebar() {
                     key={item.url}
                     to={item.url}
                     className={cn(
-                      collapsedNavItemClass,
+                      sidebarNavItemCollapsedClass,
                       isActive(item.url)
-                        ? activeNavItemClass
-                        : inactiveNavItemClass,
+                        ? sidebarNavItemActiveClass
+                        : sidebarNavItemInactiveClass,
                     )}
                     title={t(item.titleKey)}
                   >
@@ -383,10 +378,10 @@ export function AppSidebar() {
                     key={item.url}
                     to={item.url}
                     className={cn(
-                      expandedNavItemClass,
+                      sidebarNavItemExpandedClass,
                       isActive(item.url)
-                        ? activeNavItemClass
-                        : inactiveNavItemClass,
+                        ? sidebarNavItemActiveClass
+                        : sidebarNavItemInactiveClass,
                     )}
                   >
                     <item.icon
@@ -425,8 +420,8 @@ export function AppSidebar() {
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
               isActive(item.url)
-                ? activeNavItemClass
-                : inactiveNavItemClass,
+                ? sidebarNavItemActiveClass
+                : sidebarNavItemInactiveClass,
               collapsed && "justify-center",
             )}
           >
