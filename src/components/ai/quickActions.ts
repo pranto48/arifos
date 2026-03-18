@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardMode } from '@/contexts/DashboardModeContext';
+import { logAiUsage } from '@/lib/aiUsageLogger';
 
 export type QuickActionGroup = 'navigation' | 'create-actions' | 'ai-actions' | 'admin-system';
 
@@ -187,28 +188,62 @@ export function useQuickActions() {
 
     if (error) {
       toast.error('Could not summarize overdue tasks');
+      await logAiUsage({
+        userId: user.id,
+        actionType: 'quick_action_overdue_summary',
+        inputSummary: `mode:${mode}`,
+        resultSummary: 'failed_to_fetch_overdue_tasks',
+      });
       return;
     }
 
     const count = data?.length || 0;
     if (count === 0) {
       toast.success('Great! You have no overdue tasks.');
+      await logAiUsage({
+        userId: user.id,
+        actionType: 'quick_action_overdue_summary',
+        inputSummary: `mode:${mode}`,
+        resultSummary: 'no_overdue_tasks',
+      });
       return;
     }
 
     const top = data?.map((t) => t.title).slice(0, 3).join(' · ');
     toast.warning(`${count} overdue task(s). Top: ${top}`);
+    await logAiUsage({
+      userId: user.id,
+      actionType: 'quick_action_overdue_summary',
+      inputSummary: `mode:${mode}`,
+      resultSummary: `overdue_count:${count}`,
+    });
   };
 
   const runPlanMyDay = async () => {
+    if (!user) return;
+
     navigate('/');
     window.dispatchEvent(new Event('ai-plan-my-day'));
     toast.success('AI planner ready: check Daily Planner on Dashboard');
+    await logAiUsage({
+      userId: user.id,
+      actionType: 'quick_action_plan_day',
+      inputSummary: `mode:${mode}`,
+      resultSummary: 'planner_opened',
+    });
   };
 
   const runWeeklyReview = async () => {
+    if (!user) return;
+
     navigate('/analytics');
     toast.info('Weekly review prep: open Analytics + Reports for summary export');
+    await logAiUsage({
+      userId: user.id,
+      actionType: 'quick_action_weekly_review',
+      inputSummary: `mode:${mode}`,
+      resultSummary: 'analytics_opened',
+    });
   };
 
   const actions: QuickAction[] = QUICK_ACTION_CONFIG.map((action) => {
