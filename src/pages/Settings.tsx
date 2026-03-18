@@ -25,6 +25,8 @@ import { AiHistory } from '@/components/settings/AiHistory';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsAdmin } from '@/hooks/useUserRoles';
 import { SectionErrorBoundary } from '@/components/ErrorBoundary';
+import { isSelfHosted } from '@/lib/selfHostedConfig';
+import { SelfHostedHealthCard } from '@/components/settings/SelfHostedHealthCard';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -183,10 +185,11 @@ export default function Settings() {
           </div>
         )}
 
-        <div className="p-4 md:p-6 max-w-2xl">
+        <div className="p-4 md:p-6 max-w-4xl">
           {!isMobile && (
             <h2 className="text-xl font-semibold mb-6">{getCategoryTitle()}</h2>
           )}
+          {isSelfHosted() ? <SelfHostedHealthCard /> : null}
           <SectionErrorBoundary sectionName={getCategoryTitle()}>
             {renderContent()}
           </SectionErrorBoundary>
