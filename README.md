@@ -63,299 +63,163 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
 
 ## Self-Hosted Deployment (Docker)
 
-### Quick Start with Setup Wizard
+### Docker Compose Profiles
+
+LifeOS ships with two readable Docker Compose profiles so the startup mode is obvious at a glance:
+
+- **`dev`**: local iteration with the development-labelled web container.
+- **`prod`**: long-running deployment defaults with the production-labelled web container.
+
+You can either select a profile inline or set it once in `.env` with `COMPOSE_PROFILES`.
 
 ```bash
-# Clone the repo
-git clone https://github.com/YOUR_USERNAME/lifeos.git
-cd lifeos
+# Development profile
+COMPOSE_PROFILES=dev docker compose up --build
 
-# Run the interactive setup
-chmod +x docker/docker-setup.sh
-./docker/docker-setup.sh
+# Production profile
+COMPOSE_PROFILES=prod docker compose up -d
 ```
 
-Choose your database (PostgreSQL or MySQL), and the setup wizard at `http://localhost:8080/setup` will guide you through configuring the database connection and creating your admin account.
+### Service Healthchecks
 
-### Docker Compose (PostgreSQL)
+The root `docker-compose.yml` now includes healthchecks for every core service:
+
+- **`postgres`** uses `pg_isready` so the backend only starts after the database accepts connections.
+- **`backend`** polls `http://localhost:3001/api/health` before either web container is considered ready.
+- **`lifeos-dev`** and **`lifeos-prod`** probe the local web root with `wget --spider` so `docker compose ps` exposes frontend readiness clearly.
+
+### First Run
+
+Use this checklist the first time you boot a self-hosted instance.
+
+#### 1. Copy the environment template
 
 ```bash
-# Start with built-in PostgreSQL
-docker-compose -f docker-compose.selfhosted.yml --profile with-postgres up -d
+cp .env.example .env
 ```
 
-### Docker Compose (MySQL - XAMPP compatible)
+Required values to change before a real deployment:
+
+- `POSTGRES_PASSWORD`
+- `JWT_SECRET`
+
+Recommended optional values:
+
+- `COMPOSE_PROFILES=dev` for local testing or `COMPOSE_PROFILES=prod` for a persistent install
+- `ADMIN_EMAIL` and `ADMIN_PASSWORD` if you want to pre-seed the first admin
+- `APP_LICENSE_KEY` if your deployment requires license activation
+
+#### 2. Start the stack
 
 ```bash
-# Start with MySQL
-docker-compose -f docker-compose.selfhosted.yml --profile with-mysql up -d
+# Uses COMPOSE_PROFILES from .env
+
+docker compose up -d
 ```
 
-### External Database (XAMPP, etc.)
+Or override the profile explicitly:
 
 ```bash
-# Start without bundled database - configure via setup wizard
-docker-compose -f docker-compose.selfhosted.yml up -d
-
-# Then open http://localhost:8080/setup and enter your DB credentials
+docker compose --profile dev up --build
+# or
+docker compose --profile prod up -d
 ```
 
-### Environment Variables (.env)
+#### 3. Open the application URL
 
-Copy `docker/.env.example` to `docker/.env` and configure:
+By default, the app is available at:
 
-```env
-DB_TYPE=postgresql        # or mysql
-DB_HOST=localhost          # your DB server
-DB_PORT=5432              # 5432 for PostgreSQL, 3306 for MySQL
-DB_NAME=lifeos
-DB_USER=lifeos
-DB_PASSWORD=your_password
-JWT_SECRET=change-this-to-random-string
-```
+- `http://localhost:3377`
 
-### Cloud Deployment (Supabase)
+If you changed `APP_PORT` or `LIFEOS_URL`, use that URL instead.
+
+#### 4. Complete admin bootstrap
+
+Choose one of these two bootstrap paths:
+
+- **UI bootstrap**: leave `ADMIN_EMAIL` and `ADMIN_PASSWORD` blank, open the app, and complete the first-run admin wizard.
+- **Pre-seeded bootstrap**: set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env` before starting the stack so the backend can provision the initial admin automatically.
+
+After signing in the first time, immediately rotate any placeholder credentials and store them in your password manager.
+
+#### 5. Establish a backup strategy
+
+At minimum, back up the PostgreSQL database volume on a schedule. A simple logical backup looks like this:
 
 ```bash
-# Build and run with Supabase backend
-docker-compose up -d
+docker exec lifeos-db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup_$(date +%Y%m%d).sql
 ```
 
-### Manual Docker Build
+To restore:
 
 ```bash
-# Build the image
-docker build -t lifeos:latest .
-
-# Run the container
-docker run -d -p 8080:80 --name lifeos lifeos:latest
-
-# View logs
-docker logs -f lifeos
-
-# Stop and remove
-docker stop lifeos && docker rm lifeos
+docker exec -i lifeos-db psql -U "$POSTGRES_USER" "$POSTGRES_DB" < backup_20240101.sql
 ```
 
-### Docker with Custom Environment
+Recommended production practice:
 
-If you need to configure environment variables at build time:
+- Run a scheduled `pg_dump` job at least daily.
+- Store backups outside the Docker host.
+- Test restore into a staging environment before you need it during an incident.
+- Back up the `.env` file securely because it contains credentials required for recovery.
 
-```bash
-# Build with build args
-docker build \
-  --build-arg VITE_SUPABASE_URL=your_url \
-  --build-arg VITE_SUPABASE_PUBLISHABLE_KEY=your_key \
-  -t lifeos:latest .
-```
+### Troubleshooting
 
-### Production Deployment with Docker
+#### Authentication problems
 
-For production deployment with SSL, you can use the following `docker-compose.prod.yml`:
+If sign-in or admin bootstrap fails:
 
-```yaml
-version: '3.8'
-
-services:
-  lifeos:
-    build: .
-    container_name: lifeos-app
-    restart: unless-stopped
-    environment:
-      - VIRTUAL_HOST=your-domain.com
-      - LETSENCRYPT_HOST=your-domain.com
-      - LETSENCRYPT_EMAIL=your-email@example.com
-
-  nginx-proxy:
-    image: jwilder/nginx-proxy
-    container_name: nginx-proxy
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-      - certs:/etc/nginx/certs
-      - vhost:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-    restart: unless-stopped
-
-  letsencrypt:
-    image: jrcs/letsencrypt-nginx-proxy-companion
-    container_name: letsencrypt
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - certs:/etc/nginx/certs
-      - vhost:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-    environment:
-      - NGINX_PROXY_CONTAINER=nginx-proxy
-    restart: unless-stopped
-
-volumes:
-  certs:
-  vhost:
-  html:
-```
-
-## Self-Hosting Guide
-
-### Quick Start (Recommended)
-
-The easiest way to get started with self-hosting:
-
-```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/lifeos.git
-cd lifeos
-
-# Make the setup script executable
-chmod +x docker/docker-setup.sh
-
-# Run the interactive setup
-./docker/docker-setup.sh
-```
-
-The setup script will:
-- ✅ Check Docker requirements
-- ✅ Auto-generate secure passwords
-- ✅ Create admin credentials
-- ✅ Start all services
-- ✅ Display access URLs
-
-### Default Admin Credentials
-
-After first startup, login with:
-- **Email**: `admin@lifeos.local`
-- **Password**: `LifeOS@2024!`
-
-⚠️ **IMPORTANT**: Change these credentials immediately after first login!
-
-### Option 1: Docker with Internal Database (Fully Self-Hosted)
-
-For a completely self-contained installation with internal PostgreSQL database:
-
-```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/lifeos.git
-cd lifeos
-
-# Copy and configure environment
-cp docker/.env.example docker/.env
-# Edit docker/.env with your settings (or use auto-generated values)
-
-# Start with internal database
-docker-compose -f docker-compose.selfhosted.yml up -d
-
-# Include optional services (pgAdmin for DB management)
-docker-compose -f docker-compose.selfhosted.yml --profile with-admin up -d
-
-# Include reverse proxy with SSL support
-docker-compose -f docker-compose.selfhosted.yml --profile with-proxy up -d
-```
-
-**Access Points**:
-- LifeOS App: `http://localhost:8080`
-- pgAdmin (if enabled): `http://localhost:5050`
-
-**Included Services**:
-- PostgreSQL 16 (database)
-- Redis 7 (session cache)
-- LifeOS Application
-- Optional: Nginx reverse proxy with SSL
-- Optional: pgAdmin for database management
-
-### Option 2: Docker with Cloud Backend
-
-Use Docker for the frontend with cloud-hosted Supabase backend:
-
-```bash
-# Clone and configure
-git clone https://github.com/YOUR_USERNAME/lifeos.git
-cd lifeos
-
-# Build and run
-docker-compose up -d
-```
-
-Configure environment variables in `docker-compose.yml` or `.env`:
-```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
-```
-
-### Option 3: Static Hosting
-
-1. Build the application:
+1. Confirm the backend is healthy:
    ```bash
-   npm run build
+   docker compose ps
+   docker compose logs backend --tail=100
+   ```
+2. Verify `JWT_SECRET` is set and identical across restarts. Changing it invalidates previously issued tokens.
+3. If you pre-seeded `ADMIN_EMAIL` / `ADMIN_PASSWORD`, confirm the values were present in `.env` before the first startup.
+4. Clear old browser cookies or open a private window if you previously switched between environments that used different secrets.
+
+#### Import UUID mapping issues
+
+If imported records fail because UUID references do not line up:
+
+1. Make sure the source data preserves the original UUIDs for related entities.
+2. Import parent records before child records so foreign-key lookups have targets available.
+3. If an import was partially applied, remove the incomplete batch before retrying so you do not create duplicate UUID-to-record mappings.
+4. Use database logs and backend logs together to identify the specific table or relation that rejected the UUID.
+
+A helpful starting point is:
+
+```bash
+docker compose logs backend --tail=200
+```
+
+#### Database connectivity issues
+
+If the backend cannot reach PostgreSQL:
+
+1. Check database health and port bindings:
+   ```bash
+   docker compose ps
+   docker compose logs postgres --tail=100
+   ```
+2. Confirm the `.env` values for `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` match what the backend expects.
+3. Wait for the `postgres` healthcheck to pass before judging the app startup; the backend is configured to wait on it.
+4. If you changed credentials after the volume was initialized, recreate the stack or update the database user manually because PostgreSQL keeps the original credentials inside the persisted volume.
+5. Validate direct connectivity from the database container:
+   ```bash
+   docker exec -it lifeos-db pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
    ```
 
-2. Deploy the `dist` folder to any static hosting service:
-   - Nginx
-   - Apache
-   - Netlify
-   - Vercel
-   - Cloudflare Pages
+### Legacy setup wizard
 
-### Docker Management
-
-The interactive management script provides easy access to common operations:
+The repository still includes `docker/docker-setup.sh` if you prefer the interactive bootstrap flow:
 
 ```bash
+chmod +x docker/docker-setup.sh
 ./docker/docker-setup.sh
 ```
 
-**Available Commands**:
-| Command | Description |
-|---------|-------------|
-| Start services | Start core or all services |
-| Stop services | Stop all running services |
-| Restart services | Restart all services |
-| View logs | View logs for specific services |
-| Show status | Display service status |
-| Backup database | Create database backup |
-| Restore database | Restore from backup |
-| Reset admin password | Generate new admin password |
-| Update application | Pull and rebuild latest version |
-| Cleanup | Remove all containers and data |
-
-### Backup & Restore
-
-```bash
-# Create backup
-docker exec lifeos-db pg_dump -U lifeos lifeos > backup_$(date +%Y%m%d).sql
-
-# Restore database
-docker exec -i lifeos-db psql -U lifeos lifeos < backup_20240101.sql
-```
-
-Or use the management script:
-```bash
-./docker/docker-setup.sh
-# Select option 6 for backup, 7 for restore
-```
-
-## Self-Hosted Database Schema
-
-If you're running with the internal database (`docker-compose.selfhosted.yml`), the database schema is automatically initialized from `docker/init-db.sql`. This includes:
-
-- User authentication tables
-- Role-based access control
-- Device inventory with specifications
-- Support user management
-- All core application tables
-
-To customize or extend the schema, modify `docker/init-db.sql` before first startup.
-
-## Backup & Restore (Self-Hosted)
-
-```bash
-# Backup database
-docker exec lifeos-db pg_dump -U lifeos lifeos > backup_$(date +%Y%m%d).sql
-
-# Restore database
-docker exec -i lifeos-db psql -U lifeos lifeos < backup_20240101.sql
-```
+That script remains useful for guided setup, but the root `docker-compose.yml` plus `.env.example` now covers the full first-run flow documented above.
 
 ## Project Structure
 
