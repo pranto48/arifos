@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LogOut, User } from "lucide-react";
 import {
   Sheet,
@@ -21,11 +21,10 @@ import {
 } from '@/components/ai/quickActions';
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
+import { avatarBadgeClass, floatingHeaderClass, iconBadgeClass, sidebarPanelClass } from "@/lib/design-tokens";
 
-
-const mobileHeaderClass = "md:hidden sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt";
-const brandBadgeClass = "w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center";
-const avatarBadgeClass = "w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center";
+const mobileHeaderClass = `${floatingHeaderClass} safe-area-pt md:hidden z-40`;
 
 export function MobileHeader() {
   const { signOut, user } = useAuth();
@@ -60,7 +59,7 @@ export function MobileHeader() {
       <div className="flex items-center justify-between h-14 px-4">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <div className={brandBadgeClass}>
+          <div className={iconBadgeClass}>
             <span className="text-primary font-bold text-sm">L</span>
           </div>
           <span className="font-semibold text-foreground">LifeOS</span>
@@ -91,7 +90,7 @@ export function MobileHeader() {
             </SheetTrigger>
             <SheetContent
               side="right"
-              className="w-[280px] bg-sidebar border-sidebar-border z-[60]"
+              className={cn("z-[60] w-[280px] border-sidebar-border", sidebarPanelClass)}
             >
               <SheetHeader>
                 <SheetTitle className="text-sidebar-foreground">

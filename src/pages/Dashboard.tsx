@@ -16,6 +16,7 @@ import { DashboardCustomizer } from '@/components/dashboard/DashboardCustomizer'
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AiDailyPlanner } from '@/components/dashboard/AiDailyPlanner';
+import { pageHeaderClass, pageShellClass, pageTitleClass, surfaceCardClass } from '@/lib/design-tokens';
 
 // Lazy load heavy chart components
 const UpcomingFamilyEvents = lazy(() => import('@/components/dashboard/UpcomingFamilyEvents').then(m => ({ default: m.UpcomingFamilyEvents })));
@@ -213,7 +214,7 @@ export default function Dashboard() {
         return <Suspense key={widgetId} fallback={<ChartLoader />}><GoalProgressChart goals={stats.goals} /></Suspense>;
       case 'budget-summary':
         return (
-          <Card key={widgetId} className="bg-card border-border">
+          <Card key={widgetId} className={surfaceCardClass}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Wallet className="h-4 w-4" /> {t('dashboard.thisMonthBudget')}
@@ -247,7 +248,7 @@ export default function Dashboard() {
         );
       case 'recent-notes':
         return (
-          <Card key={widgetId} className="bg-card border-border">
+          <Card key={widgetId} className={surfaceCardClass}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <FileText className="h-4 w-4" /> {t('dashboard.recentNotes')}
@@ -271,7 +272,7 @@ export default function Dashboard() {
         );
       case 'upcoming-tasks':
         return (
-          <Card key={widgetId} className="bg-card border-border">
+          <Card key={widgetId} className={surfaceCardClass}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Calendar className="h-4 w-4" /> {t('dashboard.upcomingTasks')}
@@ -331,11 +332,11 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className={pageShellClass}>
       {/* Header */}
-      <div className="flex items-start sm:items-center justify-between gap-3">
+      <div className={pageHeaderClass}>
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold text-foreground truncate">
+          <h1 className={`${pageTitleClass} truncate text-xl md:text-2xl`}>
             {getGreeting()}, {user?.user_metadata?.full_name?.split(' ')[0] || t('dashboard.there')}
           </h1>
           <p className="text-muted-foreground text-xs md:text-sm">
