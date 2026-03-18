@@ -23,6 +23,7 @@ import {
   EXPORT_PRESETS,
 } from '@/lib/dataExportImport';
 import { generateExampleXlsx, parseXlsxFile } from '@/lib/xlsxHelpers';
+import { PRODUCT_ANALYTICS_EVENTS, trackProductAnalyticsEvent } from '@/lib/productAnalytics';
 
 interface DataExportImportButtonProps {
   preset: string;
@@ -296,6 +297,7 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
       setImportEntity('');
     } catch (err: any) {
       toast.error(`Import failed: ${err.message}`);
+      void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.importFailed);
       setImporting(false);
       setImportProgress(0);
     } finally {
@@ -323,12 +325,15 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
 
       if (result.errors.length === 0) {
         toast.success(`Imported ${result.imported} items successfully`);
+        void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.importCompleted);
         setTimeout(() => window.location.reload(), 1500);
       } else {
         toast.warning(`Imported ${result.imported} items with ${result.errors.length} errors`);
+        void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.importFailed);
       }
     } catch (err: any) {
       toast.error(`Import failed: ${err.message}`);
+      void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.importFailed);
     } finally {
       setImporting(false);
       setImportProgress(0);
@@ -362,6 +367,7 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
       }
     } catch (err: any) {
       toast.error(`Import failed: ${err.message}`);
+      void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.importFailed);
     } finally {
       setImporting(false);
       setImportProgress(0);

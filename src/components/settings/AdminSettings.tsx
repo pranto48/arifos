@@ -32,6 +32,7 @@ import { FormFieldSettings } from './FormFieldSettings';
 import { ModuleSettings } from './ModuleSettings';
 import { RoleManagement } from './RoleManagement';
 import { isSelfHosted, getApiUrl } from '@/lib/selfHostedConfig';
+import { resetInternalAnalyticsSettingCache } from '@/lib/productAnalytics';
 import {
   getLicenseInfo,
   saveLicenseInfo,
@@ -105,6 +106,7 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
 
   // App settings state
   const [onboardingEnabled, setOnboardingEnabled] = useState(true);
+  const [internalAnalyticsEnabled, setInternalAnalyticsEnabled] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
 
   // License state
@@ -236,34 +238,40 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
     try {
       const { data } = await supabase
         .from('app_settings')
-        .select('onboarding_enabled')
+        .select('onboarding_enabled, internal_analytics_enabled')
         .eq('id', 'default')
         .maybeSingle();
       
       if (data) {
         setOnboardingEnabled(data.onboarding_enabled);
+        setInternalAnalyticsEnabled(data.internal_analytics_enabled ?? true);
       }
     } catch (error) {
       console.error('Failed to load app settings:', error);
     }
   };
 
-  const updateOnboardingSetting = async (enabled: boolean) => {
+  const updateAppSetting = async (updates: { onboarding_enabled?: boolean; internal_analytics_enabled?: boolean }, successMessage: string, successMessageBn: string) => {
     setSavingSettings(true);
     try {
       const { error } = await supabase
         .from('app_settings')
-        .update({ onboarding_enabled: enabled })
+        .update(updates)
         .eq('id', 'default');
 
       if (error) throw error;
 
-      setOnboardingEnabled(enabled);
+      if (typeof updates.onboarding_enabled === 'boolean') {
+        setOnboardingEnabled(updates.onboarding_enabled);
+      }
+      if (typeof updates.internal_analytics_enabled === 'boolean') {
+        setInternalAnalyticsEnabled(updates.internal_analytics_enabled);
+        resetInternalAnalyticsSettingCache(updates.internal_analytics_enabled);
+      }
+
       toast({
         title: language === 'bn' ? 'সফল' : 'Success',
-        description: language === 'bn' 
-          ? `ওয়েলকাম স্ক্রিন ${enabled ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে।`
-          : `Welcome screen ${enabled ? 'enabled' : 'disabled'}.`,
+        description: language === 'bn' ? successMessageBn : successMessage,
       });
     } catch (error: any) {
       console.error('Failed to update setting:', error);
@@ -275,6 +283,22 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
     } finally {
       setSavingSettings(false);
     }
+  };
+
+  const updateOnboardingSetting = async (enabled: boolean) => {
+    await updateAppSetting(
+      { onboarding_enabled: enabled },
+      `Welcome screen ${enabled ? 'enabled' : 'disabled'}.`,
+      `ওয়েলকাম স্ক্রিন ${enabled ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে।`,
+    );
+  };
+
+  const updateInternalAnalyticsSetting = async (enabled: boolean) => {
+    await updateAppSetting(
+      { internal_analytics_enabled: enabled },
+      `Internal analytics ${enabled ? 'enabled' : 'disabled'}.`,
+      `ইন্টারনাল অ্যানালিটিক্স ${enabled ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে।`,
+    );
   };
 
   const loadUserRoles = async () => {
@@ -604,6 +628,35 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
                       id="onboarding-toggle"
                       checked={onboardingEnabled}
                       onCheckedChange={updateOnboardingSetting}
+                      disabled={savingSettings}
+                    />
+                  </div>
+                </div>
+
+
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-foreground">
+                        {language === 'bn' ? 'ইন্টারনাল অ্যানালিটিক্স' : 'Internal Analytics'}
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {language === 'bn'
+                          ? 'গোপনীয়তা-সুরক্ষিত দৈনিক কাউন্টার ট্র্যাকিং চালু/বন্ধ করুন। নোটের কনটেন্ট বা এআই প্রম্পট সংরক্ষণ করা হয় না।'
+                          : 'Enable or disable privacy-friendly daily counters. No note content or AI prompts are stored.'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {savingSettings && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    <Switch
+                      id="internal-analytics-toggle"
+                      checked={internalAnalyticsEnabled}
+                      onCheckedChange={updateInternalAnalyticsSetting}
                       disabled={savingSettings}
                     />
                   </div>

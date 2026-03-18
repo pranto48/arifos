@@ -16,6 +16,7 @@ import {
   recordQuickActionUsage,
   useQuickActions,
 } from '@/components/ai/quickActions';
+import { PRODUCT_ANALYTICS_EVENTS, trackProductAnalyticsEvent } from '@/lib/productAnalytics';
 
 interface AiQuickActionBarProps {
   compact?: boolean;
@@ -41,6 +42,7 @@ export function AiQuickActionBar({ compact = false }: AiQuickActionBarProps) {
   useEffect(() => {
     if (open) {
       setHistory(getQuickActionHistory());
+      void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.quickActionOpen);
     }
   }, [open]);
 
@@ -77,7 +79,9 @@ export function AiQuickActionBar({ compact = false }: AiQuickActionBarProps) {
         type="button"
         variant={compact ? 'ghost' : 'outline'}
         size={compact ? 'icon' : 'sm'}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+        }}
         className={compact ? 'h-9 w-9' : ''}
       >
         <Sparkles className="h-4 w-4" />

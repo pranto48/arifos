@@ -23,6 +23,7 @@ import { DataExportImportButton } from '@/components/shared/DataExportImportButt
 import { FieldVisibility } from '@/components/shared/FieldVisibility';
 import { MarkdownEditor } from '@/components/notes/MarkdownEditor';
 import { logAiUsage } from '@/lib/aiUsageLogger';
+import { PRODUCT_ANALYTICS_EVENTS, trackProductAnalyticsEvent } from '@/lib/productAnalytics';
 import ReactMarkdown from 'react-markdown';
 
 
@@ -285,6 +286,7 @@ export default function Notes() {
       inputSummary: `note:${note.title}`,
       resultSummary: `created_tasks:${rows.length}`,
     });
+    void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.noteToTaskConversion);
   };
 
   return (
