@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckSquare, Pencil, Trash2, GripVertical, MoreVertical, ChevronDown, ChevronUp, ArrowRightLeft, Repeat, FolderOpen, Settings2, CheckCheck, UserPlus, Flag, CalendarClock, LayoutGrid, List } from 'lucide-react';
+import { CheckSquare, Pencil, Trash2, GripVertical, MoreVertical, ChevronDown, ChevronUp, ArrowRightLeft, Repeat, FolderOpen, Settings2, CheckCheck, UserPlus, Flag, CalendarClock, LayoutGrid, List, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -91,6 +91,7 @@ interface SortableTaskProps {
   onDelete: (id: string) => void;
   onMove: (id: string, currentType: string) => void;
   onAssign: (task: Task) => void;
+  onAiBreakdown: (task: Task) => void;
   onChecklistUpdate: () => void;
   priorityColors: Record<string, string>;
   selectionMode: boolean;
@@ -98,7 +99,7 @@ interface SortableTaskProps {
   onSelectionChange: (id: string, selected: boolean) => void;
 }
 
-function SortableTask({ task, checklists, categories, supportUserInfo, onToggle, onEdit, onDelete, onMove, onAssign, onChecklistUpdate, priorityColors, selectionMode, isSelected, onSelectionChange }: SortableTaskProps) {
+function SortableTask({ task, checklists, categories, supportUserInfo, onToggle, onEdit, onDelete, onMove, onAssign, onAiBreakdown, onChecklistUpdate, priorityColors, selectionMode, isSelected, onSelectionChange }: SortableTaskProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const {
     attributes,
@@ -220,6 +221,10 @@ function SortableTask({ task, checklists, categories, supportUserInfo, onToggle,
               <DropdownMenuItem onClick={() => onAssign(task)}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Assign to User
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onAiBreakdown(task)}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                AI Assist: Breakdown
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -539,6 +544,56 @@ export default function Tasks() {
     setAssignDialogOpen(true);
   };
 
+  const generateChecklistSteps = (task: Task): string[] => {
+    const source = `${task.title}. ${task.description || ''}`.trim();
+    const sentenceSteps = source
+      .split(/\n|\.|;|,/)
+      .map((s) => s.replace(/^[-*\d.\s]+/, '').trim())
+      .filter((s) => s.length > 10)
+      .slice(0, 8);
+
+    if (sentenceSteps.length >= 3) {
+      return sentenceSteps.map((s, idx) => `${idx + 1}. ${s.charAt(0).toUpperCase()}${s.slice(1)}`);
+    }
+
+    return [
+      `Define expected outcome for: ${task.title}`,
+      'List required resources or dependencies',
+      'Execute the first concrete action',
+      'Review progress and adjust next step',
+    ];
+  };
+
+  const handleAiBreakdown = async (task: Task) => {
+    if (!user) return;
+
+    const items = generateChecklistSteps(task);
+    const existing = new Set((checklists[task.id] || []).map((c) => c.title.toLowerCase().trim()));
+    const newItems = items.filter((title) => !existing.has(title.toLowerCase().trim()));
+
+    if (newItems.length === 0) {
+      toast.info('Checklist already contains these breakdown steps');
+      return;
+    }
+
+    const rows = newItems.map((title, i) => ({
+      task_id: task.id,
+      user_id: user.id,
+      title,
+      is_completed: false,
+      sort_order: (checklists[task.id]?.length || 0) + i + 1,
+    }));
+
+    const { error } = await supabase.from('task_checklists').insert(rows as any);
+    if (error) {
+      toast.error('Failed to auto-generate checklist');
+      return;
+    }
+
+    toast.success(`AI Assist added ${newItems.length} subtask${newItems.length > 1 ? 's' : ''}`);
+    loadData(0, true);
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -802,6 +857,7 @@ export default function Tasks() {
                     onDelete={handleDelete}
                     onMove={handleMove}
                     onAssign={handleAssign}
+                    onAiBreakdown={handleAiBreakdown}
                     onChecklistUpdate={() => loadData(0, true)}
                     priorityColors={priorityColors}
                     selectionMode={selectionMode}

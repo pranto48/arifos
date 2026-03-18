@@ -10,6 +10,7 @@ import { DashboardModeSwitcher } from './DashboardModeSwitcher';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileHeader } from './MobileHeader';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { AiQuickActionBar } from '@/components/ai/AiQuickActionBar';
 import { Loader2 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -59,6 +60,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <header className="hidden md:flex sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-xl items-center justify-between px-6">
               <div className="flex items-center gap-4">
                 <GlobalSearch />
+                <AiQuickActionBar />
                 <DashboardModeSwitcher />
               </div>
               <div className="flex items-center gap-2">
