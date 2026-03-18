@@ -44,14 +44,31 @@ export function AiQuickActionBar({ compact = false }: AiQuickActionBarProps) {
     }
   }, [open]);
 
-  const groupedActions = useMemo(() => {
-    return {
-      navigation: actions.filter((action) => action.group === 'navigation'),
-      createActions: actions.filter((action) => action.group === 'create-actions'),
-      aiActions: actions.filter((action) => action.group === 'ai-actions'),
-      adminSystem: actions.filter((action) => action.group === 'admin-system'),
-    };
-  }, [actions]);
+  const groups = useMemo(
+    () => [
+      {
+        key: 'navigation',
+        heading: QUICK_ACTION_GROUP_LABELS.navigation,
+        actions: actions.filter((action) => action.group === 'navigation'),
+      },
+      {
+        key: 'create-actions',
+        heading: QUICK_ACTION_GROUP_LABELS['create-actions'],
+        actions: actions.filter((action) => action.group === 'create-actions'),
+      },
+      {
+        key: 'ai-actions',
+        heading: QUICK_ACTION_GROUP_LABELS['ai-actions'],
+        actions: actions.filter((action) => action.group === 'ai-actions'),
+      },
+      {
+        key: 'admin-system',
+        heading: QUICK_ACTION_GROUP_LABELS['admin-system'],
+        actions: actions.filter((action) => action.group === 'admin-system'),
+      },
+    ],
+    [actions],
+  );
 
   const recentActions = useMemo(
     () =>
@@ -69,6 +86,42 @@ export function AiQuickActionBar({ compact = false }: AiQuickActionBarProps) {
     await action.run();
     recordQuickActionUsage(action.id);
     setHistory(getQuickActionHistory());
+  };
+
+  const renderActionRow = (actionId: string, recentLabel?: string) => {
+    const action = actionById[actionId];
+    if (!action) return null;
+
+    return (
+      <CommandItem
+        key={`${action.id}-${recentLabel ?? 'default'}`}
+        value={`${action.label} ${action.aliases.join(' ')} ${action.group} ${action.shortcut}`}
+        onSelect={() => runAction(action.id)}
+        className="py-3"
+      >
+        <action.icon className="mr-2 h-4 w-4 shrink-0" />
+        <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{action.label}</span>
+              {recentLabel && <span className="text-xs text-muted-foreground">{recentLabel}</span>}
+            </div>
+            <p className="text-xs text-muted-foreground">{action.hint}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {action.aliases.map((alias) => (
+                <span
+                  key={`${action.id}-${alias}`}
+                  className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground"
+                >
+                  {alias}
+                </span>
+              ))}
+            </div>
+          </div>
+          <kbd className="rounded border px-1.5 py-0.5 text-xs text-muted-foreground">{action.shortcut}</kbd>
+        </div>
+      </CommandItem>
+    );
   };
 
   return (
@@ -92,108 +145,20 @@ export function AiQuickActionBar({ compact = false }: AiQuickActionBarProps) {
           {recentActions.length > 0 && (
             <>
               <CommandGroup heading="Recent Commands">
-                {recentActions.map(({ executedAt, action }, index) => (
-                  <CommandItem
-                    key={`${action.id}-${executedAt}-${index}`}
-                    value={`${action.label} ${action.aliases.join(' ')} recent`}
-                    onSelect={() => runAction(action.id)}
-                  >
-                    <action.icon className="h-4 w-4 mr-2" />
-                    <div className="flex flex-1 items-center justify-between gap-3">
-                      <div className="flex flex-col">
-                        <span>{action.label}</span>
-                        <span className="text-xs text-muted-foreground">{action.hint}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">Recent</span>
-                    </div>
-                  </CommandItem>
-                ))}
+                {recentActions.map(({ action, executedAt }, index) =>
+                  renderActionRow(action.id, index === 0 ? 'Most recent' : new Date(executedAt).toLocaleDateString()),
+                )}
               </CommandGroup>
               <CommandSeparator />
             </>
           )}
 
-          <CommandGroup heading={QUICK_ACTION_GROUP_LABELS.navigation}>
-            {groupedActions.navigation.map((action) => (
-              <CommandItem
-                key={action.id}
-                value={`${action.label} ${action.aliases.join(' ')} ${action.group}`}
-                onSelect={() => runAction(action.id)}
-              >
-                <action.icon className="h-4 w-4 mr-2" />
-                <div className="flex flex-1 items-center justify-between gap-3">
-                  <div className="flex flex-col">
-                    <span>{action.label}</span>
-                    <span className="text-xs text-muted-foreground">{action.hint}</span>
-                  </div>
-                  <kbd className="text-xs text-muted-foreground border px-1.5 py-0.5 rounded">{action.shortcut}</kbd>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-
-          <CommandSeparator />
-
-          <CommandGroup heading={QUICK_ACTION_GROUP_LABELS['create-actions']}>
-            {groupedActions.createActions.map((action) => (
-              <CommandItem
-                key={action.id}
-                value={`${action.label} ${action.aliases.join(' ')} ${action.group}`}
-                onSelect={() => runAction(action.id)}
-              >
-                <action.icon className="h-4 w-4 mr-2" />
-                <div className="flex flex-1 items-center justify-between gap-3">
-                  <div className="flex flex-col">
-                    <span>{action.label}</span>
-                    <span className="text-xs text-muted-foreground">{action.hint}</span>
-                  </div>
-                  <kbd className="text-xs text-muted-foreground border px-1.5 py-0.5 rounded">{action.shortcut}</kbd>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-
-          <CommandSeparator />
-
-          <CommandGroup heading={QUICK_ACTION_GROUP_LABELS['ai-actions']}>
-            {groupedActions.aiActions.map((action) => (
-              <CommandItem
-                key={action.id}
-                value={`${action.label} ${action.aliases.join(' ')} ${action.group}`}
-                onSelect={() => runAction(action.id)}
-              >
-                <action.icon className="h-4 w-4 mr-2" />
-                <div className="flex flex-1 items-center justify-between gap-3">
-                  <div className="flex flex-col">
-                    <span>{action.label}</span>
-                    <span className="text-xs text-muted-foreground">{action.hint}</span>
-                  </div>
-                  <kbd className="text-xs text-muted-foreground border px-1.5 py-0.5 rounded">{action.shortcut}</kbd>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-
-          <CommandSeparator />
-
-          <CommandGroup heading={QUICK_ACTION_GROUP_LABELS['admin-system']}>
-            {groupedActions.adminSystem.map((action) => (
-              <CommandItem
-                key={action.id}
-                value={`${action.label} ${action.aliases.join(' ')} ${action.group}`}
-                onSelect={() => runAction(action.id)}
-              >
-                <action.icon className="h-4 w-4 mr-2" />
-                <div className="flex flex-1 items-center justify-between gap-3">
-                  <div className="flex flex-col">
-                    <span>{action.label}</span>
-                    <span className="text-xs text-muted-foreground">{action.hint}</span>
-                  </div>
-                  <kbd className="text-xs text-muted-foreground border px-1.5 py-0.5 rounded">{action.shortcut}</kbd>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          {groups.map((group, index) => (
+            <div key={group.key}>
+              <CommandGroup heading={group.heading}>{group.actions.map((action) => renderActionRow(action.id))}</CommandGroup>
+              {index < groups.length - 1 && <CommandSeparator />}
+            </div>
+          ))}
         </CommandList>
       </CommandDialog>
     </>

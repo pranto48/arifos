@@ -147,7 +147,7 @@ export function MobileHeader() {
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="min-h-9 rounded-full px-3.5 text-xs font-medium transition-all duration-200 active:scale-[0.97] active:bg-secondary/80"
+                className="h-7 rounded-full px-2.5 text-xs"
                 onClick={() => handleTopQuickAction(action.id)}
               >
                 {action.label}
