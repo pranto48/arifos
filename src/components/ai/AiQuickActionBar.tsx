@@ -131,7 +131,7 @@ export function AiQuickActionBar({ compact = false }: AiQuickActionBarProps) {
         variant={compact ? 'ghost' : 'outline'}
         size={compact ? 'icon' : 'sm'}
         onClick={() => setOpen(true)}
-        className={compact ? 'h-9 w-9' : ''}
+        className={compact ? `h-11 w-11 rounded-2xl transition-all duration-200 active:scale-[0.96] ${open ? 'bg-primary/10 text-primary shadow-sm' : ''}` : ''}
       >
         <Sparkles className="h-4 w-4" />
         {!compact && <span className="ml-2">AI Quick Action</span>}

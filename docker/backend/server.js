@@ -6,8 +6,27 @@
 
 const http = require("http");
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 
 // --- Configuration ---
+const BACKUP_STALE_DAYS = 7;
+
+function readJsonFile(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+const backendPackage = readJsonFile(path.join(__dirname, "package.json")) || {};
+const rootPackage = readJsonFile(path.join(__dirname, "..", "..", "package.json")) || {};
+const appVersion =
+  process.env.APP_VERSION || rootPackage.version || backendPackage.version || "unknown";
+const buildHash =
+  process.env.APP_BUILD_HASH || process.env.BUILD_HASH || process.env.GIT_COMMIT || "unknown";
+
 const PORT = process.env.API_PORT || 3001;
 let dbClient = null;
 let dbType = process.env.DB_TYPE || "postgresql"; // postgresql or mysql
@@ -1055,6 +1074,105 @@ routes["POST /api/license/verify"] = async (req, res) => {
 };
 
 // API: Get license status (for UI)
+routes["GET /api/system/health"] = async (req, res) => {
+  const startedAt = Date.now();
+
+  const api = {
+    status: appState.status === "ready" ? "healthy" : "warning",
+    message:
+      appState.status === "ready"
+        ? "API is responding normally."
+        : `API is reachable but currently ${appState.status}. ${appState.message}`,
+    responseTimeMs: null,
+  };
+
+  let database = {
+    status: "offline",
+    message: "Database connection is unavailable. Check DB credentials and container health.",
+  };
+
+  let backup = {
+    status: "warning",
+    message: "No backup history found. Create or schedule a backup.",
+    lastBackupAt: null,
+  };
+
+  try {
+    if (!dbClient) {
+      dbClient = await connectDatabase({});
+    }
+
+    await query("SELECT 1");
+    database = {
+      status: "healthy",
+      message: `Database is reachable over ${dbClient.type}.`,
+    };
+
+    try {
+      const backupRows = await query(
+        "SELECT MAX(last_backup_at) AS last_backup_at FROM backup_schedules",
+      );
+      const lastBackupAt = backupRows?.[0]?.last_backup_at || null;
+
+      if (lastBackupAt) {
+        const backupDate = new Date(lastBackupAt);
+        const backupAgeMs = Date.now() - backupDate.getTime();
+        const staleThresholdMs = BACKUP_STALE_DAYS * 24 * 60 * 60 * 1000;
+
+        if (Number.isFinite(backupAgeMs) && backupAgeMs > staleThresholdMs) {
+          backup = {
+            status: "warning",
+            message: `Backup is older than ${BACKUP_STALE_DAYS} days. Run a fresh backup now.`,
+            lastBackupAt,
+          };
+        } else {
+          backup = {
+            status: "healthy",
+            message: "Recent backup detected.",
+            lastBackupAt,
+          };
+        }
+      }
+    } catch (err) {
+      backup = {
+        status: "warning",
+        message: "Backup status could not be read. Verify the backup_schedules table exists.",
+        lastBackupAt: null,
+      };
+    }
+  } catch (err) {
+    database = {
+      status: "offline",
+      message: "Database check failed. Verify the DB container and connection settings.",
+    };
+    backup = {
+      status: "offline",
+      message: "Backup status unavailable because the database check failed.",
+      lastBackupAt: null,
+    };
+  }
+
+  const app = {
+    version: appVersion,
+    buildHash,
+    status: buildHash === "unknown" ? "warning" : "healthy",
+    message:
+      buildHash === "unknown"
+        ? "Build hash is unavailable. Set APP_BUILD_HASH or GIT_COMMIT during deployment for traceability."
+        : "Version metadata is available.",
+  };
+
+  api.responseTimeMs = Date.now() - startedAt;
+
+  sendJson(res, 200, {
+    timestamp: new Date().toISOString(),
+    api,
+    database,
+    backup,
+    app,
+  });
+};
+
 routes["GET /api/license/status"] = async (req, res) => {
   await loadLicenseCache();
   const licenseKey = await getLicenseSetting("app_license_key");
@@ -1173,6 +1291,7 @@ async function checkSetupMiddleware(req) {
     "GET /api/auth/session",
     "POST /api/auth/change-password",
     "POST /api/auth/update-email",
+    "GET /api/system/health",
   ];
   if (setupExempt.includes(routeKey)) return true;
 

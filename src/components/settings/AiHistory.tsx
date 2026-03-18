@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Bot, Filter, History } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { isSelfHosted, selfHostedApi } from '@/lib/selfHostedConfig';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 
 interface AiUsageLogRow {
   id: string;
+  user_id?: string;
   action_type: string;
   input_summary: string | null;
   result_summary: string | null;
@@ -29,6 +31,17 @@ export function AiHistory() {
   useEffect(() => {
     const load = async () => {
       if (!user) return;
+
+      if (isSelfHosted()) {
+        const data = await selfHostedApi.selectAll('ai_usage_log');
+        const scopedRows = (data as AiUsageLogRow[])
+          .filter((row: any) => row.user_id === user.id)
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 300);
+        setLogs(scopedRows);
+        return;
+      }
+
       const { data } = await supabase
         .from('ai_usage_log')
         .select('id,action_type,input_summary,result_summary,source,created_at')

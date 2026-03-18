@@ -103,11 +103,37 @@ export interface ImportPreviewRelationRemap {
   count: number;
 }
 
+export interface ImportPreviewIdConversion {
+  entity: string;
+  rowIndex: number;
+  originalId: string;
+  convertedId: string;
+}
+
+export interface ImportPreviewRowRemap {
+  entity: string;
+  rowIndex: number;
+  fkColumn: string;
+  targetEntity: string;
+  from: string;
+  to: string;
+}
+
+export interface ImportPreviewEntityBreakdown {
+  entity: string;
+  rows: number;
+  idAutoConverted: number;
+  relationshipsRemapped: number;
+}
+
 export interface ImportPreviewSummary {
   fixedPayload: any;
   idAutoConverted: number;
   relationshipsRemapped: number;
   relationRemapDetails: ImportPreviewRelationRemap[];
+  idConversionDetails: ImportPreviewIdConversion[];
+  rowRemapDetails: ImportPreviewRowRemap[];
+  entityBreakdown: ImportPreviewEntityBreakdown[];
   warnings: ImportPreviewWarning[];
   schemaSummary: {
     entitiesDetected: number;
@@ -161,6 +187,10 @@ function applyIdAndFkRemap(row: any, entity: string, idRemapMap: Record<string, 
   return next;
 }
 
+function isImportantRemapEntity(entity: string): boolean {
+  return entity.startsWith('device_') || entity.startsWith('support_');
+}
+
 export function buildImportPreview(payload: any, userId: string): ImportPreviewSummary {
   if (!payload?.data || !payload?.exportType) {
     throw new Error('Invalid export file. Missing "data" or "exportType" field.');
@@ -175,6 +205,9 @@ export function buildImportPreview(payload: any, userId: string): ImportPreviewS
   const fixedData: Record<string, any[]> = {};
   const warnings: ImportPreviewWarning[] = [];
   const relationRemapCounter = new Map<string, ImportPreviewRelationRemap>();
+  const idConversionDetails: ImportPreviewIdConversion[] = [];
+  const rowRemapDetails: ImportPreviewRowRemap[] = [];
+  const entityBreakdown: ImportPreviewEntityBreakdown[] = [];
 
   let rowsDetected = 0;
   let entitiesDetected = 0;
@@ -191,6 +224,7 @@ export function buildImportPreview(payload: any, userId: string): ImportPreviewS
     if (rows === undefined) {
       missingEntities.push(entity);
       fixedData[entity] = [];
+      entityBreakdown.push({ entity, rows: 0, idAutoConverted: 0, relationshipsRemapped: 0 });
       continue;
     }
 
@@ -202,11 +236,14 @@ export function buildImportPreview(payload: any, userId: string): ImportPreviewS
         message: `Expected an array for ${entity}, received ${typeof rows}`,
       });
       fixedData[entity] = [];
+      entityBreakdown.push({ entity, rows: 0, idAutoConverted: 0, relationshipsRemapped: 0 });
       continue;
     }
 
     entitiesDetected++;
     rowsDetected += rows.length;
+    let entityIdAutoConverted = 0;
+    let entityRelationshipsRemapped = 0;
 
     fixedData[entity] = rows.map((row: any, rowIndex: number) => {
       if (!row || typeof row !== 'object' || Array.isArray(row)) {
@@ -232,11 +269,41 @@ export function buildImportPreview(payload: any, userId: string): ImportPreviewS
         });
       }
 
+      if (typeof row.id === 'string' && typeof remapped.id === 'string' && row.id !== remapped.id) {
+        entityIdAutoConverted += 1;
+        idConversionDetails.push({
+          entity,
+          rowIndex,
+          originalId: row.id,
+          convertedId: remapped.id,
+        });
+        warnings.push({
+          entity,
+          rowIndex,
+          message: `ID auto-converted from ${row.id} to ${remapped.id}.`,
+        });
+      }
+
       const fkMap = FOREIGN_KEY_REMAP[entity] || {};
       for (const [fkColumn, targetEntity] of Object.entries(fkMap)) {
         const originalValue = row[fkColumn];
         const remappedValue = remapped[fkColumn];
         if (typeof originalValue === 'string' && typeof remappedValue === 'string' && originalValue !== remappedValue) {
+          entityRelationshipsRemapped += 1;
+          rowRemapDetails.push({
+            entity,
+            rowIndex,
+            fkColumn,
+            targetEntity,
+            from: originalValue,
+            to: remappedValue,
+          });
+          warnings.push({
+            entity,
+            rowIndex,
+            message: `${fkColumn} remapped from ${originalValue} to ${remappedValue}.`,
+          });
+
           const key = `${entity}:${fkColumn}:${targetEntity}`;
           const existing = relationRemapCounter.get(key);
           if (existing) {
@@ -254,6 +321,13 @@ export function buildImportPreview(payload: any, userId: string): ImportPreviewS
 
       return remapped;
     });
+
+    entityBreakdown.push({
+      entity,
+      rows: rows.length,
+      idAutoConverted: entityIdAutoConverted,
+      relationshipsRemapped: entityRelationshipsRemapped,
+    });
   }
 
   const fixedPayload = {
@@ -261,7 +335,12 @@ export function buildImportPreview(payload: any, userId: string): ImportPreviewS
     data: fixedData,
   };
 
-  const relationRemapDetails = Array.from(relationRemapCounter.values()).sort((a, b) => b.count - a.count);
+  const relationRemapDetails = Array.from(relationRemapCounter.values())
+    .sort((a, b) => {
+      const importantDiff = Number(isImportantRemapEntity(b.entity) || isImportantRemapEntity(b.targetEntity)) - Number(isImportantRemapEntity(a.entity) || isImportantRemapEntity(a.targetEntity));
+      if (importantDiff !== 0) return importantDiff;
+      return b.count - a.count;
+    });
   const relationshipsRemapped = relationRemapDetails.reduce((sum, item) => sum + item.count, 0);
 
   return {
@@ -269,6 +348,9 @@ export function buildImportPreview(payload: any, userId: string): ImportPreviewS
     idAutoConverted,
     relationshipsRemapped,
     relationRemapDetails,
+    idConversionDetails,
+    rowRemapDetails,
+    entityBreakdown,
     warnings,
     schemaSummary: {
       entitiesDetected,
