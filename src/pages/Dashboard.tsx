@@ -1,8 +1,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  CheckSquare, FileText, Wallet, Target, 
-  Calendar, Clock, ArrowUpRight, ArrowDownRight, Lightbulb, Settings2, Sparkles, ListTodo, Timer
+import {
+  CheckSquare, FileText, Wallet, Target,
+  Calendar, Clock, ArrowUpRight, ArrowDownRight, Lightbulb, Settings2, Sparkles, ListTodo, Timer, ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +59,7 @@ export default function Dashboard() {
     activeGoals: 0,
     recentNotes: [] as any[],
     upcomingTasks: [] as any[],
+    openTasks: [] as any[],
     officeTasks: 0,
     personalTasks: 0,
     officeNotes: 0,
@@ -98,10 +99,18 @@ export default function Dashboard() {
 
     const tasks = tasksRes.data || [];
     const notes = notesRes.data || [];
-    const todayTasks = tasks.filter(t => t.due_date?.split('T')[0] === today && t.status !== 'completed').length;
-    const completedTasks = tasks.filter(t => t.status === 'completed').length;
-    const overdueTasks = tasks.filter(t => t.due_date && t.due_date < new Date().toISOString() && t.status !== 'completed').length;
-    const upcomingTasks = tasks.filter(t => t.status !== 'completed').slice(0, 5);
+    const activeModeTasks = tasks.filter(t => (t.task_type || 'office') === mode);
+    const openModeTasks = activeModeTasks.filter(t => t.status !== 'completed');
+    const todayTasks = openModeTasks.filter(t => t.due_date?.split('T')[0] === today).length;
+    const completedTasks = activeModeTasks.filter(t => t.status === 'completed').length;
+    const overdueTasks = openModeTasks.filter(t => t.due_date && t.due_date < new Date().toISOString()).length;
+    const upcomingTasks = [...openModeTasks]
+      .sort((a, b) => {
+        const dateA = a.due_date ? new Date(a.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+        const dateB = b.due_date ? new Date(b.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+        return dateA - dateB;
+      })
+      .slice(0, 5);
 
     // Count by type
     const officeTasks = tasks.filter(t => t.task_type === 'office' && t.status !== 'completed').length;
@@ -126,6 +135,7 @@ export default function Dashboard() {
       activeGoals: goalsRes.data?.length || 0,
       recentNotes: notes.slice(0, 3),
       upcomingTasks,
+      openTasks: openModeTasks,
       officeTasks,
       personalTasks,
       officeNotes,
@@ -173,7 +183,7 @@ export default function Dashboard() {
         { title: 'Personal Projects', value: stats.personalProjects, icon: Lightbulb, color: 'text-primary' },
       ];
 
-  const topPriorityTasks = [...stats.upcomingTasks]
+  const topPriorityTasks = [...stats.openTasks]
     .sort((a, b) => {
       const priorityScore = { urgent: 4, high: 3, medium: 2, low: 1 } as const;
       const scoreA = priorityScore[(a.priority || 'low') as keyof typeof priorityScore] || 1;
@@ -186,6 +196,12 @@ export default function Dashboard() {
       return dateA - dateB;
     })
     .slice(0, 3);
+
+  const heroChips = [
+    { label: 'Priority Queue', value: topPriorityTasks.length },
+    { label: 'Overdue', value: stats.overdueTasks },
+    { label: 'Open Tasks', value: stats.todayTasks + stats.overdueTasks },
+  ];
 
   const handlePlanMyDay = () => {
     window.dispatchEvent(new Event('ai-plan-my-day'));
@@ -356,50 +372,69 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <Card className="border-primary/25 bg-gradient-to-br from-primary/15 via-card to-card shadow-sm">
-        <CardContent className="p-5 md:p-6 space-y-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-wider text-primary/80 font-semibold">Dashboard Focus</p>
-              <h2 className="text-2xl md:text-3xl font-bold leading-tight text-foreground">Your top priorities today</h2>
-              <p className="text-sm text-muted-foreground">Stay on track with the most important items and jump into action instantly.</p>
+      <Card className="overflow-hidden border-primary/25 bg-gradient-to-br from-primary/20 via-primary/5 to-card shadow-sm">
+        <CardContent className="relative p-5 md:p-6 space-y-6">
+          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/3 bg-gradient-to-l from-primary/10 to-transparent md:block" />
+
+          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl space-y-3">
+              <p className="text-xs uppercase tracking-[0.22em] text-primary/80 font-semibold">Dashboard Focus</p>
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight tracking-tight text-foreground">
+                Your top priorities,
+                <span className="block text-primary">ready for action.</span>
+              </h2>
+              <p className="max-w-xl text-sm md:text-base text-muted-foreground">
+                Review the highest-priority tasks, spot overdue work fast, and jump straight into focus mode or AI-assisted planning.
+              </p>
             </div>
-            <div className="flex flex-wrap gap-2 md:justify-end">
-              <div className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs font-medium">
-                Overdue <span className="font-mono text-foreground ml-1">{stats.overdueTasks}</span>
-              </div>
-              <div className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs font-medium">
-                Open Tasks <span className="font-mono text-foreground ml-1">{stats.todayTasks + stats.overdueTasks}</span>
-              </div>
+
+            <div className="relative flex flex-wrap gap-2 lg:max-w-sm lg:justify-end">
+              {heroChips.map((chip) => (
+                <div
+                  key={chip.label}
+                  className="min-w-[108px] rounded-full border border-border/60 bg-background/80 px-3 py-2 backdrop-blur"
+                >
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{chip.label}</p>
+                  <p className="mt-0.5 font-mono text-base font-semibold text-foreground">{chip.value}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+          <div className="relative grid grid-cols-1 gap-3 md:grid-cols-3">
             {topPriorityTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground md:col-span-3 rounded-lg border border-dashed border-border/70 bg-background/40 px-3 py-3">
+              <p className="text-sm text-muted-foreground md:col-span-3 rounded-xl border border-dashed border-border/70 bg-background/50 px-4 py-4">
                 No active priority tasks found. You're all clear.
               </p>
             ) : (
               topPriorityTasks.map((task, index) => (
-                <div key={task.id} className="rounded-lg border border-border/60 bg-background/60 px-3 py-3">
-                  <p className="text-xs text-muted-foreground">Priority #{index + 1}</p>
-                  <p className="text-sm font-semibold text-foreground truncate mt-1">{task.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {task.due_date ? `Due ${format(new Date(task.due_date), 'MMM d')}` : 'No due date'}
-                  </p>
+                <div key={task.id} className="rounded-xl border border-border/60 bg-background/70 px-4 py-4 shadow-sm backdrop-blur">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Priority #{index + 1}</p>
+                      <p className="mt-2 text-sm font-semibold leading-6 text-foreground line-clamp-2">{task.title}</p>
+                    </div>
+                    <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold capitalize text-primary">
+                      {task.priority || 'low'}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{task.due_date ? `Due ${format(new Date(task.due_date), 'MMM d')}` : 'No due date'}</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </div>
                 </div>
               ))
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => navigate('/time-tracking')}>
+          <div className="relative flex flex-wrap gap-2">
+            <Button size="sm" className="shadow-sm" onClick={() => navigate('/time-tracking')}>
               <Timer className="h-4 w-4 mr-1" /> Start Focus
             </Button>
-            <Button size="sm" variant="secondary" onClick={handlePlanMyDay}>
+            <Button size="sm" variant="secondary" className="shadow-sm" onClick={handlePlanMyDay}>
               <Sparkles className="h-4 w-4 mr-1" /> Plan My Day
             </Button>
-            <Button size="sm" variant="outline" onClick={() => navigate('/tasks')}>
+            <Button size="sm" variant="outline" className="bg-background/70" onClick={() => navigate('/tasks')}>
               <ListTodo className="h-4 w-4 mr-1" /> Open Tasks
             </Button>
           </div>

@@ -463,7 +463,10 @@ export default function Tasks() {
     }).eq('id', id);
     // Update local state instead of full reload
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: completed ? 'completed' : 'todo' } : t));
-    toast.success(completed ? 'Task marked complete' : 'Task marked active');
+    toast.success(completed ? 'Task marked complete' : 'Task marked active', {
+      description: completed ? 'Nice work — it has been moved out of your active list.' : 'The task is back in your active queue.',
+      duration: 1800,
+    });
   };
 
   const handleEdit = (task: Task) => {

@@ -188,6 +188,7 @@ export default function Settings() {
           {!isMobile && (
             <h2 className={`${pageTitleClass} mb-6 text-xl`}>{getCategoryTitle()}</h2>
           )}
+          {isSelfHosted() ? <SelfHostedHealthCard /> : null}
           <SectionErrorBoundary sectionName={getCategoryTitle()}>
             {renderContent()}
           </SectionErrorBoundary>

@@ -56,17 +56,20 @@ export function MobileHeader() {
 
   return (
     <header className={mobileHeaderClass}>
-      <div className="flex items-center justify-between h-14 px-4">
+      <div className="flex items-center justify-between gap-3 min-h-[4rem] px-4 py-2">
         {/* Logo */}
         <div className="flex items-center gap-2">
           <div className={iconBadgeClass}>
             <span className="text-primary font-bold text-sm">L</span>
           </div>
-          <span className="font-semibold text-foreground">LifeOS</span>
+          <div className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-foreground">LifeOS</span>
+            <span className="block text-[11px] text-muted-foreground">Mobile workspace</span>
+          </div>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-3">
           <AiStatusWidget collapsed />
           <AiQuickActionBar compact />
           <DashboardModeSwitcher />
@@ -79,7 +82,7 @@ export function MobileHeader() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full"
+                className={`group ${utilityButtonClass} rounded-full`}
               >
                 <div className={avatarBadgeClass}>
                   <span className="text-primary text-xs font-semibold">
@@ -132,17 +135,17 @@ export function MobileHeader() {
       </div>
 
       {/* Search Bar */}
-      <div className="px-4 pb-3 space-y-2">
+      <div className="space-y-3 px-4 pb-4">
         <GlobalSearch />
         {topQuickActions.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {topQuickActions.map((action) => (
               <Button
                 key={action.id}
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="h-7 px-2.5 text-xs"
+                className="h-7 rounded-full px-2.5 text-xs"
                 onClick={() => handleTopQuickAction(action.id)}
               >
                 {action.label}

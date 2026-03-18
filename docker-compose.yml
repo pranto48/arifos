@@ -1,15 +1,24 @@
 # LifeOS Docker Compose
 # ─────────────────────────────────────────────────────────────
 # Profile quick start:
-#   Development: docker compose --profile dev up --build
-#   Production : docker compose --profile prod up -d
+#   Development: COMPOSE_PROFILES=dev docker compose up --build
+#   Production : COMPOSE_PROFILES=prod docker compose up -d
 #
 # First run:
 #   1) cp .env.example .env
-#   2) docker compose --profile prod up -d
-#   3) Open http://localhost:${APP_PORT:-3377}
-#   4) Complete admin bootstrap wizard (or set ADMIN_EMAIL/ADMIN_PASSWORD)
+#   2) Review required secrets (POSTGRES_PASSWORD, JWT_SECRET)
+#   3) docker compose up -d
+#   4) Open ${LIFEOS_URL:-http://localhost:3377}
+#   5) Complete the admin bootstrap wizard or pre-set ADMIN_EMAIL/ADMIN_PASSWORD
 # ─────────────────────────────────────────────────────────────
+
+x-profile-notes:
+  dev: &profile-dev
+    profiles: ["dev"]
+  prod: &profile-prod
+    profiles: ["prod"]
+  shared: &profile-shared
+    profiles: ["dev", "prod"]
 
 x-backend-env: &backend-env
   API_PORT: 3001
@@ -25,9 +34,30 @@ x-backend-env: &backend-env
   ADMIN_EMAIL: ${ADMIN_EMAIL:-}
   ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
 
+x-web-healthcheck: &web-healthcheck
+  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+x-backend-healthcheck: &backend-healthcheck
+  test: ["CMD", "node", "-e", "const http = require('http'); http.get('http://localhost:3001/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
+  interval: 10s
+  timeout: 5s
+  retries: 12
+  start_period: 60s
+
+x-postgres-healthcheck: &postgres-healthcheck
+  test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lifeos} -d ${POSTGRES_DB:-lifeos}"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
 services:
   lifeos-prod:
-    profiles: ["prod"]
+    <<: *profile-prod
     build:
       context: .
       dockerfile: Dockerfile
@@ -37,7 +67,6 @@ services:
       - "${HTTPS_PORT:-3378}:443" # HTTPS optional when SSL certs are mounted
     environment:
       NODE_ENV: production
-      # URL used by frontend runtime proxy (HTTP or HTTPS)
       LIFEOS_URL: ${LIFEOS_URL:-http://localhost:3377}
     volumes:
       # Optional SSL cert mounts:
@@ -48,17 +77,12 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    healthcheck: *web-healthcheck
     networks:
       - lifeos-network
 
   lifeos-dev:
-    profiles: ["dev"]
+    <<: *profile-dev
     build:
       context: .
       dockerfile: Dockerfile
@@ -76,16 +100,15 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      <<: *web-healthcheck
       interval: 15s
-      timeout: 10s
       retries: 5
       start_period: 25s
     networks:
       - lifeos-network
 
   backend:
-    profiles: ["dev", "prod"]
+    <<: *profile-shared
     build:
       context: ./docker/backend
       dockerfile: Dockerfile
@@ -95,17 +118,12 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "node", "-e", "const http = require('http'); http.get('http://localhost:3001/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 60s
+    healthcheck: *backend-healthcheck
     networks:
       - lifeos-network
 
   postgres:
-    profiles: ["dev", "prod"]
+    <<: *profile-shared
     image: postgres:16-alpine
     container_name: lifeos-db
     environment:
@@ -117,12 +135,7 @@ services:
       - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
       - ./docker/init-data-tables.sql:/docker-entrypoint-initdb.d/02-data-tables.sql:ro
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lifeos} -d ${POSTGRES_DB:-lifeos}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+    healthcheck: *postgres-healthcheck
     networks:
       - lifeos-network
 
