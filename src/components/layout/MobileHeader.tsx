@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LogOut, User } from "lucide-react";
 import {
   Sheet,
@@ -24,8 +24,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 
 const mobileHeaderClass = "md:hidden sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt";
-const brandBadgeClass = "w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center";
-const avatarBadgeClass = "w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center";
+const brandBadgeClass = "h-10 w-10 rounded-xl bg-primary/15 ring-1 ring-primary/10 flex items-center justify-center shadow-sm";
+const avatarBadgeClass = "h-10 w-10 rounded-full bg-primary/15 ring-1 ring-primary/10 flex items-center justify-center transition-transform duration-200 group-data-[state=open]:scale-95";
+const utilityButtonClass = "h-11 w-11 rounded-2xl transition-all duration-200 active:scale-[0.96] data-[state=open]:scale-[0.98] data-[state=open]:bg-primary/10 data-[state=open]:text-primary";
 
 export function MobileHeader() {
   const { signOut, user } = useAuth();
@@ -57,17 +58,20 @@ export function MobileHeader() {
 
   return (
     <header className={mobileHeaderClass}>
-      <div className="flex items-center justify-between h-14 px-4">
+      <div className="flex items-center justify-between gap-3 min-h-[4rem] px-4 py-2">
         {/* Logo */}
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-3">
           <div className={brandBadgeClass}>
             <span className="text-primary font-bold text-sm">L</span>
           </div>
-          <span className="font-semibold text-foreground">LifeOS</span>
+          <div className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-foreground">LifeOS</span>
+            <span className="block text-[11px] text-muted-foreground">Mobile workspace</span>
+          </div>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-3">
           <AiStatusWidget collapsed />
           <AiQuickActionBar compact />
           <DashboardModeSwitcher />
@@ -80,7 +84,7 @@ export function MobileHeader() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full"
+                className={`group ${utilityButtonClass} rounded-full`}
               >
                 <div className={avatarBadgeClass}>
                   <span className="text-primary text-xs font-semibold">
@@ -133,17 +137,17 @@ export function MobileHeader() {
       </div>
 
       {/* Search Bar */}
-      <div className="px-4 pb-3 space-y-2">
+      <div className="space-y-3 px-4 pb-4">
         <GlobalSearch />
         {topQuickActions.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {topQuickActions.map((action) => (
               <Button
                 key={action.id}
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="h-7 px-2.5 text-xs"
+                className="min-h-9 rounded-full px-3.5 text-xs font-medium transition-all duration-200 active:scale-[0.97] active:bg-secondary/80"
                 onClick={() => handleTopQuickAction(action.id)}
               >
                 {action.label}
