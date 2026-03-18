@@ -218,29 +218,15 @@ export default function Notes() {
   };
 
   const handleConvertToTasks = async (note: any) => {
-    triggerHaptic([8, 16, 8]);
-    toast({ title: 'AI Assist started', description: 'Converting note into actionable tasks…' });
     if (!user) return;
     if (note.is_vault) {
       toast({ title: 'Vault note', description: 'Unlock and copy content first for task conversion.', variant: 'destructive' });
-      await logAiUsage({
-        userId: user.id,
-        actionType: 'note_to_task',
-        inputSummary: `note:${note.title}`,
-        resultSummary: 'blocked_vault_note',
-      });
       return;
     }
 
     const titles = extractTaskTitles(note.content || '');
     if (titles.length === 0) {
       toast({ title: 'No action items', description: 'AI could not detect actionable items in this note.' });
-      await logAiUsage({
-        userId: user.id,
-        actionType: 'note_to_task',
-        inputSummary: `note:${note.title}`,
-        resultSummary: 'no_action_items_detected',
-      });
       return;
     }
 
@@ -266,27 +252,12 @@ export default function Notes() {
 
     const { error } = await supabase.from('tasks').insert(rows as any);
     if (error) {
-      triggerHaptic([20, 30, 20]);
       toast({ title: 'Error', description: 'Failed to convert note to tasks', variant: 'destructive' });
-      await logAiUsage({
-        userId: user.id,
-        actionType: 'note_to_task',
-        inputSummary: `note:${note.title}`,
-        resultSummary: 'failed_to_create_tasks',
-      });
       return;
     }
 
     window.dispatchEvent(new Event('tasks-updated'));
-    triggerHaptic(14);
     toast({ title: 'AI Assist complete', description: `${rows.length} task${rows.length > 1 ? 's' : ''} created from note.` });
-    await logAiUsage({
-      userId: user.id,
-      actionType: 'note_to_task',
-      inputSummary: `note:${note.title}`,
-      resultSummary: `created_tasks:${rows.length}`,
-    });
-    void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.noteToTaskConversion);
   };
 
   return (

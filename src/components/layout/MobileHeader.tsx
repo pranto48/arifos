@@ -14,11 +14,6 @@ import { QuickAddButton } from "@/components/quick-add/QuickAddButton";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AiStatusWidget } from "./AiStatusWidget";
 import { AiQuickActionBar } from '@/components/ai/AiQuickActionBar';
-import {
-  getFrequentQuickActionIds,
-  recordQuickActionUsage,
-  useQuickActions,
-} from '@/components/ai/quickActions';
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";

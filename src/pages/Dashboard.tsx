@@ -16,7 +16,6 @@ import { DashboardCustomizer } from '@/components/dashboard/DashboardCustomizer'
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AiDailyPlanner } from '@/components/dashboard/AiDailyPlanner';
-import { pageHeaderClass, pageShellClass, pageTitleClass, surfaceCardClass } from '@/lib/design-tokens';
 
 // Lazy load heavy chart components
 const UpcomingFamilyEvents = lazy(() => import('@/components/dashboard/UpcomingFamilyEvents').then(m => ({ default: m.UpcomingFamilyEvents })));

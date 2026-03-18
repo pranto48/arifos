@@ -98,7 +98,42 @@ Use this checklist the first time you boot a self-hosted instance.
 cp .env.example .env
 ```
 
-Required values to change before a real deployment:
+### Troubleshooting: `no service selected`
+
+If you run:
+
+```bash
+docker-compose up --build -d
+```
+
+and get `no service selected`, run these exact commands:
+
+```bash
+# 1) Ensure no inherited compose env is overriding services
+unset COMPOSE_FILE COMPOSE_PROFILES
+
+# 2) Validate default compose file really has services
+docker compose -f docker-compose.yml config --services
+
+# 3) Start explicit services from the default installer stack
+docker compose -f docker-compose.yml up --build -d lifeos backend postgres
+
+# 4) Check status and logs
+docker compose -f docker-compose.yml ps
+docker compose -f docker-compose.yml logs -f backend
+```
+
+Expected app URL for `docker-compose.yml`: **http://localhost:3377**
+
+If you want the setup wizard flow on port **8080**, use the self-hosted file instead:
+
+```bash
+docker compose -f docker-compose.selfhosted.yml --profile with-postgres up -d
+```
+
+Then open **http://localhost:8080/setup**.
+
+### Manual Docker Build
 
 - `POSTGRES_PASSWORD`
 - `JWT_SECRET`

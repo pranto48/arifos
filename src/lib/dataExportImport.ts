@@ -90,59 +90,6 @@ const FOREIGN_KEY_REMAP: Record<string, Record<string, string>> = {
   },
 };
 
-export interface ImportPreviewWarning {
-  entity: string;
-  rowIndex: number;
-  message: string;
-}
-
-export interface ImportPreviewRelationRemap {
-  entity: string;
-  fkColumn: string;
-  targetEntity: string;
-  count: number;
-}
-
-export interface ImportPreviewIdConversion {
-  entity: string;
-  rowIndex: number;
-  originalId: string;
-  convertedId: string;
-}
-
-export interface ImportPreviewRowRemap {
-  entity: string;
-  rowIndex: number;
-  fkColumn: string;
-  targetEntity: string;
-  from: string;
-  to: string;
-}
-
-export interface ImportPreviewEntityBreakdown {
-  entity: string;
-  rows: number;
-  idAutoConverted: number;
-  relationshipsRemapped: number;
-}
-
-export interface ImportPreviewSummary {
-  fixedPayload: any;
-  idAutoConverted: number;
-  relationshipsRemapped: number;
-  relationRemapDetails: ImportPreviewRelationRemap[];
-  idConversionDetails: ImportPreviewIdConversion[];
-  rowRemapDetails: ImportPreviewRowRemap[];
-  entityBreakdown: ImportPreviewEntityBreakdown[];
-  warnings: ImportPreviewWarning[];
-  schemaSummary: {
-    entitiesDetected: number;
-    rowsDetected: number;
-    missingEntities: string[];
-    invalidEntityShapes: string[];
-  };
-}
-
 function buildIdRemapMap(entities: ExportableEntity[], data: Record<string, any>): Record<string, Map<string, string>> {
   const maps: Record<string, Map<string, string>> = {};
 
@@ -185,180 +132,6 @@ function applyIdAndFkRemap(row: any, entity: string, idRemapMap: Record<string, 
   }
 
   return next;
-}
-
-function isImportantRemapEntity(entity: string): boolean {
-  return entity.startsWith('device_') || entity.startsWith('support_');
-}
-
-export function buildImportPreview(payload: any, userId: string): ImportPreviewSummary {
-  if (!payload?.data || !payload?.exportType) {
-    throw new Error('Invalid export file. Missing "data" or "exportType" field.');
-  }
-
-  const preset = EXPORT_PRESETS[payload.exportType];
-  if (!preset) {
-    throw new Error(`Unknown export type: ${payload.exportType}`);
-  }
-
-  const idRemapMap = buildIdRemapMap(preset.entities, payload.data);
-  const fixedData: Record<string, any[]> = {};
-  const warnings: ImportPreviewWarning[] = [];
-  const relationRemapCounter = new Map<string, ImportPreviewRelationRemap>();
-  const idConversionDetails: ImportPreviewIdConversion[] = [];
-  const rowRemapDetails: ImportPreviewRowRemap[] = [];
-  const entityBreakdown: ImportPreviewEntityBreakdown[] = [];
-
-  let rowsDetected = 0;
-  let entitiesDetected = 0;
-  let idAutoConverted = 0;
-  for (const remap of Object.values(idRemapMap)) {
-    idAutoConverted += remap.size;
-  }
-
-  const missingEntities: string[] = [];
-  const invalidEntityShapes: string[] = [];
-
-  for (const entity of preset.entities) {
-    const rows = payload.data[entity];
-    if (rows === undefined) {
-      missingEntities.push(entity);
-      fixedData[entity] = [];
-      entityBreakdown.push({ entity, rows: 0, idAutoConverted: 0, relationshipsRemapped: 0 });
-      continue;
-    }
-
-    if (!Array.isArray(rows)) {
-      invalidEntityShapes.push(entity);
-      warnings.push({
-        entity,
-        rowIndex: -1,
-        message: `Expected an array for ${entity}, received ${typeof rows}`,
-      });
-      fixedData[entity] = [];
-      entityBreakdown.push({ entity, rows: 0, idAutoConverted: 0, relationshipsRemapped: 0 });
-      continue;
-    }
-
-    entitiesDetected++;
-    rowsDetected += rows.length;
-    let entityIdAutoConverted = 0;
-    let entityRelationshipsRemapped = 0;
-
-    fixedData[entity] = rows.map((row: any, rowIndex: number) => {
-      if (!row || typeof row !== 'object' || Array.isArray(row)) {
-        warnings.push({
-          entity,
-          rowIndex,
-          message: 'Row is not an object and will be imported as-is.',
-        });
-        return row;
-      }
-
-      const { search_vector, ...rest } = row;
-      const remapped = applyIdAndFkRemap(rest, entity, idRemapMap);
-      if (remapped.user_id) {
-        remapped.user_id = userId;
-      }
-
-      if (typeof row.id !== 'string' || row.id.trim() === '') {
-        warnings.push({
-          entity,
-          rowIndex,
-          message: 'Missing or invalid "id" value.',
-        });
-      }
-
-      if (typeof row.id === 'string' && typeof remapped.id === 'string' && row.id !== remapped.id) {
-        entityIdAutoConverted += 1;
-        idConversionDetails.push({
-          entity,
-          rowIndex,
-          originalId: row.id,
-          convertedId: remapped.id,
-        });
-        warnings.push({
-          entity,
-          rowIndex,
-          message: `ID auto-converted from ${row.id} to ${remapped.id}.`,
-        });
-      }
-
-      const fkMap = FOREIGN_KEY_REMAP[entity] || {};
-      for (const [fkColumn, targetEntity] of Object.entries(fkMap)) {
-        const originalValue = row[fkColumn];
-        const remappedValue = remapped[fkColumn];
-        if (typeof originalValue === 'string' && typeof remappedValue === 'string' && originalValue !== remappedValue) {
-          entityRelationshipsRemapped += 1;
-          rowRemapDetails.push({
-            entity,
-            rowIndex,
-            fkColumn,
-            targetEntity,
-            from: originalValue,
-            to: remappedValue,
-          });
-          warnings.push({
-            entity,
-            rowIndex,
-            message: `${fkColumn} remapped from ${originalValue} to ${remappedValue}.`,
-          });
-
-          const key = `${entity}:${fkColumn}:${targetEntity}`;
-          const existing = relationRemapCounter.get(key);
-          if (existing) {
-            existing.count += 1;
-          } else {
-            relationRemapCounter.set(key, {
-              entity,
-              fkColumn,
-              targetEntity,
-              count: 1,
-            });
-          }
-        }
-      }
-
-      return remapped;
-    });
-
-    entityBreakdown.push({
-      entity,
-      rows: rows.length,
-      idAutoConverted: entityIdAutoConverted,
-      relationshipsRemapped: entityRelationshipsRemapped,
-    });
-  }
-
-  const fixedPayload = {
-    ...payload,
-    data: fixedData,
-  };
-
-  const relationRemapDetails = Array.from(relationRemapCounter.values())
-    .sort((a, b) => {
-      const importantDiff = Number(isImportantRemapEntity(b.entity) || isImportantRemapEntity(b.targetEntity)) - Number(isImportantRemapEntity(a.entity) || isImportantRemapEntity(a.targetEntity));
-      if (importantDiff !== 0) return importantDiff;
-      return b.count - a.count;
-    });
-  const relationshipsRemapped = relationRemapDetails.reduce((sum, item) => sum + item.count, 0);
-
-  return {
-    fixedPayload,
-    idAutoConverted,
-    relationshipsRemapped,
-    relationRemapDetails,
-    idConversionDetails,
-    rowRemapDetails,
-    entityBreakdown,
-    warnings,
-    schemaSummary: {
-      entitiesDetected,
-      rowsDetected,
-      missingEntities,
-      invalidEntityShapes,
-    },
-  };
 }
 
 export async function fetchEntityData(entity: ExportableEntity, userId: string): Promise<any[]> {
@@ -531,6 +304,7 @@ export async function importData(
   const errors: string[] = [];
   const isShared = (entity: string) => SHARED_TABLES.has(entity as ExportableEntity);
   const total = preset.entities.length;
+  const idRemapMap = buildIdRemapMap(preset.entities, payload.data);
 
   for (let idx = 0; idx < total; idx++) {
     const entity = preset.entities[idx];
@@ -560,7 +334,14 @@ export async function importData(
       continue;
     }
 
-    const cleaned = filteredRows;
+    const cleaned = filteredRows.map((row: any) => {
+      const { search_vector, ...rest } = row;
+      const remapped = applyIdAndFkRemap(rest, entity, idRemapMap);
+      if (remapped.user_id) {
+        remapped.user_id = userId;
+      }
+      return remapped;
+    });
 
     const onConflictKey = getOnConflictKey(entity);
     const BATCH_SIZE = isSelfHosted() ? 50 : 200;
