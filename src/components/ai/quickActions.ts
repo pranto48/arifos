@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarRange, ClipboardList, LayoutDashboard, NotebookPen, PlusCircle, Settings, Sparkles, Wand2, LogOut } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -33,7 +34,7 @@ const QUICK_ACTION_CONFIG: Omit<QuickAction, 'run'>[] = [
     label: 'Go to Dashboard',
     hint: 'Open home workspace',
     shortcut: 'G D',
-    aliases: ['dashboard', 'home', 'overview'],
+    aliases: ['dashboard', 'home', 'overview', 'workspace'],
     group: 'navigation',
     icon: LayoutDashboard,
   },
@@ -42,7 +43,7 @@ const QUICK_ACTION_CONFIG: Omit<QuickAction, 'run'>[] = [
     label: 'Go to Tasks',
     hint: 'Open task workspace',
     shortcut: 'G T',
-    aliases: ['tasks', 'todo', 'task list'],
+    aliases: ['tasks', 'todo', 'task list', 'my tasks'],
     group: 'navigation',
     icon: ClipboardList,
   },
@@ -51,7 +52,7 @@ const QUICK_ACTION_CONFIG: Omit<QuickAction, 'run'>[] = [
     label: 'Go to Notes',
     hint: 'Open notes workspace',
     shortcut: 'G N',
-    aliases: ['notes', 'docs', 'journal'],
+    aliases: ['notes', 'docs', 'journal', 'documents'],
     group: 'navigation',
     icon: NotebookPen,
   },
@@ -60,7 +61,7 @@ const QUICK_ACTION_CONFIG: Omit<QuickAction, 'run'>[] = [
     label: 'Create Task',
     hint: 'Open quick add for a new task',
     shortcut: 'N T',
-    aliases: ['new task', 'add task', 'capture todo'],
+    aliases: ['new task', 'add task', 'capture todo', 'create todo'],
     group: 'create-actions',
     icon: PlusCircle,
   },
@@ -69,7 +70,7 @@ const QUICK_ACTION_CONFIG: Omit<QuickAction, 'run'>[] = [
     label: 'Create Note',
     hint: 'Jump to notes and start drafting',
     shortcut: 'N N',
-    aliases: ['new note', 'write note', 'capture note'],
+    aliases: ['new note', 'write note', 'capture note', 'draft note'],
     group: 'create-actions',
     icon: NotebookPen,
   },
@@ -78,7 +79,7 @@ const QUICK_ACTION_CONFIG: Omit<QuickAction, 'run'>[] = [
     label: 'Plan my day',
     hint: 'Prioritize tasks and focus list',
     shortcut: 'A P',
-    aliases: ['plan day', 'daily plan', 'focus plan'],
+    aliases: ['plan day', 'daily plan', 'focus plan', 'today plan'],
     group: 'ai-actions',
     icon: Wand2,
   },
@@ -87,7 +88,7 @@ const QUICK_ACTION_CONFIG: Omit<QuickAction, 'run'>[] = [
     label: 'Summarize overdue tasks',
     hint: 'Quick overdue digest',
     shortcut: 'A O',
-    aliases: ['overdue', 'late tasks', 'task debt'],
+    aliases: ['overdue', 'late tasks', 'task debt', 'behind schedule'],
     group: 'ai-actions',
     icon: ClipboardList,
   },
@@ -96,7 +97,7 @@ const QUICK_ACTION_CONFIG: Omit<QuickAction, 'run'>[] = [
     label: 'Prepare weekly review',
     hint: 'Open analytics workflow',
     shortcut: 'A W',
-    aliases: ['weekly report', 'weekly review', 'review'],
+    aliases: ['weekly report', 'weekly review', 'review', 'status report'],
     group: 'ai-actions',
     icon: CalendarRange,
   },
@@ -105,7 +106,7 @@ const QUICK_ACTION_CONFIG: Omit<QuickAction, 'run'>[] = [
     label: 'Open Settings',
     hint: 'Manage account and preferences',
     shortcut: 'S S',
-    aliases: ['settings', 'preferences', 'profile'],
+    aliases: ['settings', 'preferences', 'profile', 'account'],
     group: 'admin-system',
     icon: Settings,
   },
@@ -114,7 +115,7 @@ const QUICK_ACTION_CONFIG: Omit<QuickAction, 'run'>[] = [
     label: 'Sign out',
     hint: 'Securely end your current session',
     shortcut: 'S O',
-    aliases: ['logout', 'log out', 'exit session'],
+    aliases: ['logout', 'log out', 'exit session', 'sign off'],
     group: 'admin-system',
     icon: LogOut,
   },
@@ -211,7 +212,7 @@ export function useQuickActions() {
     toast.info('Weekly review prep: open Analytics + Reports for summary export');
   };
 
-  const actions: QuickAction[] = QUICK_ACTION_CONFIG.map((action) => {
+  const actions = useMemo<QuickAction[]>(() => {
     const runMap: Record<string, () => void | Promise<void>> = {
       'goto-dashboard': () => navigate('/'),
       'goto-tasks': () => navigate('/tasks'),
@@ -225,17 +226,20 @@ export function useQuickActions() {
       'sign-out': () => signOut(),
     };
 
-    return {
+    return QUICK_ACTION_CONFIG.map((action) => ({
       ...action,
       run: runMap[action.id],
-    };
-  });
+    }));
+  }, [mode, navigate, signOut, user]);
 
-  const actionById = actions.reduce<Record<string, QuickAction>>((acc, action) => {
-    acc[action.id] = action;
-    return acc;
-  }, {});
-
+  const actionById = useMemo(
+    () =>
+      actions.reduce<Record<string, QuickAction>>((acc, action) => {
+        acc[action.id] = action;
+        return acc;
+      }, {}),
+    [actions],
+  );
 
   return {
     actions,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LogOut, User } from "lucide-react";
 import {
   Sheet,
@@ -143,7 +143,7 @@ export function MobileHeader() {
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="h-7 px-2.5 text-xs"
+                className="h-7 rounded-full px-2.5 text-xs"
                 onClick={() => handleTopQuickAction(action.id)}
               >
                 {action.label}
