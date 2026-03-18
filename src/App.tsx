@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { DashboardModeProvider } from "@/contexts/DashboardModeContext";
@@ -43,6 +43,7 @@ const AiHub = lazy(() => import("./pages/AiHub"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Marketing = lazy(() => import("./pages/Marketing"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,7 +70,9 @@ const PageLoader = () => (
 
 // App content with onboarding
 const AppContent = () => {
+  const location = useLocation();
   const { showOnboarding, isLoading, completeOnboarding } = useOnboarding();
+  const isStandaloneRoute = ["/marketing", "/auth", "/setup"].includes(location.pathname);
 
   useEffect(() => {
     const handler = (event: PromiseRejectionEvent) => {
@@ -87,13 +90,14 @@ const AppContent = () => {
   return (
     <>
       <AnimatePresence mode="wait">
-        {showOnboarding && (
+        {showOnboarding && !isStandaloneRoute && (
           <OnboardingFlow onComplete={completeOnboarding} />
         )}
       </AnimatePresence>
-      {!showOnboarding && (
+      {(!showOnboarding || isStandaloneRoute) && (
         <Suspense fallback={<PageLoader />}>
           <Routes>
+            <Route path="/marketing" element={<Marketing />} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />

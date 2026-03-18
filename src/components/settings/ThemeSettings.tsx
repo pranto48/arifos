@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type Theme = 'dark' | 'light' | 'system';
+type Theme = 'dark-modern' | 'clean-light' | 'system';
 
 function getSystemTheme(): 'dark' | 'light' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -13,20 +13,32 @@ function getSystemTheme(): 'dark' | 'light' {
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
+
+  root.classList.remove('theme-dark-modern', 'theme-clean-light', 'dark', 'light');
+
   if (theme === 'system') {
     const sys = getSystemTheme();
-    root.classList.toggle('dark', sys === 'dark');
-    root.classList.toggle('light', sys === 'light');
+    if (sys === 'dark') {
+      root.classList.add('theme-dark-modern', 'dark');
+    } else {
+      root.classList.add('theme-clean-light', 'light');
+    }
   } else {
-    root.classList.toggle('dark', theme === 'dark');
-    root.classList.toggle('light', theme === 'light');
+    if (theme === 'dark-modern') {
+      root.classList.add('theme-dark-modern', 'dark');
+    } else {
+      root.classList.add('theme-clean-light', 'light');
+    }
   }
 }
 
 export function ThemeSettings() {
   const { language } = useLanguage();
   const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem('lifeos-theme') as Theme) || 'dark';
+    const savedTheme = localStorage.getItem('lifeos-theme');
+    if (savedTheme === 'dark') return 'dark-modern';
+    if (savedTheme === 'light') return 'clean-light';
+    return (savedTheme as Theme) || 'dark-modern';
   });
 
   useEffect(() => {
@@ -44,8 +56,8 @@ export function ThemeSettings() {
   }, [theme]);
 
   const options: { value: Theme; icon: typeof Sun; labelEn: string; labelBn: string }[] = [
-    { value: 'dark', icon: Moon, labelEn: 'Dark', labelBn: 'ডার্ক' },
-    { value: 'light', icon: Sun, labelEn: 'Light', labelBn: 'লাইট' },
+    { value: 'dark-modern', icon: Moon, labelEn: 'Default dark modern', labelBn: 'ডিফল্ট ডার্ক মডার্ন' },
+    { value: 'clean-light', icon: Sun, labelEn: 'Clean light', labelBn: 'ক্লিন লাইট' },
     { value: 'system', icon: Monitor, labelEn: 'System', labelBn: 'সিস্টেম' },
   ];
 
@@ -84,6 +96,11 @@ export function ThemeSettings() {
 
 // Export for use on app mount
 export function initializeTheme() {
-  const theme = (localStorage.getItem('lifeos-theme') as Theme) || 'dark';
+  const savedTheme = localStorage.getItem('lifeos-theme');
+  const theme = savedTheme === 'dark'
+    ? 'dark-modern'
+    : savedTheme === 'light'
+      ? 'clean-light'
+      : (savedTheme as Theme) || 'dark-modern';
   applyTheme(theme);
 }

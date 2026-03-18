@@ -1,101 +1,141 @@
 # LifeOS Docker Compose
 # ─────────────────────────────────────────────────────────────
-# First-Run Setup:
-#   1. Run: docker-compose up -d
-#   2. Visit: http://localhost:3377
-#   3. The setup wizard will prompt you to:
-#      a) Create an admin account (email + password)
-#      b) Enter your license key (or skip for free plan)
+# Profile quick start:
+#   Development: COMPOSE_PROFILES=dev docker compose up --build
+#   Production : COMPOSE_PROFILES=prod docker compose up -d
 #
-# Optional: Set these env vars for headless (no-wizard) setup:
-#   ADMIN_EMAIL, ADMIN_PASSWORD, APP_LICENSE_KEY
+# First run:
+#   1) cp .env.example .env
+#   2) Review required secrets (POSTGRES_PASSWORD, JWT_SECRET)
+#   3) docker compose up -d
+#   4) Open ${LIFEOS_URL:-http://localhost:3377}
+#   5) Complete the admin bootstrap wizard or pre-set ADMIN_EMAIL/ADMIN_PASSWORD
 # ─────────────────────────────────────────────────────────────
+
+x-profile-notes:
+  dev: &profile-dev
+    profiles: ["dev"]
+  prod: &profile-prod
+    profiles: ["prod"]
+  shared: &profile-shared
+    profiles: ["dev", "prod"]
+
+x-backend-env: &backend-env
+  API_PORT: 3001
+  DB_TYPE: postgresql
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_NAME: ${POSTGRES_DB:-lifeos}
+  DB_USER: ${POSTGRES_USER:-lifeos}
+  DB_PASSWORD: ${POSTGRES_PASSWORD:-lifeos_secret_password}
+  JWT_SECRET: ${JWT_SECRET:-lifeos-change-this-secret}
+  LICENSE_API_URL: ${LICENSE_API_URL:-https://abcytwvuntyicdknpzju.supabase.co/functions/v1/verify-license}
+  APP_LICENSE_KEY: ${APP_LICENSE_KEY:-}
+  ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+  ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+
+x-web-healthcheck: &web-healthcheck
+  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+x-backend-healthcheck: &backend-healthcheck
+  test: ["CMD", "node", "-e", "const http = require('http'); http.get('http://localhost:3001/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
+  interval: 10s
+  timeout: 5s
+  retries: 12
+  start_period: 60s
+
+x-postgres-healthcheck: &postgres-healthcheck
+  test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lifeos} -d ${POSTGRES_DB:-lifeos}"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
 services:
-  lifeos:
+  lifeos-prod:
+    <<: *profile-prod
     build:
       context: .
       dockerfile: Dockerfile
     container_name: lifeos-app
     ports:
-      - "3377:80"
-      - "3378:443"   # HTTPS port (optional — only active when SSL certs are mounted)
+      - "${APP_PORT:-3377}:80"
+      - "${HTTPS_PORT:-3378}:443" # HTTPS optional when SSL certs are mounted
     environment:
-      - NODE_ENV=production
-      # URL used for Supabase client proxy. Supports HTTP and HTTPS:
-      #   http://localhost:3377  (default)
-      #   https://lifeos.example.com
-      #   http://192.168.1.100:3377
-      - LIFEOS_URL=${LIFEOS_URL:-http://localhost:3377}
+      NODE_ENV: production
+      LIFEOS_URL: ${LIFEOS_URL:-http://localhost:3377}
     volumes:
-      # Optional: Mount SSL certificates for HTTPS
-      # Create ./ssl/ folder with cert.pem and key.pem, then uncomment:
+      # Optional SSL cert mounts:
       # - ./ssl/cert.pem:/etc/nginx/ssl/cert.pem:ro
       # - ./ssl/key.pem:/etc/nginx/ssl/key.pem:ro
-      - /dev/null:/etc/nginx/ssl/.keep:ro  # placeholder so volume section is valid
+      - /dev/null:/etc/nginx/ssl/.keep:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck: *web-healthcheck
+    networks:
+      - lifeos-network
+
+  lifeos-dev:
+    <<: *profile-dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lifeos-app-dev
+    ports:
+      - "${APP_PORT:-3377}:80"
+      - "${HTTPS_PORT:-3378}:443"
+    environment:
+      NODE_ENV: development
+      LIFEOS_URL: ${LIFEOS_URL:-http://localhost:3377}
+    volumes:
+      - /dev/null:/etc/nginx/ssl/.keep:ro
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      <<: *web-healthcheck
+      interval: 15s
+      retries: 5
+      start_period: 25s
     networks:
       - lifeos-network
 
   backend:
+    <<: *profile-shared
     build:
       context: ./docker/backend
       dockerfile: Dockerfile
     container_name: lifeos-backend
-    environment:
-      - API_PORT=3001
-      - DB_TYPE=postgresql
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=lifeos
-      - DB_USER=lifeos
-      - DB_PASSWORD=lifeos_secret_password
-      - JWT_SECRET=lifeos-change-this-secret
-      - LICENSE_API_URL=https://abcytwvuntyicdknpzju.supabase.co/functions/v1/verify-license
-      # Optional: Pre-configure license key (skip license step in wizard)
-      - APP_LICENSE_KEY=${APP_LICENSE_KEY:-}
-      # Optional: Pre-configure admin account (skip admin step in wizard)
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+    environment: *backend-env
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "node", "-e", "const http = require('http'); http.get('http://localhost:3001/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 60s
+    healthcheck: *backend-healthcheck
     networks:
       - lifeos-network
 
   postgres:
+    <<: *profile-shared
     image: postgres:16-alpine
     container_name: lifeos-db
     environment:
-      POSTGRES_USER: lifeos
-      POSTGRES_PASSWORD: lifeos_secret_password
-      POSTGRES_DB: lifeos
+      POSTGRES_USER: ${POSTGRES_USER:-lifeos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lifeos_secret_password}
+      POSTGRES_DB: ${POSTGRES_DB:-lifeos}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
       - ./docker/init-data-tables.sql:/docker-entrypoint-initdb.d/02-data-tables.sql:ro
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lifeos -d lifeos"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+    healthcheck: *postgres-healthcheck
     networks:
       - lifeos-network
 

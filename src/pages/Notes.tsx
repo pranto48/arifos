@@ -22,7 +22,16 @@ import { format } from 'date-fns';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
 import { FieldVisibility } from '@/components/shared/FieldVisibility';
 import { MarkdownEditor } from '@/components/notes/MarkdownEditor';
+import { logAiUsage } from '@/lib/aiUsageLogger';
+import { PRODUCT_ANALYTICS_EVENTS, trackProductAnalyticsEvent } from '@/lib/productAnalytics';
 import ReactMarkdown from 'react-markdown';
+import { pageHeaderClass, pageShellClass, pageTitleClass, surfaceCardClass } from '@/lib/design-tokens';
+
+const triggerHaptic = (pattern: number | number[] = 10) => {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
+};
 
 export default function Notes() {
   const { user } = useAuth();
@@ -252,9 +261,9 @@ export default function Notes() {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold text-foreground">{t('notes.title')}</h1>
+    <div className={pageShellClass}>
+      <div className={pageHeaderClass}>
+        <h1 className={pageTitleClass}>{t('notes.title')}</h1>
         <div className="flex items-center gap-2 flex-wrap">
           <ReportActions
             variant="compact"
@@ -288,7 +297,7 @@ export default function Notes() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.length === 0 ? (
-          <Card className="bg-card border-border col-span-full">
+          <Card className={`${surfaceCardClass} col-span-full`}>
             <CardContent className="py-12 text-center">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">{t('notes.noNotesYet')}</p>
@@ -298,7 +307,7 @@ export default function Notes() {
           filtered.map(note => (
             <Card 
               key={note.id} 
-              className="bg-card border-border hover:bg-muted/30 transition-colors cursor-pointer group"
+              className={`${surfaceCardClass} group cursor-pointer transition-colors hover:bg-muted/30`}
               onClick={() => handleViewNote(note)}
             >
               <CardContent className="p-4 space-y-2">
@@ -372,7 +381,7 @@ export default function Notes() {
 
       {/* View Note Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-card border-border">
+        <DialogContent className={`sm:max-w-[600px] ${surfaceCardClass}`}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground">
               {selectedNote?.is_vault && <Lock className="h-5 w-5 text-primary" />}
@@ -437,7 +446,7 @@ export default function Notes() {
 
       {/* Create Note Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-card border-border">
+        <DialogContent className={`sm:max-w-[600px] ${surfaceCardClass}`}>
           <DialogHeader>
             <DialogTitle className="text-foreground">{t('notes.createNewNote')}</DialogTitle>
           </DialogHeader>

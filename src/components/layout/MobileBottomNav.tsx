@@ -24,6 +24,7 @@ import { useDashboardMode } from '@/contexts/DashboardModeContext';
 import { useModuleConfig } from '@/hooks/useModuleConfig';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { TranslationKey } from '@/translations';
 
@@ -72,6 +73,14 @@ export function MobileBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { toast } = useToast();
+
+
+  const triggerHaptic = (pattern: number | number[] = 10) => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(pattern);
+    }
+  };
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -90,28 +99,36 @@ export function MobileBottomNav() {
   const filteredPrimaryItems = filterItems(primaryNavItems);
   const filteredAllNavItems = filterItems(allNavItems);
 
+  const navFeedback = {
+    base: 'group relative flex flex-1 flex-col items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 min-h-[60px] transition-all duration-200 ease-out active:scale-[0.96] active:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+    active: 'text-primary bg-primary/12 shadow-[0_8px_24px_-18px_hsl(var(--primary))] ring-1 ring-primary/15',
+    inactive: 'text-muted-foreground hover:bg-muted/40 active:bg-muted/60',
+  };
+
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-sidebar/95 backdrop-blur-xl border-t border-sidebar-border safe-area-pb">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-sidebar-border bg-sidebar/95 backdrop-blur-xl safe-area-pb">
+      <div className="mx-auto flex max-w-screen-sm items-center justify-around gap-2 px-3 py-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
         {filteredPrimaryItems.map(item => (
           <NavLink
             key={item.url}
             to={item.url}
+            onClick={() => triggerHaptic(8)}
             className={cn(
-              'flex flex-col items-center justify-center gap-1 flex-1 py-2 rounded-lg transition-all active:scale-95 relative',
-              isActive(item.url)
-                ? 'text-primary'
-                : 'text-muted-foreground'
+              navFeedback.base,
+              isActive(item.url) ? navFeedback.active : navFeedback.inactive
             )}
           >
             <item.icon className={cn(
-              'h-5 w-5',
-              isActive(item.url) && 'text-primary'
+              'h-5 w-5 transition-all duration-200 group-active:scale-90',
+              isActive(item.url) ? 'text-primary scale-110' : 'group-hover:-translate-y-0.5'
             )} />
-            <span className="text-[10px] font-medium">{t(item.titleKey)}</span>
-            {isActive(item.url) && (
-              <div className="absolute bottom-1 w-6 h-0.5 bg-primary rounded-full" />
-            )}
+            <span className="text-[11px] font-medium leading-none">{t(item.titleKey)}</span>
+            <span
+              className={cn(
+                'absolute inset-x-4 -bottom-0.5 h-0.5 rounded-full bg-primary transition-opacity duration-200',
+                isActive(item.url) ? 'opacity-100' : 'opacity-0'
+              )}
+            />
           </NavLink>
         ))}
         
@@ -119,37 +136,51 @@ export function MobileBottomNav() {
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
             <button
+              onClick={() => {
+                triggerHaptic([10, 15, 10]);
+                toast({
+                  title: 'Navigation menu open',
+                  description: 'Use one tap to jump to any feature.',
+                });
+              }}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 flex-1 py-2 rounded-lg transition-all active:scale-95',
-                menuOpen ? 'text-primary' : 'text-muted-foreground'
+                navFeedback.base,
+                menuOpen ? navFeedback.active : navFeedback.inactive
               )}
             >
-              <Menu className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{t('nav.more') || 'More'}</span>
+              <Menu className={cn('h-5 w-5 transition-all duration-200', menuOpen && 'scale-110 text-primary')} />
+              <span className="text-[11px] font-medium leading-none">{t('nav.more') || 'More'}</span>
+              <span
+                className={cn(
+                  'absolute inset-x-4 -bottom-0.5 h-0.5 rounded-full bg-primary transition-opacity duration-200',
+                  menuOpen ? 'opacity-100' : 'opacity-0'
+                )}
+              />
             </button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-[70vh] rounded-t-3xl bg-sidebar border-sidebar-border z-[60]">
+          <SheetContent side="bottom" className="z-[60] h-[72vh] rounded-t-[28px] border-sidebar-border bg-sidebar px-4 pt-3">
             <SheetHeader className="pb-4">
               <SheetTitle className="text-sidebar-foreground text-left">
                 {t('nav.allFeatures') || 'All Features'}
               </SheetTitle>
             </SheetHeader>
-            <div className="grid grid-cols-4 gap-3 pb-safe overflow-y-auto max-h-[calc(70vh-100px)]">
+            <div className="grid max-h-[calc(72vh-100px)] grid-cols-4 gap-3 overflow-y-auto pb-safe">
               {filteredAllNavItems.map(item => (
                 <button
                   key={item.url}
                   onClick={() => {
+                    triggerHaptic(12);
                     setMenuOpen(false);
                     navigate(item.url);
                   }}
                   className={cn(
-                    'flex flex-col items-center justify-center gap-2 p-3 rounded-2xl transition-all active:scale-95',
+                    'group flex min-h-[96px] flex-col items-center justify-center gap-2 rounded-[22px] p-3.5 transition-all duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
                     isActive(item.url)
-                      ? 'bg-primary/20 text-primary'
-                      : 'bg-secondary/50 text-sidebar-foreground hover:bg-secondary'
+                      ? 'bg-primary/18 text-primary shadow-[0_14px_30px_-24px_hsl(var(--primary))] ring-1 ring-primary/20'
+                      : 'bg-secondary/50 text-sidebar-foreground hover:bg-secondary active:bg-secondary/80'
                   )}
                 >
-                  <item.icon className="h-6 w-6" />
+                  <item.icon className={cn('h-6 w-6 transition-transform duration-200 group-active:scale-90', isActive(item.url) && 'scale-105')} />
                   <span className="text-xs font-medium text-center leading-tight">
                     {t(item.titleKey)}
                   </span>

@@ -1,14 +1,13 @@
-import { useState, useRef, useCallback } from 'react';
-import { Download, Upload, FileJson, FileCode, Loader2, Check, AlertTriangle, RefreshCw, SkipForward, Replace, FileDown, Info, FileSpreadsheet } from 'lucide-react';
+import { useMemo, useState, useRef } from 'react';
+import { Download, Upload, FileJson, FileCode, Loader2, Check, AlertTriangle, SkipForward, Replace, FileDown, FileSpreadsheet, ArrowRightLeft, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -17,11 +16,14 @@ import {
   parseImportFile,
   detectConflicts,
   downloadBlob,
+  buildImportPreview,
   type ExportFormat,
   type ExportableEntity,
+  type ImportPreviewSummary,
   EXPORT_PRESETS,
 } from '@/lib/dataExportImport';
 import { generateExampleXlsx, parseXlsxFile } from '@/lib/xlsxHelpers';
+import { PRODUCT_ANALYTICS_EVENTS, trackProductAnalyticsEvent } from '@/lib/productAnalytics';
 
 interface DataExportImportButtonProps {
   preset: string;
@@ -183,13 +185,29 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
   // Conflict state
   const [conflicts, setConflicts] = useState<ConflictItem[]>([]);
   const [showConflict, setShowConflict] = useState(false);
+  const [showPreImportWizard, setShowPreImportWizard] = useState(false);
   const [conflictResolution, setConflictResolution] = useState<ConflictResolution>('overwrite');
   const [pendingPayload, setPendingPayload] = useState<any>(null);
+  const [importPreview, setImportPreview] = useState<ImportPreviewSummary | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const config = EXPORT_PRESETS[preset];
   const displayLabel = label || config?.label || preset;
+
+  const highlightedRemaps = useMemo(() => {
+    return (importPreview?.relationRemapDetails || []).filter(item =>
+      item.entity.startsWith('device_') ||
+      item.entity.startsWith('support_') ||
+      item.targetEntity.startsWith('device_') ||
+      item.targetEntity.startsWith('support_')
+    );
+  }, [importPreview]);
+
+  const previewJsonSnippet = useMemo(() => {
+    if (!importPreview?.fixedPayload) return '';
+    return JSON.stringify(importPreview.fixedPayload, null, 2);
+  }, [importPreview]);
 
   // ---- Download example file ----
   const handleDownloadExample = (format: 'json' | 'xlsx' = 'json') => {
@@ -281,24 +299,19 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
       const presetConfig = EXPORT_PRESETS[payload.exportType];
       if (!presetConfig) throw new Error(`Unknown export type: ${payload.exportType}`);
 
-      setImportEntity('Checking for conflicts...');
-      setImportProgress(15);
+      setImportEntity('Building import preview...');
+      setImportProgress(25);
 
-      // Parallel conflict detection
-      const foundConflicts = await detectConflicts(payload, user.id);
-
-      if (foundConflicts.length > 0) {
-        setConflicts(foundConflicts);
-        setPendingPayload(payload);
-        setShowConflict(true);
-        setImporting(false);
-        setImportProgress(0);
-        setImportEntity('');
-      } else {
-        await executeImport(payload, 'overwrite');
-      }
+      const preview = buildImportPreview(payload, user.id);
+      setImportPreview(preview);
+      setPendingPayload(preview.fixedPayload);
+      setShowPreImportWizard(true);
+      setImporting(false);
+      setImportProgress(0);
+      setImportEntity('');
     } catch (err: any) {
       toast.error(`Import failed: ${err.message}`);
+      void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.importFailed);
       setImporting(false);
       setImportProgress(0);
     } finally {
@@ -326,17 +339,21 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
 
       if (result.errors.length === 0) {
         toast.success(`Imported ${result.imported} items successfully`);
+        void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.importCompleted);
         setTimeout(() => window.location.reload(), 1500);
       } else {
         toast.warning(`Imported ${result.imported} items with ${result.errors.length} errors`);
+        void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.importFailed);
       }
     } catch (err: any) {
       toast.error(`Import failed: ${err.message}`);
+      void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.importFailed);
     } finally {
       setImporting(false);
       setImportProgress(0);
       setImportEntity('');
       setPendingPayload(null);
+      setImportPreview(null);
     }
   };
 
@@ -344,6 +361,39 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
     if (pendingPayload) {
       executeImport(pendingPayload, conflictResolution);
     }
+  };
+
+  const handlePreImportContinue = async () => {
+    if (!pendingPayload || !user) return;
+
+    setShowPreImportWizard(false);
+    setImporting(true);
+    setImportEntity('Checking for conflicts...');
+    setImportProgress(15);
+
+    try {
+      const foundConflicts = await detectConflicts(pendingPayload, user.id);
+      if (foundConflicts.length > 0) {
+        setConflicts(foundConflicts);
+        setShowConflict(true);
+      } else {
+        await executeImport(pendingPayload, 'overwrite');
+      }
+    } catch (err: any) {
+      toast.error(`Import failed: ${err.message}`);
+      void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.importFailed);
+    } finally {
+      setImporting(false);
+      setImportProgress(0);
+      setImportEntity('');
+    }
+  };
+
+  const handleDownloadFixedPreview = () => {
+    if (!importPreview?.fixedPayload) return;
+    const blob = new Blob([JSON.stringify(importPreview.fixedPayload, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, `lifeos-${preset}-fixed-preview.json`);
+    toast.success('Fixed preview JSON downloaded.');
   };
 
   const entityLabel = (e: string) => e.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -457,6 +507,175 @@ export function DataExportImportButton({ preset, label }: DataExportImportButton
             <Progress value={exportProgress} className="h-3" />
             <p className="text-xs text-muted-foreground text-right">{Math.round(exportProgress)}%</p>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pre-Import Wizard */}
+      <Dialog open={showPreImportWizard} onOpenChange={setShowPreImportWizard}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Pre-Import Validation Summary</DialogTitle>
+            <DialogDescription>
+              Review schema checks, auto-fixes, and remapped relationships before executing import.
+            </DialogDescription>
+          </DialogHeader>
+
+          {importPreview ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">Schema validation summary</p>
+                  <p className="text-sm font-medium">{importPreview.schemaSummary.entitiesDetected} entities, {importPreview.schemaSummary.rowsDetected} rows detected</p>
+                  <div className="space-y-1 text-xs">
+                    {importPreview.entityBreakdown.map((item) => (
+                      <div key={item.entity} className="flex items-center justify-between gap-2">
+                        <span>{entityLabel(item.entity)}</span>
+                        <span className="text-muted-foreground">{item.rows} rows</span>
+                      </div>
+                    ))}
+                  </div>
+                  {importPreview.schemaSummary.missingEntities.length > 0 && (
+                    <p className="text-xs text-warning mt-1">Missing entities: {importPreview.schemaSummary.missingEntities.map(entityLabel).join(', ')}</p>
+                  )}
+                  {importPreview.schemaSummary.invalidEntityShapes.length > 0 && (
+                    <p className="text-xs text-destructive mt-1">Invalid shapes: {importPreview.schemaSummary.invalidEntityShapes.map(entityLabel).join(', ')}</p>
+                  )}
+                </div>
+
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">Auto-fix summary</p>
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Wand2 className="h-4 w-4 text-primary" />
+                    <span>{importPreview.idAutoConverted} IDs auto-converted</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <ArrowRightLeft className="h-4 w-4 text-primary" />
+                    <span>{importPreview.relationshipsRemapped} relationships remapped</span>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    {importPreview.entityBreakdown.filter(item => item.idAutoConverted > 0 || item.relationshipsRemapped > 0).length === 0 ? (
+                      <p className="text-muted-foreground">No ID or relationship fixes required.</p>
+                    ) : (
+                      importPreview.entityBreakdown
+                        .filter(item => item.idAutoConverted > 0 || item.relationshipsRemapped > 0)
+                        .map((item) => (
+                          <div key={item.entity} className="flex items-center justify-between gap-2">
+                            <span>{entityLabel(item.entity)}</span>
+                            <span className="text-muted-foreground">
+                              {item.idAutoConverted} IDs / {item.relationshipsRemapped} remaps
+                            </span>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-3 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">ID/FK remap preview</p>
+                    <p className="text-xs text-muted-foreground">Highlighted device/support remaps appear first so you can verify dependency-heavy imports.</p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={handleDownloadFixedPreview}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Download fixed preview JSON
+                  </Button>
+                </div>
+
+                {importPreview.idConversionDetails.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Auto-converted IDs</p>
+                    <ScrollArea className="max-h-28">
+                      <div className="space-y-1 text-xs">
+                        {importPreview.idConversionDetails.slice(0, 50).map((item, idx) => (
+                          <p key={idx}>
+                            {entityLabel(item.entity)} #{item.rowIndex + 1}: {item.originalId} → {item.convertedId}
+                          </p>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Relationship remaps</p>
+                  <ScrollArea className="max-h-32">
+                    <div className="space-y-1 text-xs">
+                      {(highlightedRemaps.length > 0 ? highlightedRemaps : importPreview.relationRemapDetails).length === 0 ? (
+                        <p className="text-muted-foreground">No relationship remaps required.</p>
+                      ) : (
+                        (highlightedRemaps.length > 0 ? highlightedRemaps : importPreview.relationRemapDetails).map((item, idx) => (
+                          <p key={idx}>
+                            {entityLabel(item.entity)}.{item.fkColumn} → {entityLabel(item.targetEntity)} ({item.count})
+                          </p>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+
+                {importPreview.rowRemapDetails.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Row-level remap examples</p>
+                    <ScrollArea className="max-h-28">
+                      <div className="space-y-1 text-xs">
+                        {importPreview.rowRemapDetails.slice(0, 50).map((item, idx) => (
+                          <p key={idx}>
+                            {entityLabel(item.entity)} #{item.rowIndex + 1}: {item.fkColumn} {item.from} → {item.to}
+                          </p>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="text-sm font-medium">Row-level warning list</p>
+                <ScrollArea className="max-h-40">
+                  <div className="space-y-1 text-xs">
+                    {importPreview.warnings.length === 0 ? (
+                      <p className="text-muted-foreground">No row-level warnings detected.</p>
+                    ) : (
+                      importPreview.warnings.slice(0, 100).map((warning, idx) => (
+                        <p key={idx} className="text-warning">
+                          {entityLabel(warning.entity)} #{warning.rowIndex >= 0 ? warning.rowIndex + 1 : 'n/a'}: {warning.message}
+                        </p>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+
+              <div className="rounded-lg border p-3 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Fixed preview JSON</p>
+                    <p className="text-xs text-muted-foreground">This downloadable/exportable payload matches the exact data that will be imported.</p>
+                  </div>
+                  <Badge variant="secondary">Ready to import</Badge>
+                </div>
+                <ScrollArea className="max-h-52 rounded-md border bg-muted/30 p-3">
+                  <pre className="text-[11px] leading-5 whitespace-pre-wrap break-all">{previewJsonSnippet}</pre>
+                </ScrollArea>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPreImportWizard(false);
+                setPendingPayload(null);
+                setImportPreview(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handlePreImportContinue}>Continue to Conflict Check</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

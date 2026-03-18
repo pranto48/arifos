@@ -1,9 +1,10 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  CheckSquare, FileText, Wallet, Target, 
-  Calendar, Clock, ArrowUpRight, ArrowDownRight, Lightbulb, Settings2
+import {
+  CheckSquare, FileText, Wallet, Target,
+  Calendar, Clock, ArrowUpRight, ArrowDownRight, Lightbulb, Settings2, Sparkles, ListTodo, Timer, ArrowRight
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -34,6 +35,7 @@ const RecentTimeEntries = lazy(() => import('@/components/dashboard/RecentTimeEn
 const ChartLoader = () => <Skeleton className="h-64 w-full rounded-lg" />;
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useLanguage();
   const { mode } = useDashboardMode();
@@ -56,6 +58,7 @@ export default function Dashboard() {
     activeGoals: 0,
     recentNotes: [] as any[],
     upcomingTasks: [] as any[],
+    openTasks: [] as any[],
     officeTasks: 0,
     personalTasks: 0,
     officeNotes: 0,
@@ -86,7 +89,7 @@ export default function Dashboard() {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
     
     const [tasksRes, notesRes, transactionsRes, goalsRes, projectsRes] = await Promise.all([
-      supabase.from('tasks').select('id,title,status,due_date,task_type,sort_order,category_id').eq('user_id', user?.id),
+      supabase.from('tasks').select('id,title,status,due_date,priority,task_type,sort_order,category_id').eq('user_id', user?.id),
       supabase.from('notes').select('id,title,note_type,created_at').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(20),
       supabase.from('transactions').select('id,amount,type').eq('user_id', user?.id).gte('date', startOfMonth.split('T')[0]),
       supabase.from('goals').select('id,title,category,target_amount,current_amount,target_date,status').eq('user_id', user?.id).in('status', ['active', 'in_progress']).eq('goal_type', mode),
@@ -95,10 +98,18 @@ export default function Dashboard() {
 
     const tasks = tasksRes.data || [];
     const notes = notesRes.data || [];
-    const todayTasks = tasks.filter(t => t.due_date?.split('T')[0] === today && t.status !== 'completed').length;
-    const completedTasks = tasks.filter(t => t.status === 'completed').length;
-    const overdueTasks = tasks.filter(t => t.due_date && t.due_date < new Date().toISOString() && t.status !== 'completed').length;
-    const upcomingTasks = tasks.filter(t => t.status !== 'completed').slice(0, 5);
+    const activeModeTasks = tasks.filter(t => (t.task_type || 'office') === mode);
+    const openModeTasks = activeModeTasks.filter(t => t.status !== 'completed');
+    const todayTasks = openModeTasks.filter(t => t.due_date?.split('T')[0] === today).length;
+    const completedTasks = activeModeTasks.filter(t => t.status === 'completed').length;
+    const overdueTasks = openModeTasks.filter(t => t.due_date && t.due_date < new Date().toISOString()).length;
+    const upcomingTasks = [...openModeTasks]
+      .sort((a, b) => {
+        const dateA = a.due_date ? new Date(a.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+        const dateB = b.due_date ? new Date(b.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+        return dateA - dateB;
+      })
+      .slice(0, 5);
 
     // Count by type
     const officeTasks = tasks.filter(t => t.task_type === 'office' && t.status !== 'completed').length;
@@ -123,6 +134,7 @@ export default function Dashboard() {
       activeGoals: goalsRes.data?.length || 0,
       recentNotes: notes.slice(0, 3),
       upcomingTasks,
+      openTasks: openModeTasks,
       officeTasks,
       personalTasks,
       officeNotes,
@@ -170,6 +182,30 @@ export default function Dashboard() {
         { title: 'Personal Projects', value: stats.personalProjects, icon: Lightbulb, color: 'text-primary' },
       ];
 
+  const topPriorityTasks = [...stats.openTasks]
+    .sort((a, b) => {
+      const priorityScore = { urgent: 4, high: 3, medium: 2, low: 1 } as const;
+      const scoreA = priorityScore[(a.priority || 'low') as keyof typeof priorityScore] || 1;
+      const scoreB = priorityScore[(b.priority || 'low') as keyof typeof priorityScore] || 1;
+
+      if (scoreB !== scoreA) return scoreB - scoreA;
+
+      const dateA = a.due_date ? new Date(a.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+      const dateB = b.due_date ? new Date(b.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+      return dateA - dateB;
+    })
+    .slice(0, 3);
+
+  const heroChips = [
+    { label: 'Priority Queue', value: topPriorityTasks.length },
+    { label: 'Overdue', value: stats.overdueTasks },
+    { label: 'Open Tasks', value: stats.todayTasks + stats.overdueTasks },
+  ];
+
+  const handlePlanMyDay = () => {
+    window.dispatchEvent(new Event('ai-plan-my-day'));
+  };
+
   // Render widget by ID
   const renderWidget = (widgetId: string) => {
     switch (widgetId) {
@@ -193,7 +229,7 @@ export default function Dashboard() {
         return <Suspense key={widgetId} fallback={<ChartLoader />}><GoalProgressChart goals={stats.goals} /></Suspense>;
       case 'budget-summary':
         return (
-          <Card key={widgetId} className="bg-card border-border">
+          <Card key={widgetId} className={surfaceCardClass}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Wallet className="h-4 w-4" /> {t('dashboard.thisMonthBudget')}
@@ -227,7 +263,7 @@ export default function Dashboard() {
         );
       case 'recent-notes':
         return (
-          <Card key={widgetId} className="bg-card border-border">
+          <Card key={widgetId} className={surfaceCardClass}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <FileText className="h-4 w-4" /> {t('dashboard.recentNotes')}
@@ -251,7 +287,7 @@ export default function Dashboard() {
         );
       case 'upcoming-tasks':
         return (
-          <Card key={widgetId} className="bg-card border-border">
+          <Card key={widgetId} className={surfaceCardClass}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Calendar className="h-4 w-4" /> {t('dashboard.upcomingTasks')}
@@ -311,11 +347,11 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className={pageShellClass}>
       {/* Header */}
-      <div className="flex items-start sm:items-center justify-between gap-3">
+      <div className={pageHeaderClass}>
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold text-foreground truncate">
+          <h1 className={`${pageTitleClass} truncate text-xl md:text-2xl`}>
             {getGreeting()}, {user?.user_metadata?.full_name?.split(' ')[0] || t('dashboard.there')}
           </h1>
           <p className="text-muted-foreground text-xs md:text-sm">
@@ -334,6 +370,75 @@ export default function Dashboard() {
           <Settings2 className="h-4 w-4" />
         </Button>
       </div>
+
+      <Card className="overflow-hidden border-primary/25 bg-gradient-to-br from-primary/20 via-primary/5 to-card shadow-sm">
+        <CardContent className="relative p-5 md:p-6 space-y-6">
+          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/3 bg-gradient-to-l from-primary/10 to-transparent md:block" />
+
+          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl space-y-3">
+              <p className="text-xs uppercase tracking-[0.22em] text-primary/80 font-semibold">Dashboard Focus</p>
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight tracking-tight text-foreground">
+                Your top priorities,
+                <span className="block text-primary">ready for action.</span>
+              </h2>
+              <p className="max-w-xl text-sm md:text-base text-muted-foreground">
+                Review the highest-priority tasks, spot overdue work fast, and jump straight into focus mode or AI-assisted planning.
+              </p>
+            </div>
+
+            <div className="relative flex flex-wrap gap-2 lg:max-w-sm lg:justify-end">
+              {heroChips.map((chip) => (
+                <div
+                  key={chip.label}
+                  className="min-w-[108px] rounded-full border border-border/60 bg-background/80 px-3 py-2 backdrop-blur"
+                >
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{chip.label}</p>
+                  <p className="mt-0.5 font-mono text-base font-semibold text-foreground">{chip.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="relative grid grid-cols-1 gap-3 md:grid-cols-3">
+            {topPriorityTasks.length === 0 ? (
+              <p className="text-sm text-muted-foreground md:col-span-3 rounded-xl border border-dashed border-border/70 bg-background/50 px-4 py-4">
+                No active priority tasks found. You're all clear.
+              </p>
+            ) : (
+              topPriorityTasks.map((task, index) => (
+                <div key={task.id} className="rounded-xl border border-border/60 bg-background/70 px-4 py-4 shadow-sm backdrop-blur">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Priority #{index + 1}</p>
+                      <p className="mt-2 text-sm font-semibold leading-6 text-foreground line-clamp-2">{task.title}</p>
+                    </div>
+                    <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold capitalize text-primary">
+                      {task.priority || 'low'}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{task.due_date ? `Due ${format(new Date(task.due_date), 'MMM d')}` : 'No due date'}</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="relative flex flex-wrap gap-2">
+            <Button size="sm" className="shadow-sm" onClick={() => navigate('/time-tracking')}>
+              <Timer className="h-4 w-4 mr-1" /> Start Focus
+            </Button>
+            <Button size="sm" variant="secondary" className="shadow-sm" onClick={handlePlanMyDay}>
+              <Sparkles className="h-4 w-4 mr-1" /> Plan My Day
+            </Button>
+            <Button size="sm" variant="outline" className="bg-background/70" onClick={() => navigate('/tasks')}>
+              <ListTodo className="h-4 w-4 mr-1" /> Open Tasks
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Grid */}
       <div className={`grid ${mode === 'office' ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-4'} gap-4`}>

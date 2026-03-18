@@ -6,8 +6,27 @@
 
 const http = require("http");
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 
 // --- Configuration ---
+const BACKUP_STALE_DAYS = 7;
+
+function readJsonFile(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+const backendPackage = readJsonFile(path.join(__dirname, "package.json")) || {};
+const rootPackage = readJsonFile(path.join(__dirname, "..", "..", "package.json")) || {};
+const appVersion =
+  process.env.APP_VERSION || rootPackage.version || backendPackage.version || "unknown";
+const buildHash =
+  process.env.APP_BUILD_HASH || process.env.BUILD_HASH || process.env.GIT_COMMIT || "unknown";
+
 const PORT = process.env.API_PORT || 3001;
 let dbClient = null;
 let dbType = process.env.DB_TYPE || "postgresql"; // postgresql or mysql
@@ -182,6 +201,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE TABLE IF NOT EXISTS app_settings (
   id TEXT PRIMARY KEY DEFAULT 'default',
   onboarding_enabled BOOLEAN DEFAULT true,
+  internal_analytics_enabled BOOLEAN DEFAULT true,
   setup_complete BOOLEAN DEFAULT false,
   db_type VARCHAR(20) DEFAULT 'postgresql',
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -194,6 +214,18 @@ CREATE TABLE IF NOT EXISTS license_settings (
   setting_value TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS product_analytics_daily (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  metric_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  event_key VARCHAR(64) NOT NULL,
+  event_count INTEGER NOT NULL DEFAULT 0,
+  source VARCHAR(20) NOT NULL DEFAULT 'web',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, metric_date, event_key)
 );
 `;
 
@@ -243,6 +275,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE TABLE IF NOT EXISTS app_settings (
   id CHAR(36) PRIMARY KEY,
   onboarding_enabled BOOLEAN DEFAULT TRUE,
+  internal_analytics_enabled BOOLEAN DEFAULT TRUE,
   setup_complete BOOLEAN DEFAULT FALSE,
   db_type VARCHAR(20) DEFAULT 'mysql',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -255,6 +288,19 @@ CREATE TABLE IF NOT EXISTS license_settings (
   setting_value TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS product_analytics_daily (
+  id CHAR(36) PRIMARY KEY,
+  user_id CHAR(36) NOT NULL,
+  metric_date DATE NOT NULL,
+  event_key VARCHAR(64) NOT NULL,
+  event_count INT NOT NULL DEFAULT 0,
+  source VARCHAR(20) NOT NULL DEFAULT 'web',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_product_analytics_daily (user_id, metric_date, event_key),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 `;
 
@@ -1055,6 +1101,105 @@ routes["POST /api/license/verify"] = async (req, res) => {
 };
 
 // API: Get license status (for UI)
+routes["GET /api/system/health"] = async (req, res) => {
+  const startedAt = Date.now();
+
+  const api = {
+    status: appState.status === "ready" ? "healthy" : "warning",
+    message:
+      appState.status === "ready"
+        ? "API is responding normally."
+        : `API is reachable but currently ${appState.status}. ${appState.message}`,
+    responseTimeMs: null,
+  };
+
+  let database = {
+    status: "offline",
+    message: "Database connection is unavailable. Check DB credentials and container health.",
+  };
+
+  let backup = {
+    status: "warning",
+    message: "No backup history found. Create or schedule a backup.",
+    lastBackupAt: null,
+  };
+
+  try {
+    if (!dbClient) {
+      dbClient = await connectDatabase({});
+    }
+
+    await query("SELECT 1");
+    database = {
+      status: "healthy",
+      message: `Database is reachable over ${dbClient.type}.`,
+    };
+
+    try {
+      const backupRows = await query(
+        "SELECT MAX(last_backup_at) AS last_backup_at FROM backup_schedules",
+      );
+      const lastBackupAt = backupRows?.[0]?.last_backup_at || null;
+
+      if (lastBackupAt) {
+        const backupDate = new Date(lastBackupAt);
+        const backupAgeMs = Date.now() - backupDate.getTime();
+        const staleThresholdMs = BACKUP_STALE_DAYS * 24 * 60 * 60 * 1000;
+
+        if (Number.isFinite(backupAgeMs) && backupAgeMs > staleThresholdMs) {
+          backup = {
+            status: "warning",
+            message: `Backup is older than ${BACKUP_STALE_DAYS} days. Run a fresh backup now.`,
+            lastBackupAt,
+          };
+        } else {
+          backup = {
+            status: "healthy",
+            message: "Recent backup detected.",
+            lastBackupAt,
+          };
+        }
+      }
+    } catch (err) {
+      backup = {
+        status: "warning",
+        message: "Backup status could not be read. Verify the backup_schedules table exists.",
+        lastBackupAt: null,
+      };
+    }
+  } catch (err) {
+    database = {
+      status: "offline",
+      message: "Database check failed. Verify the DB container and connection settings.",
+    };
+    backup = {
+      status: "offline",
+      message: "Backup status unavailable because the database check failed.",
+      lastBackupAt: null,
+    };
+  }
+
+  const app = {
+    version: appVersion,
+    buildHash,
+    status: buildHash === "unknown" ? "warning" : "healthy",
+    message:
+      buildHash === "unknown"
+        ? "Build hash is unavailable. Set APP_BUILD_HASH or GIT_COMMIT during deployment for traceability."
+        : "Version metadata is available.",
+  };
+
+  api.responseTimeMs = Date.now() - startedAt;
+
+  sendJson(res, 200, {
+    timestamp: new Date().toISOString(),
+    api,
+    database,
+    backup,
+    app,
+  });
+};
+
 routes["GET /api/license/status"] = async (req, res) => {
   await loadLicenseCache();
   const licenseKey = await getLicenseSetting("app_license_key");
@@ -1173,6 +1318,7 @@ async function checkSetupMiddleware(req) {
     "GET /api/auth/session",
     "POST /api/auth/change-password",
     "POST /api/auth/update-email",
+    "GET /api/system/health",
   ];
   if (setupExempt.includes(routeKey)) return true;
 
@@ -1722,6 +1868,71 @@ async function handleRpcCall(req, res, funcName) {
     }
     return;
   }
+
+  if (funcName === "increment_product_analytics_counter") {
+    const user = getUserFromRequest(req);
+    if (!user) {
+      sendRestJson(res, 401, { message: "Authentication required" });
+      return;
+    }
+
+    try {
+      const body = await parseBody(req);
+      const eventKey = body?.p_event_key;
+      const metricDate = body?.p_metric_date || new Date().toISOString().split("T")[0];
+      const increment = Math.max(1, Number(body?.p_increment || 1));
+      const source = body?.p_source || "web";
+
+      const allowedEvents = new Set([
+        "quick_action_open",
+        "ai_action_run",
+        "planner_refresh",
+        "note_to_task_conversion",
+        "import_completed",
+        "import_failed",
+      ]);
+
+      if (!allowedEvents.has(eventKey)) {
+        sendRestJson(res, 400, { message: "Unsupported analytics event" });
+        return;
+      }
+
+      let rows;
+      if (dbType === "postgresql") {
+        rows = await query(
+          `INSERT INTO product_analytics_daily (user_id, metric_date, event_key, event_count, source)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (user_id, metric_date, event_key)
+           DO UPDATE SET
+             event_count = product_analytics_daily.event_count + EXCLUDED.event_count,
+             source = EXCLUDED.source,
+             updated_at = NOW()
+           RETURNING *`,
+          [user.sub, metricDate, eventKey, increment, source],
+        );
+      } else {
+        await query(
+          `INSERT INTO product_analytics_daily (id, user_id, metric_date, event_key, event_count, source)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON DUPLICATE KEY UPDATE
+             event_count = event_count + VALUES(event_count),
+             source = VALUES(source),
+             updated_at = CURRENT_TIMESTAMP`,
+          [uuid(), user.sub, metricDate, eventKey, increment, source],
+        );
+        rows = await query(
+          `SELECT * FROM product_analytics_daily WHERE user_id = $1 AND metric_date = $2 AND event_key = $3 LIMIT 1`,
+          [user.sub, metricDate, eventKey],
+        );
+      }
+
+      sendRestJson(res, 200, rows?.[0] || null);
+    } catch (err) {
+      sendRestJson(res, 500, { message: err.message });
+    }
+    return;
+  }
+
   // Unknown RPC — return empty result
   sendRestJson(res, 200, []);
 }
@@ -2033,6 +2244,7 @@ const ALLOWED_DATA_TABLES = new Set([
   "task_templates",
   "user_mfa_settings",
   "user_workspace_permissions",
+  "product_analytics_daily",
 ]);
 
 function validateTable(tableName) {

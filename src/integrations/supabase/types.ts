@@ -50,6 +50,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          input_summary: string | null
+          result_summary: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          input_summary?: string | null
+          result_summary?: string | null
+          source: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          input_summary?: string | null
+          result_summary?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_notifications: {
         Row: {
           created_at: string
@@ -108,18 +138,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          internal_analytics_enabled: boolean
           onboarding_enabled: boolean
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
+          internal_analytics_enabled?: boolean
           onboarding_enabled?: boolean
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
+          internal_analytics_enabled?: boolean
           onboarding_enabled?: boolean
           updated_at?: string
         }
@@ -1522,6 +1555,40 @@ export type Database = {
           updated_at?: string
           user_id?: string
           work_duration?: number
+        }
+        Relationships: []
+      }
+
+      product_analytics_daily: {
+        Row: {
+          created_at: string
+          event_count: number
+          event_key: string
+          id: string
+          metric_date: string
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_count?: number
+          event_key: string
+          id?: string
+          metric_date?: string
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_count?: number
+          event_key?: string
+          id?: string
+          metric_date?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -3070,6 +3137,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_product_analytics_counter: {
+        Args: {
+          p_event_key: string
+          p_increment?: number
+          p_metric_date?: string
+          p_source?: string
+        }
+        Returns: {
+          created_at: string
+          event_count: number
+          event_key: string
+          id: string
+          metric_date: string
+          source: string
+          updated_at: string
+          user_id: string
+        }
+      }
       get_support_users_safe: {
         Args: never
         Returns: {

@@ -12,10 +12,15 @@ import { MobileHeader } from './MobileHeader';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { AiQuickActionBar } from '@/components/ai/AiQuickActionBar';
 import { Loader2 } from 'lucide-react';
+import { floatingHeaderClass } from '@/lib/design-tokens';
 
 interface AppLayoutProps {
   children: ReactNode;
 }
+
+const appShellClass = 'min-h-screen bg-background';
+const desktopHeaderClass = `${floatingHeaderClass} hidden h-16 items-center justify-between px-6 md:flex`;
+const contentWrapperClass = 'app-page-shell p-4 md:p-6';
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { user, loading } = useAuth();
@@ -45,7 +50,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <LicenseGuard>
       <MfaGuard>
-        <div className="min-h-screen bg-background">
+        <div className={appShellClass}>
           {/* Desktop Sidebar - Hidden on mobile */}
           <div className="hidden md:block">
             <AppSidebar />
@@ -57,7 +62,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {/* Main Content */}
           <main className="md:ml-[72px] lg:ml-[240px] min-h-screen transition-all duration-200 pb-20 md:pb-0">
             {/* Desktop Top Bar - Hidden on mobile */}
-            <header className="hidden md:flex sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-xl items-center justify-between px-6">
+            <header className={desktopHeaderClass}>
               <div className="flex items-center gap-4">
                 <GlobalSearch />
                 <AiQuickActionBar />
@@ -70,7 +75,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </header>
 
             {/* Page Content */}
-            <div className="p-4 md:p-6">
+            <div className={contentWrapperClass}>
               {children}
             </div>
           </main>

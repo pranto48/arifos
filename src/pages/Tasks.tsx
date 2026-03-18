@@ -30,6 +30,7 @@ import { TaskAssignmentHistory } from '@/components/tasks/TaskAssignmentHistory'
 import { TaskFollowUp } from '@/components/tasks/TaskFollowUp';
 import { TaskKanbanBoard } from '@/components/tasks/TaskKanbanBoard';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
+import { logAiUsage } from '@/lib/aiUsageLogger';
 import { ReportActions } from '@/components/shared/ReportActions';
 import { FieldVisibility } from '@/components/shared/FieldVisibility';
 import {
@@ -49,6 +50,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { pageHeaderClass, pageShellClass, pageTitleClass, surfaceCardClass } from '@/lib/design-tokens';
 
 interface ChecklistItem {
   id: string;
@@ -80,6 +82,13 @@ interface SupportUserInfo {
   department_name: string;
   unit_name: string;
 }
+
+
+const triggerHaptic = (pattern: number | number[] = 10) => {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
+};
 
 interface SortableTaskProps {
   task: Task;
@@ -123,7 +132,7 @@ function SortableTask({ task, checklists, categories, supportUserInfo, onToggle,
     <Card
       ref={setNodeRef}
       style={style}
-      className={`bg-card border-border hover:bg-muted/30 transition-colors ${isSelected ? 'ring-2 ring-primary' : ''}`}
+      className={`${surfaceCardClass} hover:bg-muted/30 transition-colors ${isSelected ? 'ring-2 ring-primary' : ''}`}
     >
       <CardContent className="p-4">
         <div className="flex items-center gap-2 md:gap-4 flex-wrap">
@@ -447,12 +456,17 @@ export default function Tasks() {
   };
 
   const toggleTask = async (id: string, completed: boolean) => {
+    triggerHaptic(completed ? 14 : 8);
     await supabase.from('tasks').update({
       status: completed ? 'completed' : 'todo',
       completed_at: completed ? new Date().toISOString() : null,
     }).eq('id', id);
     // Update local state instead of full reload
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: completed ? 'completed' : 'todo' } : t));
+    toast.success(completed ? 'Task marked complete' : 'Task marked active', {
+      description: completed ? 'Nice work — it has been moved out of your active list.' : 'The task is back in your active queue.',
+      duration: 1800,
+    });
   };
 
   const handleEdit = (task: Task) => {
@@ -659,9 +673,9 @@ export default function Tasks() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground">{t('tasks.title')}</h1>
+    <div className={pageShellClass}>
+      <div className={pageHeaderClass}>
+        <h1 className={`${pageTitleClass} text-2xl`}>{t('tasks.title')}</h1>
         <div className="flex flex-wrap gap-2 items-center">
           {/* View Toggle */}
           <div className="flex items-center gap-0.5 bg-muted/30 rounded-md p-0.5">
@@ -816,7 +830,7 @@ export default function Tasks() {
       ) : (
       <div className="space-y-2">
         {filteredTasks.length === 0 ? (
-          <Card className="bg-card border-border">
+          <Card className={surfaceCardClass}>
             <CardContent className="py-12 text-center">
               <CheckSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">{t('tasks.noTasksYet')}</p>

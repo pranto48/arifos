@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Menu, LogOut, User } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { LogOut, User } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -16,25 +16,55 @@ import { AiStatusWidget } from "./AiStatusWidget";
 import { AiQuickActionBar } from '@/components/ai/AiQuickActionBar';
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { cn } from "@/lib/utils";
+import { avatarBadgeClass, floatingHeaderClass, iconBadgeClass, sidebarPanelClass } from "@/lib/design-tokens";
+
+const mobileHeaderClass = `${floatingHeaderClass} safe-area-pt md:hidden z-40`;
 
 export function MobileHeader() {
   const { signOut, user } = useAuth();
   const { t } = useLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [topQuickActionIds, setTopQuickActionIds] = useState<string[]>([]);
+  const { actionById } = useQuickActions();
+
+  useEffect(() => {
+    setTopQuickActionIds(getFrequentQuickActionIds(3));
+  }, []);
+
+  const topQuickActions = useMemo(
+    () =>
+      topQuickActionIds
+        .map((id) => actionById[id])
+        .filter((action): action is NonNullable<typeof action> => Boolean(action)),
+    [actionById, topQuickActionIds],
+  );
+
+  const handleTopQuickAction = async (actionId: string) => {
+    const action = actionById[actionId];
+    if (!action) return;
+
+    await action.run();
+    recordQuickActionUsage(actionId);
+    setTopQuickActionIds(getFrequentQuickActionIds(3));
+  };
 
   return (
-    <header className="md:hidden sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border safe-area-pt">
-      <div className="flex items-center justify-between h-14 px-4">
+    <header className={mobileHeaderClass}>
+      <div className="flex items-center justify-between gap-3 min-h-[4rem] px-4 py-2">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+          <div className={iconBadgeClass}>
             <span className="text-primary font-bold text-sm">L</span>
           </div>
-          <span className="font-semibold text-foreground">LifeOS</span>
+          <div className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-foreground">LifeOS</span>
+            <span className="block text-[11px] text-muted-foreground">Mobile workspace</span>
+          </div>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 items-center gap-3">
           <AiStatusWidget collapsed />
           <AiQuickActionBar compact />
           <DashboardModeSwitcher />
@@ -47,9 +77,9 @@ export function MobileHeader() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full"
+                className={`group ${utilityButtonClass} rounded-full`}
               >
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <div className={avatarBadgeClass}>
                   <span className="text-primary text-xs font-semibold">
                     {user?.email?.charAt(0).toUpperCase() || "U"}
                   </span>
@@ -58,7 +88,7 @@ export function MobileHeader() {
             </SheetTrigger>
             <SheetContent
               side="right"
-              className="w-[280px] bg-sidebar border-sidebar-border z-[60]"
+              className={cn("z-[60] w-[280px] border-sidebar-border", sidebarPanelClass)}
             >
               <SheetHeader>
                 <SheetTitle className="text-sidebar-foreground">
@@ -100,8 +130,24 @@ export function MobileHeader() {
       </div>
 
       {/* Search Bar */}
-      <div className="px-4 pb-3">
+      <div className="space-y-3 px-4 pb-4">
         <GlobalSearch />
+        {topQuickActions.length > 0 && (
+          <div className="flex flex-wrap gap-2.5">
+            {topQuickActions.map((action) => (
+              <Button
+                key={action.id}
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="h-7 rounded-full px-2.5 text-xs"
+                onClick={() => handleTopQuickAction(action.id)}
+              >
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
     </header>
   );

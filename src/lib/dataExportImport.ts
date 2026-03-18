@@ -297,14 +297,8 @@ export async function importData(
   conflictResolution: 'overwrite' | 'skip' = 'overwrite',
   existingDataMap?: Record<string, any[]>,
 ): Promise<{ imported: number; errors: string[] }> {
-  if (!payload?.data || !payload?.exportType) {
-    throw new Error('Invalid export file. Missing "data" or "exportType" field.');
-  }
-
-  const preset = EXPORT_PRESETS[payload.exportType];
-  if (!preset) {
-    throw new Error(`Unknown export type: ${payload.exportType}`);
-  }
+  const preview = buildImportPreview(payload, userId);
+  const preset = EXPORT_PRESETS[preview.fixedPayload.exportType];
 
   let imported = 0;
   const errors: string[] = [];
@@ -314,7 +308,7 @@ export async function importData(
 
   for (let idx = 0; idx < total; idx++) {
     const entity = preset.entities[idx];
-    const rows = payload.data[entity];
+    const rows = preview.fixedPayload.data[entity];
     if (!Array.isArray(rows) || rows.length === 0) {
       onPct?.(((idx + 1) / total) * 100);
       continue;
