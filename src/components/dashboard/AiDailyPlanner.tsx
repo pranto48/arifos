@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardMode } from '@/contexts/DashboardModeContext';
 import { logAiUsage } from '@/lib/aiUsageLogger';
+import { PRODUCT_ANALYTICS_EVENTS, trackProductAnalyticsEvent } from '@/lib/productAnalytics';
 
 interface TaskRow {
   id: string;
@@ -92,6 +93,9 @@ export function AiDailyPlanner() {
         inputSummary: `mode:${mode}`,
         resultSummary: error ? 'failed_to_refresh_plan' : `tasks_loaded:${(data || []).length}`,
       });
+      if (!error) {
+        void trackProductAnalyticsEvent(PRODUCT_ANALYTICS_EVENTS.plannerRefresh);
+      }
     }
 
     setTasks((data as TaskRow[]) || []);

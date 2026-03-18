@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, Lightbulb, FileBarChart, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Activity, BarChart3, TrendingUp, Lightbulb, FileBarChart, AlertTriangle, CheckCircle, Info, ShieldOff } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { useAnalytics, CrossModuleInsight } from '@/hooks/useAnalytics';
+import { useProductAnalytics } from '@/hooks/useProductAnalytics';
 import { ReportActions } from '@/components/shared/ReportActions';
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -27,6 +26,12 @@ const chartConfig = {
   income: { label: 'Income', color: 'hsl(var(--chart-2))' },
   timeHours: { label: 'Hours Tracked', color: 'hsl(var(--chart-3))' },
   goals: { label: 'Goals', color: 'hsl(var(--chart-4))' },
+  quick_action_open: { label: 'Quick Action Opens', color: 'hsl(var(--primary))' },
+  ai_action_run: { label: 'AI Actions Run', color: 'hsl(var(--chart-2))' },
+  planner_refresh: { label: 'Planner Refreshes', color: 'hsl(var(--chart-3))' },
+  note_to_task_conversion: { label: 'Note to Task', color: 'hsl(var(--chart-4))' },
+  import_completed: { label: 'Imports Completed', color: 'hsl(var(--chart-5))' },
+  import_failed: { label: 'Imports Failed', color: 'hsl(var(--destructive))' },
 };
 
 function InsightCard({ insight }: { insight: CrossModuleInsight }) {
@@ -53,8 +58,8 @@ function InsightCard({ insight }: { insight: CrossModuleInsight }) {
 }
 
 export default function Analytics() {
-  const { t } = useLanguage();
   const { loading, summary, monthlyTrends, insights, buildReport } = useAnalytics(6);
+  const { loading: productLoading, enabled: internalAnalyticsEnabled, totals, series } = useProductAnalytics(14);
   const [selectedModules, setSelectedModules] = useState<string[]>(['tasks', 'goals', 'budget']);
 
   const toggleModule = (mod: string) => {
@@ -82,6 +87,13 @@ export default function Analytics() {
     { label: 'Hours Tracked', value: `${summary.totalTimeTracked}h`, sub: `${summary.activeProjects} active projects` },
   ];
 
+  const internalStatCards = [
+    { label: 'Quick Action Opens', value: totals.quick_action_open, sub: 'Command palette launches' },
+    { label: 'AI Actions Run', value: totals.ai_action_run, sub: 'Successful AI assists' },
+    { label: 'Planner Refreshes', value: totals.planner_refresh, sub: 'Manual planner refreshes' },
+    { label: 'Imports', value: `${totals.import_completed}/${totals.import_failed}`, sub: 'Completed / failed imports' },
+  ];
+
   const taskStatusData = [
     { name: 'Completed', value: summary.completedTasks },
     { name: 'Pending', value: summary.totalTasks - summary.completedTasks },
@@ -99,7 +111,6 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statCards.map((card, i) => (
           <motion.div key={card.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
@@ -115,14 +126,14 @@ export default function Analytics() {
       </div>
 
       <Tabs defaultValue="trends" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="trends"><TrendingUp className="h-4 w-4 mr-1.5" />Trends</TabsTrigger>
           <TabsTrigger value="insights"><Lightbulb className="h-4 w-4 mr-1.5" />Insights</TabsTrigger>
           <TabsTrigger value="breakdown"><BarChart3 className="h-4 w-4 mr-1.5" />Breakdown</TabsTrigger>
+          <TabsTrigger value="internal"><Activity className="h-4 w-4 mr-1.5" />Internal</TabsTrigger>
           <TabsTrigger value="reports"><FileBarChart className="h-4 w-4 mr-1.5" />Reports</TabsTrigger>
         </TabsList>
 
-        {/* TRENDS TAB */}
         <TabsContent value="trends" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
@@ -189,7 +200,6 @@ export default function Analytics() {
           </div>
         </TabsContent>
 
-        {/* INSIGHTS TAB */}
         <TabsContent value="insights" className="space-y-4">
           <Card>
             <CardHeader><CardTitle className="text-base">Cross-Module Insights</CardTitle></CardHeader>
@@ -203,7 +213,6 @@ export default function Analytics() {
           </Card>
         </TabsContent>
 
-        {/* BREAKDOWN TAB */}
         <TabsContent value="breakdown" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
@@ -239,7 +248,79 @@ export default function Analytics() {
           </div>
         </TabsContent>
 
-        {/* REPORTS TAB */}
+        <TabsContent value="internal" className="space-y-4">
+          {!internalAnalyticsEnabled ? (
+            <Card>
+              <CardContent className="p-8 text-center space-y-3">
+                <ShieldOff className="h-10 w-10 text-muted-foreground mx-auto" />
+                <div>
+                  <p className="font-medium">Internal analytics disabled</p>
+                  <p className="text-sm text-muted-foreground mt-1">Self-hosted admin settings have turned off product telemetry, so this panel stays empty.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : productLoading ? (
+            <Skeleton className="h-72" />
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {internalStatCards.map((card) => (
+                  <Card key={card.label}>
+                    <CardContent className="p-4">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{card.label}</p>
+                      <p className="text-2xl font-bold text-foreground mt-1">{card.value}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{card.sub}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                <Card className="xl:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="text-base">Feature adoption over the last 14 days</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer config={chartConfig} className="h-72">
+                      <BarChart data={series}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                        <XAxis dataKey="label" className="text-xs" />
+                        <YAxis className="text-xs" />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="quick_action_open" stackId="a" fill="var(--color-quick_action_open)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="ai_action_run" stackId="a" fill="var(--color-ai_action_run)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="planner_refresh" stackId="a" fill="var(--color-planner_refresh)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="note_to_task_conversion" stackId="a" fill="var(--color-note_to_task_conversion)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="import_completed" stackId="a" fill="var(--color-import_completed)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="import_failed" stackId="a" fill="var(--color-import_failed)" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">What this panel tracks</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="rounded-lg border p-3 bg-muted/30">
+                      <p className="font-medium">Privacy first</p>
+                      <p className="text-muted-foreground mt-1">Only per-user, per-day counters are stored—no note contents, prompts, imports, or command text.</p>
+                    </div>
+                    <ul className="space-y-2 text-muted-foreground">
+                      <li>• Quick action palette opens.</li>
+                      <li>• Successful AI action runs.</li>
+                      <li>• Manual planner refreshes.</li>
+                      <li>• Note-to-task conversions.</li>
+                      <li>• Import completions and failures.</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+        </TabsContent>
+
         <TabsContent value="reports" className="space-y-4">
           <Card>
             <CardHeader>

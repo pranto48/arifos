@@ -201,6 +201,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE TABLE IF NOT EXISTS app_settings (
   id TEXT PRIMARY KEY DEFAULT 'default',
   onboarding_enabled BOOLEAN DEFAULT true,
+  internal_analytics_enabled BOOLEAN DEFAULT true,
   setup_complete BOOLEAN DEFAULT false,
   db_type VARCHAR(20) DEFAULT 'postgresql',
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -213,6 +214,18 @@ CREATE TABLE IF NOT EXISTS license_settings (
   setting_value TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS product_analytics_daily (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  metric_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  event_key VARCHAR(64) NOT NULL,
+  event_count INTEGER NOT NULL DEFAULT 0,
+  source VARCHAR(20) NOT NULL DEFAULT 'web',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, metric_date, event_key)
 );
 `;
 
@@ -262,6 +275,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE TABLE IF NOT EXISTS app_settings (
   id CHAR(36) PRIMARY KEY,
   onboarding_enabled BOOLEAN DEFAULT TRUE,
+  internal_analytics_enabled BOOLEAN DEFAULT TRUE,
   setup_complete BOOLEAN DEFAULT FALSE,
   db_type VARCHAR(20) DEFAULT 'mysql',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -274,6 +288,19 @@ CREATE TABLE IF NOT EXISTS license_settings (
   setting_value TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS product_analytics_daily (
+  id CHAR(36) PRIMARY KEY,
+  user_id CHAR(36) NOT NULL,
+  metric_date DATE NOT NULL,
+  event_key VARCHAR(64) NOT NULL,
+  event_count INT NOT NULL DEFAULT 0,
+  source VARCHAR(20) NOT NULL DEFAULT 'web',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_product_analytics_daily (user_id, metric_date, event_key),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 `;
 
@@ -1841,6 +1868,71 @@ async function handleRpcCall(req, res, funcName) {
     }
     return;
   }
+
+  if (funcName === "increment_product_analytics_counter") {
+    const user = getUserFromRequest(req);
+    if (!user) {
+      sendRestJson(res, 401, { message: "Authentication required" });
+      return;
+    }
+
+    try {
+      const body = await parseBody(req);
+      const eventKey = body?.p_event_key;
+      const metricDate = body?.p_metric_date || new Date().toISOString().split("T")[0];
+      const increment = Math.max(1, Number(body?.p_increment || 1));
+      const source = body?.p_source || "web";
+
+      const allowedEvents = new Set([
+        "quick_action_open",
+        "ai_action_run",
+        "planner_refresh",
+        "note_to_task_conversion",
+        "import_completed",
+        "import_failed",
+      ]);
+
+      if (!allowedEvents.has(eventKey)) {
+        sendRestJson(res, 400, { message: "Unsupported analytics event" });
+        return;
+      }
+
+      let rows;
+      if (dbType === "postgresql") {
+        rows = await query(
+          `INSERT INTO product_analytics_daily (user_id, metric_date, event_key, event_count, source)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (user_id, metric_date, event_key)
+           DO UPDATE SET
+             event_count = product_analytics_daily.event_count + EXCLUDED.event_count,
+             source = EXCLUDED.source,
+             updated_at = NOW()
+           RETURNING *`,
+          [user.sub, metricDate, eventKey, increment, source],
+        );
+      } else {
+        await query(
+          `INSERT INTO product_analytics_daily (id, user_id, metric_date, event_key, event_count, source)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON DUPLICATE KEY UPDATE
+             event_count = event_count + VALUES(event_count),
+             source = VALUES(source),
+             updated_at = CURRENT_TIMESTAMP`,
+          [uuid(), user.sub, metricDate, eventKey, increment, source],
+        );
+        rows = await query(
+          `SELECT * FROM product_analytics_daily WHERE user_id = $1 AND metric_date = $2 AND event_key = $3 LIMIT 1`,
+          [user.sub, metricDate, eventKey],
+        );
+      }
+
+      sendRestJson(res, 200, rows?.[0] || null);
+    } catch (err) {
+      sendRestJson(res, 500, { message: err.message });
+    }
+    return;
+  }
+
   // Unknown RPC — return empty result
   sendRestJson(res, 200, []);
 }
@@ -2152,6 +2244,7 @@ const ALLOWED_DATA_TABLES = new Set([
   "task_templates",
   "user_mfa_settings",
   "user_workspace_permissions",
+  "product_analytics_daily",
 ]);
 
 function validateTable(tableName) {
