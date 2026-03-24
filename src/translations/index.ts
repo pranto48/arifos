@@ -15,6 +15,7 @@ export const translations = {
   'nav.family': { bn: 'পরিবার', en: 'Family' },
   'nav.supportUsers': { bn: 'সাপোর্ট ইউজার', en: 'Support Users' },
   'nav.deviceInventory': { bn: 'ডিভাইস ইনভেন্টরি', en: 'Device Inventory' },
+  'nav.ipbxInventory': { bn: 'IPBX ইনভেন্টরি', en: 'IPBX Inventory' },
   'nav.supportTickets': { bn: 'সাপোর্ট টিকেট', en: 'Support Tickets' },
   'nav.loans': { bn: 'ঋণ', en: 'Loans' },
   'nav.settings': { bn: 'সেটিংস', en: 'Settings' },

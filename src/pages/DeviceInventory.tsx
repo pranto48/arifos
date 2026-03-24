@@ -573,10 +573,11 @@ export default function DeviceInventoryPage() {
   };
 
   // Report data for shared ReportActions
-  const reportHeaders = ['Device Name', 'Device Number', 'Serial Number', 'Category', 'Status', 'Purchase Date', 'Delivery Date', 'Supplier', 'Requisition No', 'BOD No', 'Warranty Date', 'Price', 'Assigned To', 'Unit', 'Department', 'RAM', 'Storage', 'Processor', 'UPS', 'Monitor', 'Webcam', 'Headset', 'Notes'];
+  const reportHeaders = ['Device Name', 'Device Number', 'Serial Number', 'Category', 'Status', 'Purchase Date', 'Delivery Date', 'Supplier', 'Requisition No', 'BOD No', 'Warranty Date', 'Price', 'Assigned To', 'Unit', 'Department', 'RAM', 'Storage', 'Processor', 'UPS', 'Monitor', 'Webcam', 'Headset', 'IPBX Model', 'IPBX Extension', 'IP Phone IP', 'IPBX User ID', 'IPBX Password', 'Notes'];
   const reportRows = filteredDevices.map(device => {
     const category = categories.find(c => c.id === device.category_id);
     const supportUser = device.support_user_id ? supportUserMap[device.support_user_id] : null;
+    const customSpecs = (device.custom_specs || {}) as Record<string, string>;
     return [
       device.device_name,
       device.device_number || '',
@@ -600,6 +601,11 @@ export default function DeviceInventoryPage() {
       device.monitor_info || '',
       device.webcam_info || '',
       device.headset_info || '',
+      customSpecs.ipbx_model || '',
+      customSpecs.ipbx_extension_number || '',
+      customSpecs.ip_phone_ip_address || '',
+      customSpecs.ipbx_user_id || '',
+      customSpecs.ipbx_password || '',
       device.notes || '',
     ];
   });
@@ -1270,11 +1276,12 @@ export default function DeviceInventoryPage() {
                       { name: 'CCTV', description: 'Security cameras and DVR/NVR (IP Address, DVR/NVR IP, Channel, Location fields)' },
                       { name: 'Firewall', description: 'Network firewalls and gateways (SSID, Admin IP, WAN/LAN IP, Firmware fields)' },
                       { name: 'Access Point', description: 'Wireless access points (SSID, WiFi Password, Admin IP, Firmware fields)' },
+                      { name: 'IPBX', description: 'IPBX systems and IP phones (Model, Extension, IP Phone IP, User ID, Password fields)' },
                       { name: 'NAS', description: 'Network attached storage (LAN IP, Admin Username, RAID Config, OS fields)' },
                       { name: 'Scanner', description: 'Standalone scanners (IP Address, Model, Driver Info fields)' },
                       { name: 'Monitor', description: 'Standalone display monitors' },
                       { name: 'Projector', description: 'Projectors and display equipment' },
-                      { name: 'Phone', description: 'IP phones and communication devices' },
+                      { name: 'Phone', description: 'IP phones and communication devices (Model, Extension, IP Address, User ID fields)' },
                       { name: 'Tablet', description: 'Tablets and handheld devices' },
                       { name: 'Other', description: 'Miscellaneous IT equipment' },
                     ];
@@ -1294,7 +1301,7 @@ export default function DeviceInventoryPage() {
                   }}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  {language === 'bn' ? '১৮টি নমুনা ক্যাটাগরি যোগ করুন' : 'Add 18 Sample IT Categories'}
+                  {language === 'bn' ? '১৯টি নমুনা ক্যাটাগরি যোগ করুন' : 'Add 19 Sample IT Categories'}
                 </Button>
               </div>
             )}
