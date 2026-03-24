@@ -1,6 +1,6 @@
 // Device type detection and field configuration
 
-export type DeviceType = 'computer' | 'router' | 'server' | 'printer' | 'ups' | 'cctv' | 'network_equipment' | 'generic';
+export type DeviceType = 'computer' | 'router' | 'server' | 'printer' | 'ups' | 'cctv' | 'network_equipment' | 'ipbx_phone' | 'generic';
 
 const COMPUTER_CATEGORIES = [
   'Desktop', 'Desktop Clone PC', 'Desktop Clone', 'Clone PC',
@@ -33,6 +33,10 @@ const NETWORK_EQUIPMENT_CATEGORIES = [
   'Network Equipment', 'Hub', 'Patch Panel',
 ];
 
+const IPBX_PHONE_CATEGORIES = [
+  'IPBX', 'IP PBX', 'PBX', 'IP Phone', 'VoIP Phone', 'SIP Phone', 'PABX',
+];
+
 export function getDeviceType(categoryName: string | null): DeviceType {
   if (!categoryName) return 'generic';
   const lower = categoryName.toLowerCase();
@@ -40,6 +44,7 @@ export function getDeviceType(categoryName: string | null): DeviceType {
   if (COMPUTER_CATEGORIES.some(c => lower.includes(c.toLowerCase()))) return 'computer';
   // Network equipment before router since 'Switch' was in both
   if (NETWORK_EQUIPMENT_CATEGORIES.some(c => lower.includes(c.toLowerCase()))) return 'network_equipment';
+  if (IPBX_PHONE_CATEGORIES.some(c => lower.includes(c.toLowerCase()))) return 'ipbx_phone';
   if (ROUTER_CATEGORIES.some(c => lower.includes(c.toLowerCase()))) return 'router';
   if (SERVER_CATEGORIES.some(c => lower.includes(c.toLowerCase()))) return 'server';
   if (PRINTER_CATEGORIES.some(c => lower.includes(c.toLowerCase()))) return 'printer';
@@ -120,6 +125,14 @@ export const NETWORK_EQUIPMENT_FIELDS: DeviceTypeField[] = [
   { key: 'spanning_tree', labelEn: 'Spanning Tree', labelBn: 'স্প্যানিং ট্রি', placeholder: 'e.g. RSTP Enabled' },
 ];
 
+export const IPBX_PHONE_FIELDS: DeviceTypeField[] = [
+  { key: 'ipbx_model', labelEn: 'IPBX Device Model', labelBn: 'IPBX ডিভাইস মডেল', placeholder: 'e.g. Yeastar S20 / Grandstream UCM' },
+  { key: 'ipbx_extension_number', labelEn: 'IPBX Extension Number', labelBn: 'IPBX এক্সটেনশন নম্বর', placeholder: 'e.g. 1205' },
+  { key: 'ip_phone_ip_address', labelEn: 'IP Phone Device IP Address', labelBn: 'IP ফোন ডিভাইস IP ঠিকানা', placeholder: 'e.g. 10.10.10.55' },
+  { key: 'ipbx_user_id', labelEn: 'IPBX User ID', labelBn: 'IPBX ইউজার ID', placeholder: 'e.g. ext1205' },
+  { key: 'ipbx_password', labelEn: 'IPBX Password', labelBn: 'IPBX পাসওয়ার্ড', placeholder: '••••••', isPassword: true },
+];
+
 export function getFieldsForType(type: DeviceType): DeviceTypeField[] {
   switch (type) {
     case 'router': return ROUTER_FIELDS;
@@ -128,6 +141,7 @@ export function getFieldsForType(type: DeviceType): DeviceTypeField[] {
     case 'ups': return UPS_FIELDS;
     case 'cctv': return CCTV_FIELDS;
     case 'network_equipment': return NETWORK_EQUIPMENT_FIELDS;
+    case 'ipbx_phone': return IPBX_PHONE_FIELDS;
     default: return [];
   }
 }
@@ -140,6 +154,7 @@ export function getTypeIcon(type: DeviceType): string {
     case 'ups': return 'Zap';
     case 'cctv': return 'Camera';
     case 'network_equipment': return 'Network';
+    case 'ipbx_phone': return 'Phone';
     default: return 'Settings';
   }
 }
@@ -153,6 +168,7 @@ export function getTypeLabel(type: DeviceType, lang: string): string {
     ups: { en: 'UPS/Power Info', bn: 'UPS/পাওয়ার তথ্য' },
     cctv: { en: 'CCTV/Camera Info', bn: 'CCTV/ক্যামেরা তথ্য' },
     network_equipment: { en: 'Network Equipment Info', bn: 'নেটওয়ার্ক ইকুইপমেন্ট তথ্য' },
+    ipbx_phone: { en: 'IPBX/IP Phone Info', bn: 'IPBX/IP ফোন তথ্য' },
     generic: { en: 'Device Info', bn: 'ডিভাইস তথ্য' },
   };
   return lang === 'bn' ? labels[type].bn : labels[type].en;
