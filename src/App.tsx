@@ -34,6 +34,7 @@ const Projects = lazy(() => import("./pages/Projects"));
 const Calendar = lazy(() => import("./pages/Calendar"));
 const SupportUsers = lazy(() => import("./pages/SupportUsers"));
 const DeviceInventory = lazy(() => import("./pages/DeviceInventory"));
+const IpbxInventory = lazy(() => import("./pages/IpbxInventory"));
 const DeviceProfile = lazy(() => import("./pages/DeviceProfile"));
 const SupportTickets = lazy(() => import("./pages/SupportTickets"));
 const SubmitTicket = lazy(() => import("./pages/SubmitTicket"));
@@ -114,6 +115,7 @@ const AppContent = () => {
             <Route path="/calendar" element={<AppLayout><Calendar /></AppLayout>} />
             <Route path="/support-users" element={<AppLayout><SupportUsers /></AppLayout>} />
             <Route path="/device-inventory" element={<AppLayout><DeviceInventory /></AppLayout>} />
+            <Route path="/ipbx-inventory" element={<AppLayout><IpbxInventory /></AppLayout>} />
             <Route path="/device/:deviceNumber" element={<DeviceProfile />} />
             <Route path="/support-tickets" element={<AppLayout><SupportTickets /></AppLayout>} />
             <Route path="/submit-ticket" element={<SubmitTicket />} />

@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Calendar, CheckSquare, FileText, HeadsetIcon, HardDrive, Ticket, Target, Lightbulb, Repeat, Users, Wallet, DollarSign, TrendingUp, Landmark } from 'lucide-react';
+import { Loader2, Calendar, CheckSquare, FileText, HeadsetIcon, HardDrive, Ticket, Target, Lightbulb, Repeat, Users, Wallet, DollarSign, TrendingUp, Landmark, PhoneCall } from 'lucide-react';
 
 const MODULE_ICONS: Record<string, any> = {
   calendar: Calendar,
@@ -13,6 +13,7 @@ const MODULE_ICONS: Record<string, any> = {
   notes: FileText,
   support_users: HeadsetIcon,
   device_inventory: HardDrive,
+  ipbx_inventory: PhoneCall,
   support_tickets: Ticket,
   goals: Target,
   projects: Lightbulb,
@@ -26,7 +27,7 @@ const MODULE_ICONS: Record<string, any> = {
 
 const MODULE_GROUPS = [
   { label: { en: 'Productivity', bn: 'উৎপাদনশীলতা' }, modules: ['tasks', 'notes', 'projects', 'goals', 'calendar'] },
-  { label: { en: 'Office', bn: 'অফিস' }, modules: ['support_users', 'device_inventory', 'support_tickets'] },
+  { label: { en: 'Office', bn: 'অফিস' }, modules: ['support_users', 'device_inventory', 'ipbx_inventory', 'support_tickets'] },
   { label: { en: 'Personal', bn: 'ব্যক্তিগত' }, modules: ['habits', 'family'] },
   { label: { en: 'Finance', bn: 'আর্থিক' }, modules: ['budget', 'salary', 'investments', 'loans'] },
 ];

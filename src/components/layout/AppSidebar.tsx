@@ -25,6 +25,7 @@ import {
   Timer,
   Workflow,
   Brain,
+  PhoneCall,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -152,6 +153,13 @@ const navGroups: NavGroup[] = [
         icon: HardDrive,
         officeOnly: true,
         moduleName: "device_inventory",
+      },
+      {
+        titleKey: "nav.ipbxInventory",
+        url: "/ipbx-inventory",
+        icon: PhoneCall,
+        officeOnly: true,
+        moduleName: "ipbx_inventory",
       },
       {
         titleKey: "nav.supportTickets",
