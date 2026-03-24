@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   HardDrive, Calendar, DollarSign, User, Tag, 
   Package, FileText, AlertTriangle, CheckCircle, Clock,
-  Wrench, ArrowRightLeft, Building2, Users, Wifi, Server, Printer, Zap, Camera, Network, Settings
+  Wrench, ArrowRightLeft, Building2, Users, Wifi, Server, Printer, Zap, Camera, Network, Settings, Phone
 } from 'lucide-react';
 import { getDeviceType, getFieldsForType, getTypeLabel } from './deviceTypeConfig';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -308,7 +308,7 @@ export function DeviceDetailsDialog({
                 const customSpecs = (device.custom_specs || {}) as Record<string, string>;
                 const hasTypeData = typeFields.some(f => customSpecs[f.key]);
                 const TYPE_ICON_MAP: Record<string, React.ElementType> = {
-                  router: Wifi, server: Server, printer: Printer, ups: Zap, cctv: Camera, network_equipment: Network, generic: Settings,
+                  router: Wifi, server: Server, printer: Printer, ups: Zap, cctv: Camera, network_equipment: Network, ipbx_phone: Phone, generic: Settings,
                 };
                 const TypeIcon = TYPE_ICON_MAP[deviceType] || Settings;
 
