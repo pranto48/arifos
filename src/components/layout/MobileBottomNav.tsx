@@ -16,7 +16,8 @@ import {
   Landmark,
   Lightbulb,
   Ticket,
-  Timer
+  Timer,
+  PhoneCall,
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -53,6 +54,7 @@ const allNavItems: NavItem[] = [
   { titleKey: 'nav.notes', url: '/notes', icon: FileText, moduleName: 'notes' },
   { titleKey: 'nav.supportUsers', url: '/support-users', icon: HeadsetIcon, officeOnly: true, moduleName: 'support_users' },
   { titleKey: 'nav.deviceInventory', url: '/device-inventory', icon: HardDrive, officeOnly: true, moduleName: 'device_inventory' },
+  { titleKey: 'nav.ipbxInventory', url: '/ipbx-inventory', icon: PhoneCall, officeOnly: true, moduleName: 'ipbx_inventory' },
   { titleKey: 'nav.supportTickets', url: '/support-tickets', icon: Ticket, officeOnly: true, moduleName: 'support_tickets' },
   { titleKey: 'nav.habits', url: '/habits', icon: Repeat, personalOnly: true, moduleName: 'habits' },
   { titleKey: 'nav.family', url: '/family', icon: UsersIcon, personalOnly: true, moduleName: 'family' },
