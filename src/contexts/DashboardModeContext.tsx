@@ -12,6 +12,55 @@ interface WorkspacePermissions {
   personal_enabled: boolean;
 }
 
+const DEFAULT_PERMISSIONS: WorkspacePermissions = {
+  office_enabled: true,
+  personal_enabled: true,
+};
+
+function normalizeWorkspacePermissions(rows: any[] | null | undefined): WorkspacePermissions {
+  if (!rows || rows.length === 0) return DEFAULT_PERMISSIONS;
+
+  const hasBooleanShape = rows.some(
+    (row) => typeof row?.office_enabled === 'boolean' || typeof row?.personal_enabled === 'boolean'
+  );
+
+  if (hasBooleanShape) {
+    // Aggregate rows defensively in case legacy data has more than one row per user.
+    return {
+      office_enabled: rows.some((row) => row?.office_enabled !== false),
+      personal_enabled: rows.some((row) => row?.personal_enabled !== false),
+    };
+  }
+
+  // Legacy shape: one row per permission with a `permission` string column.
+  const permissionSet = new Set(
+    rows
+      .map((row) => String(row?.permission || '').toLowerCase())
+      .filter(Boolean)
+  );
+
+  if (permissionSet.size === 0) return DEFAULT_PERMISSIONS;
+
+  const officeEnabled =
+    permissionSet.has('office') ||
+    permissionSet.has('office_enabled') ||
+    permissionSet.has('office_mode') ||
+    permissionSet.has('workspace') ||
+    permissionSet.has('all');
+
+  const personalEnabled =
+    permissionSet.has('personal') ||
+    permissionSet.has('personal_enabled') ||
+    permissionSet.has('personal_mode') ||
+    permissionSet.has('workspace') ||
+    permissionSet.has('all');
+
+  return {
+    office_enabled: officeEnabled,
+    personal_enabled: personalEnabled,
+  };
+}
+
 interface DashboardModeContextType {
   mode: DashboardMode;
   setMode: (mode: DashboardMode) => void;
@@ -31,10 +80,7 @@ export function DashboardModeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<DashboardMode>('office');
   const [isPersonalUnlocked, setIsPersonalUnlocked] = useState(false);
   const autoLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [permissions, setPermissions] = useState<WorkspacePermissions>({
-    office_enabled: true,
-    personal_enabled: true,
-  });
+  const [permissions, setPermissions] = useState<WorkspacePermissions>(DEFAULT_PERMISSIONS);
   const [permissionsLoading, setPermissionsLoading] = useState(true);
 
   const loadPermissions = useCallback(async () => {
@@ -46,29 +92,26 @@ export function DashboardModeProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('user_workspace_permissions')
-        .select('office_enabled, personal_enabled')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .select('*')
+        .eq('user_id', user.id);
 
-      if (data) {
-        setPermissions({
-          office_enabled: data.office_enabled,
-          personal_enabled: data.personal_enabled,
-        });
+      if (error) {
+        throw error;
+      }
+
+      const normalized = normalizeWorkspacePermissions(data as any[] | null);
+      setPermissions(normalized);
         
         // If current mode is disabled, switch to enabled mode
-        if (!data.office_enabled && mode === 'office' && data.personal_enabled) {
+        if (!normalized.office_enabled && mode === 'office' && normalized.personal_enabled) {
           setModeState('personal');
-        } else if (!data.personal_enabled && mode === 'personal' && data.office_enabled) {
+        } else if (!normalized.personal_enabled && mode === 'personal' && normalized.office_enabled) {
           setModeState('office');
           setIsPersonalUnlocked(false);
         }
-      } else {
-        // No permissions record = all enabled (default)
-        setPermissions({ office_enabled: true, personal_enabled: true });
-      }
     } catch (error) {
       console.error('Failed to load workspace permissions:', error);
+      setPermissions(DEFAULT_PERMISSIONS);
     } finally {
       setPermissionsLoading(false);
     }
