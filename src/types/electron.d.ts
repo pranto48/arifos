@@ -7,6 +7,7 @@ declare global {
       getServerUrl: () => Promise<string>;
       setServerUrl: (serverUrl: string) => Promise<string>;
       getConfig: () => Promise<Record<string, unknown>>;
+      completeSetup: () => void;
     };
   }
 }

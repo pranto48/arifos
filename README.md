@@ -69,11 +69,30 @@ npm run dist:win
 
 Generated artifacts are placed in the Electron builder output folder (for example `dist/` or `release/` depending on builder defaults/environment).
 
+#### Step-by-step manual to create `LifeOS Setup.exe` (Windows)
+
+1. Install **Node.js 18+** and **Git** on Windows.
+2. Clone project and install dependencies:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/lifeos.git
+   cd lifeos
+   npm install
+   ```
+3. Build installer:
+   ```bash
+   npm run dist:win
+   ```
+4. Find installer in the builder output directory (typically `dist/`).
+5. Run installer on target PC and complete setup.
+
 #### Desktop server URL configuration
 
 - Electron exposes a secure bridge under `window.lifeosDesktop`.
 - Server URL is saved in the desktop user config file:
   - `%APPDATA%/LifeOS/desktop-config.json` (Windows typical path via Electron `userData`)
+- On first run of installed app, LifeOS Desktop opens a setup window asking for the server address.
+  - Default example value: `https://my.arifmahmud.com`
+  - You can change it before clicking **Save & Continue**.
 - Use these renderer helpers:
   - `getServerUrl()` and `setServerUrl()` in `src/lib/serverConfig.ts`
 
