@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
-import { Shield, Users, Key, Loader2, Crown, UserPlus, Trash2, Search, Briefcase, Home, Settings, Calendar, AlertTriangle, Mail, Sparkles, FormInput, ToggleLeft, LayoutGrid, Star, Zap, CheckCircle, XCircle, Clock, ExternalLink, RefreshCw, Download, Copy } from 'lucide-react';
+import { Shield, Users, Key, Loader2, Crown, UserPlus, Trash2, Search, Briefcase, Home, Settings, Calendar, AlertTriangle, Mail, Sparkles, FormInput, ToggleLeft, LayoutGrid, Star, Zap, CheckCircle, XCircle, Clock, ExternalLink, RefreshCw, Download, Copy, BarChart3 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
