@@ -16,6 +16,50 @@ interface ExportConfig {
   label: string;
 }
 
+export interface ImportPreviewWarning {
+  entity: string;
+  rowIndex: number;
+  message: string;
+}
+
+export interface ImportPreviewSummary {
+  fixedPayload: any;
+  warnings: ImportPreviewWarning[];
+  schemaSummary: {
+    entitiesDetected: number;
+    rowsDetected: number;
+    missingEntities: string[];
+    invalidEntityShapes: string[];
+  };
+  entityBreakdown: Array<{
+    entity: string;
+    rows: number;
+    idAutoConverted: number;
+    relationshipsRemapped: number;
+  }>;
+  idAutoConverted: number;
+  relationshipsRemapped: number;
+  idConversionDetails: Array<{
+    entity: string;
+    rowIndex: number;
+    originalId: string;
+    convertedId: string;
+  }>;
+  relationRemapDetails: Array<{
+    entity: string;
+    fkColumn: string;
+    targetEntity: string;
+    count: number;
+  }>;
+  rowRemapDetails: Array<{
+    entity: string;
+    rowIndex: number;
+    fkColumn: string;
+    from: string;
+    to: string;
+  }>;
+}
+
 export const EXPORT_PRESETS: Record<string, ExportConfig> = {
   tasks: {
     label: 'Tasks',
@@ -132,6 +176,115 @@ function applyIdAndFkRemap(row: any, entity: string, idRemapMap: Record<string, 
   }
 
   return next;
+}
+
+export function buildImportPreview(payload: any, userId: string): ImportPreviewSummary {
+  const preset = EXPORT_PRESETS[payload?.exportType];
+  if (!preset || !payload?.data || typeof payload.data !== 'object') {
+    throw new Error('Invalid import payload');
+  }
+
+  const data = payload.data as Record<string, any>;
+  const idRemapMap = buildIdRemapMap(preset.entities, data);
+  const fixedData: Record<string, any[]> = {};
+  const warnings: ImportPreviewWarning[] = [];
+  const idConversionDetails: ImportPreviewSummary['idConversionDetails'] = [];
+  const rowRemapDetails: ImportPreviewSummary['rowRemapDetails'] = [];
+  const relationRemapCounter = new Map<string, number>();
+  const entityBreakdown: ImportPreviewSummary['entityBreakdown'] = [];
+
+  const missingEntities = preset.entities.filter((entity) => !Array.isArray(data[entity]));
+  const invalidEntityShapes = preset.entities.filter((entity) => {
+    const rows = data[entity];
+    return Array.isArray(rows) && rows.some((row) => row === null || typeof row !== 'object' || Array.isArray(row));
+  });
+
+  for (const entity of preset.entities) {
+    const rows = Array.isArray(data[entity]) ? data[entity] : [];
+    let entityIdConversions = 0;
+    let entityFkRemaps = 0;
+
+    fixedData[entity] = rows
+      .map((row: any, rowIndex: number) => {
+        if (row === null || typeof row !== 'object' || Array.isArray(row)) {
+          warnings.push({
+            entity,
+            rowIndex,
+            message: 'Row is not a valid object and was skipped.',
+          });
+          return null;
+        }
+
+        const originalId = row.id;
+        const remapped = applyIdAndFkRemap({ ...row }, entity, idRemapMap);
+
+        if (typeof originalId === 'string' && remapped.id !== originalId) {
+          entityIdConversions++;
+          idConversionDetails.push({
+            entity,
+            rowIndex,
+            originalId,
+            convertedId: remapped.id,
+          });
+        }
+
+        const fkMap = FOREIGN_KEY_REMAP[entity] || {};
+        for (const [fkColumn, targetEntity] of Object.entries(fkMap)) {
+          const from = row[fkColumn];
+          const to = remapped[fkColumn];
+          if (typeof from === 'string' && typeof to === 'string' && from !== to) {
+            entityFkRemaps++;
+            rowRemapDetails.push({ entity, rowIndex, fkColumn, from, to });
+            const key = `${entity}|${fkColumn}|${targetEntity}`;
+            relationRemapCounter.set(key, (relationRemapCounter.get(key) || 0) + 1);
+          }
+        }
+
+        if ('user_id' in remapped) {
+          remapped.user_id = userId;
+        }
+
+        return remapped;
+      })
+      .filter((row): row is Record<string, any> => Boolean(row));
+
+    entityBreakdown.push({
+      entity,
+      rows: fixedData[entity].length,
+      idAutoConverted: entityIdConversions,
+      relationshipsRemapped: entityFkRemaps,
+    });
+  }
+
+  const relationRemapDetails: ImportPreviewSummary['relationRemapDetails'] = Array.from(relationRemapCounter.entries()).map(([key, count]) => {
+    const [entity, fkColumn, targetEntity] = key.split('|');
+    return { entity, fkColumn, targetEntity, count };
+  });
+
+  const fixedPayload = {
+    ...payload,
+    data: fixedData,
+    exportedAt: payload.exportedAt || new Date().toISOString(),
+  };
+
+  const rowsDetected = preset.entities.reduce((acc, entity) => acc + (Array.isArray(data[entity]) ? data[entity].length : 0), 0);
+
+  return {
+    fixedPayload,
+    warnings,
+    schemaSummary: {
+      entitiesDetected: preset.entities.filter((entity) => Array.isArray(data[entity])).length,
+      rowsDetected,
+      missingEntities,
+      invalidEntityShapes,
+    },
+    entityBreakdown,
+    idAutoConverted: idConversionDetails.length,
+    relationshipsRemapped: rowRemapDetails.length,
+    idConversionDetails,
+    relationRemapDetails,
+    rowRemapDetails,
+  };
 }
 
 export async function fetchEntityData(entity: ExportableEntity, userId: string): Promise<any[]> {
