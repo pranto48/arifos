@@ -129,8 +129,14 @@ export function LicenseSettings() {
   };
 
   const safeDate = (value: unknown, fallback = 'N/A') => {
-    if (typeof value !== 'string' || value.length === 0) return fallback;
-    const d = new Date(value);
+    if (value === null || value === undefined || value === '') return fallback;
+    let d: Date;
+    if (typeof value === 'number') {
+      const ms = value < 1e12 ? value * 1000 : value;
+      d = new Date(ms);
+    } else {
+      d = new Date(String(value));
+    }
     return Number.isNaN(d.getTime()) ? fallback : d.toLocaleDateString();
   };
 
