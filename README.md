@@ -52,6 +52,31 @@ bun dev
 
 The app will be available at `http://localhost:5173`
 
+### Desktop (Windows .exe with Electron)
+
+LifeOS can be packaged as a Windows installer (`LifeOS Setup.exe`) using Electron + electron-builder.
+
+```bash
+# Install dependencies
+npm install
+
+# Run desktop app in development mode (Vite + Electron)
+npm run dev:desktop
+
+# Build distributable Windows installer (.exe)
+npm run dist:win
+```
+
+Generated artifacts are placed in the Electron builder output folder (for example `dist/` or `release/` depending on builder defaults/environment).
+
+#### Desktop server URL configuration
+
+- Electron exposes a secure bridge under `window.lifeosDesktop`.
+- Server URL is saved in the desktop user config file:
+  - `%APPDATA%/LifeOS/desktop-config.json` (Windows typical path via Electron `userData`)
+- Use these renderer helpers:
+  - `getServerUrl()` and `setServerUrl()` in `src/lib/serverConfig.ts`
+
 ### Environment Variables
 
 Create a `.env` file in the root directory:
