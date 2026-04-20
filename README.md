@@ -96,6 +96,17 @@ Generated artifacts are placed in the Electron builder output folder (for exampl
 - Use these renderer helpers:
   - `getServerUrl()` and `setServerUrl()` in `src/lib/serverConfig.ts`
 
+#### Admin panel: download `lifeos.exe`
+
+- In **Settings → Admin Panel → Desktop App**, admins can click **Download lifeos.exe**.
+- Default download URL used by the admin button:
+  - `https://your-domain/downloads/lifeos-setup.exe`
+- To use a custom location (CDN/object storage/etc.), set:
+
+```env
+VITE_WINDOWS_EXE_URL=https://your-domain-or-cdn/path/lifeos-setup.exe
+```
+
 ### Environment Variables
 
 Create a `.env` file in the root directory:
