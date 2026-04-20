@@ -117,6 +117,29 @@ export function LicenseSettings() {
     }
   };
 
+  const safeMaskLicenseKey = (value: unknown) => {
+    if (typeof value !== 'string' || value.length === 0) return 'N/A';
+    if (value.length <= 8) return value;
+    return `${value.slice(0, 8)}...${value.slice(-4)}`;
+  };
+
+  const safeInstallationId = (value: unknown) => {
+    if (typeof value !== 'string' || value.length === 0) return 'N/A';
+    return `${value.slice(0, 20)}...`;
+  };
+
+  const safeDate = (value: unknown, fallback = 'N/A') => {
+    if (value === null || value === undefined || value === '') return fallback;
+    let d: Date;
+    if (typeof value === 'number') {
+      const ms = value < 1e12 ? value * 1000 : value;
+      d = new Date(ms);
+    } else {
+      d = new Date(String(value));
+    }
+    return Number.isNaN(d.getTime()) ? fallback : d.toLocaleDateString();
+  };
+
   return (
     <div className="space-y-6">
       {/* Current License Info */}
@@ -139,22 +162,22 @@ export function LicenseSettings() {
             <div>
               <p className="text-muted-foreground">License Key</p>
               <p className="font-mono text-foreground text-xs">
-                {license.licenseKey.slice(0, 8)}...{license.licenseKey.slice(-4)}
+                {safeMaskLicenseKey(license.licenseKey)}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground">Expires</p>
               <p className="text-foreground">
-                {license.expiresAt ? new Date(license.expiresAt).toLocaleDateString() : 'Never'}
+                {license.expiresAt ? safeDate(license.expiresAt, 'Never') : 'Never'}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground">Installation ID</p>
-              <p className="font-mono text-foreground text-xs truncate">{license.installationId.slice(0, 20)}...</p>
+              <p className="font-mono text-foreground text-xs truncate">{safeInstallationId(license.installationId)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Last Verified</p>
-              <p className="text-foreground">{new Date(license.lastVerified).toLocaleDateString()}</p>
+              <p className="text-foreground">{safeDate(license.lastVerified)}</p>
             </div>
           </div>
 

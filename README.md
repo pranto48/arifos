@@ -52,6 +52,61 @@ bun dev
 
 The app will be available at `http://localhost:5173`
 
+### Desktop (Windows .exe with Electron)
+
+LifeOS can be packaged as a Windows installer (`LifeOS Setup.exe`) using Electron + electron-builder.
+
+```bash
+# Install dependencies
+npm install
+
+# Run desktop app in development mode (Vite + Electron)
+npm run dev:desktop
+
+# Build distributable Windows installer (.exe)
+npm run dist:win
+```
+
+Generated artifacts are placed in the Electron builder output folder (for example `dist/` or `release/` depending on builder defaults/environment).
+
+#### Step-by-step manual to create `LifeOS Setup.exe` (Windows)
+
+1. Install **Node.js 18+** and **Git** on Windows.
+2. Clone project and install dependencies:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/lifeos.git
+   cd lifeos
+   npm install
+   ```
+3. Build installer:
+   ```bash
+   npm run dist:win
+   ```
+4. Find installer in the builder output directory (typically `dist/`).
+5. Run installer on target PC and complete setup.
+
+#### Desktop server URL configuration
+
+- Electron exposes a secure bridge under `window.lifeosDesktop`.
+- Server URL is saved in the desktop user config file:
+  - `%APPDATA%/LifeOS/desktop-config.json` (Windows typical path via Electron `userData`)
+- On first run of installed app, LifeOS Desktop opens a setup window asking for the server address.
+  - Default example value: `https://my.arifmahmud.com`
+  - You can change it before clicking **Save & Continue**.
+- Use these renderer helpers:
+  - `getServerUrl()` and `setServerUrl()` in `src/lib/serverConfig.ts`
+
+#### Admin panel: download `lifeos.exe`
+
+- In **Settings → Admin Panel → Desktop App**, admins can click **Download lifeos.exe**.
+- Default download URL used by the admin button:
+  - `https://your-domain/downloads/lifeos-setup.exe`
+- To use a custom location (CDN/object storage/etc.), set:
+
+```env
+VITE_WINDOWS_EXE_URL=https://your-domain-or-cdn/path/lifeos-setup.exe
+```
+
 ### Environment Variables
 
 Create a `.env` file in the root directory:

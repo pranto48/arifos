@@ -22,10 +22,12 @@ import { CalendarIntegrationSettings } from '@/components/settings/CalendarInteg
 import { AdminSettings } from '@/components/settings/AdminSettings';
 import { AiSettings } from '@/components/settings/AiSettings';
 import { AiHistory } from '@/components/settings/AiHistory';
+import { SelfHostedHealthCard } from '@/components/settings/SelfHostedHealthCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsAdmin } from '@/hooks/useUserRoles';
 import { SectionErrorBoundary } from '@/components/ErrorBoundary';
 import { floatingHeaderClass, pageTitleClass, surfaceCardClass } from '@/lib/design-tokens';
+import { isSelfHosted } from '@/lib/selfHostedConfig';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -53,6 +55,7 @@ export default function Settings() {
       'admin-security': 'security',
       'admin-integrations': 'integrations',
       'admin-license': 'license',
+      'admin-desktop': 'desktop',
     };
     return adminTabMap[activeCategory] || null;
   };
@@ -131,6 +134,7 @@ export default function Settings() {
       'admin-security': { en: 'Admin — Security', bn: 'এডমিন — সিকিউরিটি' },
       'admin-integrations': { en: 'Admin — Integrations', bn: 'এডমিন — ইন্টিগ্রেশন' },
       'admin-license': { en: 'Admin — License', bn: 'এডমিন — লাইসেন্স' },
+      'admin-desktop': { en: 'Admin — Desktop App', bn: 'এডমিন — ডেস্কটপ অ্যাপ' },
     };
     const title = titles[activeCategory] || titles.profile;
     return language === 'bn' ? title.bn : title.en;
