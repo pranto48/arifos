@@ -239,6 +239,29 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
     }
   };
 
+  const safeMaskLicenseKey = (value: unknown) => {
+    if (typeof value !== 'string' || value.length === 0) return 'N/A';
+    if (value === 'FREE') return value;
+    return value.length > 8 ? `${value.slice(0, 8)}...` : value;
+  };
+
+  const safeInstallationId = (value: unknown) => {
+    if (typeof value !== 'string' || value.length === 0) return 'N/A';
+    return `${value.slice(0, 24)}...`;
+  };
+
+  const safeDateTime = (value: unknown, fallback = 'N/A') => {
+    if (typeof value !== 'string' || value.length === 0) return fallback;
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? fallback : d.toLocaleString();
+  };
+
+  const safeDate = (value: unknown, fallback = 'N/A') => {
+    if (typeof value !== 'string' || value.length === 0) return fallback;
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? fallback : d.toLocaleDateString();
+  };
+
   const getLicensePlanIcon = (plan: string) => {
     switch (plan) {
       case 'professional': return <Crown className="w-5 h-5 text-yellow-400" />;
@@ -1149,24 +1172,24 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
                         <div>
                           <p className="text-muted-foreground text-xs">{language === 'bn' ? 'লাইসেন্স কী' : 'License Key'}</p>
                           <p className="font-mono text-foreground text-xs">
-                            {licenseInfo.licenseKey === 'FREE' ? 'FREE' : `${licenseInfo.licenseKey.slice(0, 8)}...`}
+                            {safeMaskLicenseKey(licenseInfo.licenseKey)}
                           </p>
                         </div>
                         <div>
                           <p className="text-muted-foreground text-xs">{language === 'bn' ? 'মেয়াদ শেষ' : 'Expires'}</p>
                           <p className="text-foreground">
                             {licenseInfo.expiresAt
-                              ? new Date(licenseInfo.expiresAt).toLocaleDateString()
+                              ? safeDate(licenseInfo.expiresAt, language === 'bn' ? 'অজানা' : 'Unknown')
                               : (language === 'bn' ? 'কখনো না' : 'Never')}
                           </p>
                         </div>
                         <div>
                           <p className="text-muted-foreground text-xs">{language === 'bn' ? 'ইনস্টলেশন আইডি' : 'Installation ID'}</p>
-                          <p className="font-mono text-foreground text-xs truncate">{licenseInfo.installationId.slice(0, 24)}...</p>
+                          <p className="font-mono text-foreground text-xs truncate">{safeInstallationId(licenseInfo.installationId)}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground text-xs">{language === 'bn' ? 'শেষ যাচাই' : 'Last Verified'}</p>
-                          <p className="text-foreground">{new Date(licenseInfo.lastVerified).toLocaleString()}</p>
+                          <p className="text-foreground">{safeDateTime(licenseInfo.lastVerified, language === 'bn' ? 'অজানা' : 'Unknown')}</p>
                         </div>
                       </div>
 
