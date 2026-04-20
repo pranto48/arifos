@@ -36,6 +36,7 @@ export type SettingsCategory =
   | 'admin-security'
   | 'admin-integrations'
   | 'admin-license'
+  | 'admin-desktop'
   | 'preferences';
 
 interface SettingsNavProps {
@@ -89,6 +90,7 @@ const navItems: NavItem[] = [
   { id: 'admin-security', labelEn: 'Security', labelBn: 'সিকিউরিটি', icon: <Shield className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
   { id: 'admin-integrations', labelEn: 'Integrations', labelBn: 'ইন্টিগ্রেশন', icon: <Key className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
   { id: 'admin-license', labelEn: 'License', labelBn: 'লাইসেন্স', icon: <Crown className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
+  { id: 'admin-desktop', labelEn: 'Desktop App', labelBn: 'ডেস্কটপ অ্যাপ', icon: <Briefcase className="h-3 w-3 md:h-3.5 md:w-3.5" />, group: 'admin', isSubItem: true, parentId: 'admin' },
 ];
 
 const groupLabels = {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DataExportImportButton } from '@/components/shared/DataExportImportButton';
-import { Shield, Users, Key, Loader2, Crown, UserPlus, Trash2, Search, Briefcase, Home, Settings, Calendar, AlertTriangle, Mail, Sparkles, FormInput, ToggleLeft, LayoutGrid, Star, Zap, CheckCircle, XCircle, Clock, ExternalLink, RefreshCw } from 'lucide-react';
+import { Shield, Users, Key, Loader2, Crown, UserPlus, Trash2, Search, Briefcase, Home, Settings, Calendar, AlertTriangle, Mail, Sparkles, FormInput, ToggleLeft, LayoutGrid, Star, Zap, CheckCircle, XCircle, Clock, ExternalLink, RefreshCw, Download, Copy } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -115,6 +115,7 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
   const [loadingLicense, setLoadingLicense] = useState(false);
   const [licenseKeyInput, setLicenseKeyInput] = useState('');
   const [verifyingLicense, setVerifyingLicense] = useState(false);
+  const windowsExeUrl = (import.meta.env.VITE_WINDOWS_EXE_URL as string | undefined)?.trim() || `${window.location.origin}/downloads/lifeos-setup.exe`;
 
   useEffect(() => {
     checkAdminStatus();
@@ -209,6 +210,56 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
     } finally {
       setLoadingLicense(false);
     }
+  };
+
+  const handleDownloadWindowsExe = () => {
+    const link = document.createElement('a');
+    link.href = windowsExeUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.download = 'lifeos-setup.exe';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleCopyExeUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(windowsExeUrl);
+      toast({
+        title: language === 'bn' ? 'কপি করা হয়েছে' : 'Copied',
+        description: language === 'bn' ? 'ডাউনলোড লিংক কপি হয়েছে।' : 'Download URL copied.',
+      });
+    } catch {
+      toast({
+        title: language === 'bn' ? 'ত্রুটি' : 'Error',
+        description: language === 'bn' ? 'লিংক কপি করা যায়নি।' : 'Failed to copy download URL.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const safeMaskLicenseKey = (value: unknown) => {
+    if (typeof value !== 'string' || value.length === 0) return 'N/A';
+    if (value === 'FREE') return value;
+    return value.length > 8 ? `${value.slice(0, 8)}...` : value;
+  };
+
+  const safeInstallationId = (value: unknown) => {
+    if (typeof value !== 'string' || value.length === 0) return 'N/A';
+    return `${value.slice(0, 24)}...`;
+  };
+
+  const safeDateTime = (value: unknown, fallback = 'N/A') => {
+    if (typeof value !== 'string' || value.length === 0) return fallback;
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? fallback : d.toLocaleString();
+  };
+
+  const safeDate = (value: unknown, fallback = 'N/A') => {
+    if (typeof value !== 'string' || value.length === 0) return fallback;
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? fallback : d.toLocaleDateString();
   };
 
   const getLicensePlanIcon = (plan: string) => {
@@ -1041,6 +1092,53 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
             </div>
             )}
 
+            {/* Desktop App Download */}
+            {activeTab === 'desktop' && (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border p-4 bg-muted/30 space-y-3">
+                  <h4 className="font-medium text-foreground flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    {language === 'bn' ? 'Windows LifeOS Setup (.exe)' : 'Windows LifeOS Setup (.exe)'}
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {language === 'bn'
+                      ? 'এই বাটনে ক্লিক করলে LifeOS Windows সেটআপ ফাইল ডাউনলোড হবে।'
+                      : 'Click the button below to download the LifeOS Windows setup file.'}
+                  </p>
+
+                  <div className="rounded-md border bg-background p-2 text-xs font-mono break-all">
+                    {windowsExeUrl}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={handleDownloadWindowsExe}>
+                      <Download className="h-4 w-4 mr-2" />
+                      {language === 'bn' ? 'LifeOS.exe ডাউনলোড' : 'Download lifeos.exe'}
+                    </Button>
+                    <Button variant="outline" onClick={handleCopyExeUrl}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      {language === 'bn' ? 'লিংক কপি' : 'Copy Link'}
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <a href={windowsExeUrl} target="_blank" rel="noreferrer">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        {language === 'bn' ? 'লিংক খুলুন' : 'Open Link'}
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    {language === 'bn'
+                      ? 'সার্ভারে `lifeos-setup.exe` ফাইল হোস্ট করুন। কাস্টম লিংক ব্যবহার করতে `.env`-এ `VITE_WINDOWS_EXE_URL` সেট করুন।'
+                      : 'Host `lifeos-setup.exe` on your server. To use a custom link, set `VITE_WINDOWS_EXE_URL` in `.env`.'}
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
             {/* License Information */}
             {activeTab === 'license' && (
             <div className="space-y-4">
@@ -1074,24 +1172,24 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
                         <div>
                           <p className="text-muted-foreground text-xs">{language === 'bn' ? 'লাইসেন্স কী' : 'License Key'}</p>
                           <p className="font-mono text-foreground text-xs">
-                            {licenseInfo.licenseKey === 'FREE' ? 'FREE' : `${licenseInfo.licenseKey.slice(0, 8)}...`}
+                            {safeMaskLicenseKey(licenseInfo.licenseKey)}
                           </p>
                         </div>
                         <div>
                           <p className="text-muted-foreground text-xs">{language === 'bn' ? 'মেয়াদ শেষ' : 'Expires'}</p>
                           <p className="text-foreground">
                             {licenseInfo.expiresAt
-                              ? new Date(licenseInfo.expiresAt).toLocaleDateString()
+                              ? safeDate(licenseInfo.expiresAt, language === 'bn' ? 'অজানা' : 'Unknown')
                               : (language === 'bn' ? 'কখনো না' : 'Never')}
                           </p>
                         </div>
                         <div>
                           <p className="text-muted-foreground text-xs">{language === 'bn' ? 'ইনস্টলেশন আইডি' : 'Installation ID'}</p>
-                          <p className="font-mono text-foreground text-xs truncate">{licenseInfo.installationId.slice(0, 24)}...</p>
+                          <p className="font-mono text-foreground text-xs truncate">{safeInstallationId(licenseInfo.installationId)}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground text-xs">{language === 'bn' ? 'শেষ যাচাই' : 'Last Verified'}</p>
-                          <p className="text-foreground">{new Date(licenseInfo.lastVerified).toLocaleString()}</p>
+                          <p className="text-foreground">{safeDateTime(licenseInfo.lastVerified, language === 'bn' ? 'অজানা' : 'Unknown')}</p>
                         </div>
                       </div>
 
