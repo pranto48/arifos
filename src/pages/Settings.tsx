@@ -22,10 +22,12 @@ import { CalendarIntegrationSettings } from '@/components/settings/CalendarInteg
 import { AdminSettings } from '@/components/settings/AdminSettings';
 import { AiSettings } from '@/components/settings/AiSettings';
 import { AiHistory } from '@/components/settings/AiHistory';
+import { SelfHostedHealthCard } from '@/components/settings/SelfHostedHealthCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsAdmin } from '@/hooks/useUserRoles';
 import { SectionErrorBoundary } from '@/components/ErrorBoundary';
 import { floatingHeaderClass, pageTitleClass, surfaceCardClass } from '@/lib/design-tokens';
+import { isSelfHosted } from '@/lib/selfHostedConfig';
 
 export default function Settings() {
   const { user } = useAuth();
