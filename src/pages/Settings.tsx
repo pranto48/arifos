@@ -53,6 +53,7 @@ export default function Settings() {
       'admin-security': 'security',
       'admin-integrations': 'integrations',
       'admin-license': 'license',
+      'admin-desktop': 'desktop',
     };
     return adminTabMap[activeCategory] || null;
   };
@@ -131,6 +132,7 @@ export default function Settings() {
       'admin-security': { en: 'Admin — Security', bn: 'এডমিন — সিকিউরিটি' },
       'admin-integrations': { en: 'Admin — Integrations', bn: 'এডমিন — ইন্টিগ্রেশন' },
       'admin-license': { en: 'Admin — License', bn: 'এডমিন — লাইসেন্স' },
+      'admin-desktop': { en: 'Admin — Desktop App', bn: 'এডমিন — ডেস্কটপ অ্যাপ' },
     };
     const title = titles[activeCategory] || titles.profile;
     return language === 'bn' ? title.bn : title.en;
