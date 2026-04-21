@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBiometricAuth } from '@/hooks/useBiometricAuth';
 import { useRateLimit } from '@/hooks/useRateLimit';
 import { useTrustedDevice } from '@/hooks/useTrustedDevice';
+import { usePortalBranding } from '@/hooks/usePortalBranding';
 import { supabase } from '@/integrations/supabase/client';
 import { isSelfHosted } from '@/lib/selfHostedConfig';
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,7 @@ export default function Auth() {
   const [emailOtpSending, setEmailOtpSending] = useState(false);
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [pendingMfaUserId, setPendingMfaUserId] = useState<string | null>(null);
+  const { portalName, portalLogoUrl } = usePortalBranding();
 
   const { signIn, signUp, user, session } = useAuth();
   const navigate = useNavigate();
@@ -441,10 +443,18 @@ export default function Auth() {
             transition={{ delay: 0.2 }}
             className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 mb-4"
           >
-            <Shield className="w-8 h-8 text-primary" />
+            {portalLogoUrl ? (
+              <img
+                src={portalLogoUrl}
+                alt={`${portalName} logo`}
+                className="w-10 h-10 rounded-md object-contain"
+              />
+            ) : (
+              <Shield className="w-8 h-8 text-primary" />
+            )}
           </motion.div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            <span className="text-primary">LifeOS</span>
+            <span className="text-primary">{portalName}</span>
           </h1>
           <p className="text-muted-foreground">
             Your personal life management system

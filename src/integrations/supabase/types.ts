@@ -140,6 +140,8 @@ export type Database = {
           id: string
           internal_analytics_enabled: boolean
           onboarding_enabled: boolean
+          portal_logo_url: string | null
+          portal_name: string | null
           updated_at: string
         }
         Insert: {
@@ -147,6 +149,8 @@ export type Database = {
           id?: string
           internal_analytics_enabled?: boolean
           onboarding_enabled?: boolean
+          portal_logo_url?: string | null
+          portal_name?: string | null
           updated_at?: string
         }
         Update: {
@@ -154,6 +158,8 @@ export type Database = {
           id?: string
           internal_analytics_enabled?: boolean
           onboarding_enabled?: boolean
+          portal_logo_url?: string | null
+          portal_name?: string | null
           updated_at?: string
         }
         Relationships: []

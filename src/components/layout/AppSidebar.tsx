@@ -32,6 +32,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDashboardMode } from "@/contexts/DashboardModeContext";
 import { useModuleConfig } from "@/hooks/useModuleConfig";
+import { usePortalBranding } from "@/hooks/usePortalBranding";
 import { cn } from "@/lib/utils";
 import { avatarBadgeClass, iconBadgeClass, sidebarNavItemActiveClass, sidebarNavItemCollapsedClass, sidebarNavItemExpandedClass, sidebarNavItemInactiveClass, sidebarPanelClass } from "@/lib/design-tokens";
 import { Button } from "@/components/ui/button";
@@ -242,6 +243,7 @@ export function AppSidebar() {
   const { t, language } = useLanguage();
   const { mode } = useDashboardMode();
   const { isModuleEnabled } = useModuleConfig();
+  const { portalName, portalLogoUrl } = usePortalBranding();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -301,10 +303,20 @@ export function AppSidebar() {
               className="flex items-center gap-3"
             >
               <div className={iconBadgeClass}>
-                <span className="text-primary font-bold text-sm">L</span>
+                {portalLogoUrl ? (
+                  <img
+                    src={portalLogoUrl}
+                    alt={`${portalName} logo`}
+                    className="h-5 w-5 rounded object-contain"
+                  />
+                ) : (
+                  <span className="text-primary font-bold text-sm">
+                    {portalName.charAt(0).toUpperCase() || "L"}
+                  </span>
+                )}
               </div>
               <span className="font-semibold text-sidebar-foreground">
-                LifeOS
+                {portalName}
               </span>
             </motion.div>
           )}

@@ -107,6 +107,8 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
   // App settings state
   const [onboardingEnabled, setOnboardingEnabled] = useState(true);
   const [internalAnalyticsEnabled, setInternalAnalyticsEnabled] = useState(true);
+  const [portalName, setPortalName] = useState('LifeOS');
+  const [portalLogoUrl, setPortalLogoUrl] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
 
   // License state
@@ -301,20 +303,31 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
     try {
       const { data } = await supabase
         .from('app_settings')
-        .select('onboarding_enabled, internal_analytics_enabled')
+        .select('onboarding_enabled, internal_analytics_enabled, portal_name, portal_logo_url')
         .eq('id', 'default')
         .maybeSingle();
       
       if (data) {
         setOnboardingEnabled(data.onboarding_enabled);
         setInternalAnalyticsEnabled(data.internal_analytics_enabled ?? true);
+        setPortalName(data.portal_name?.trim() || 'LifeOS');
+        setPortalLogoUrl(data.portal_logo_url?.trim() || '');
       }
     } catch (error) {
       console.error('Failed to load app settings:', error);
     }
   };
 
-  const updateAppSetting = async (updates: { onboarding_enabled?: boolean; internal_analytics_enabled?: boolean }, successMessage: string, successMessageBn: string) => {
+  const updateAppSetting = async (
+    updates: {
+      onboarding_enabled?: boolean;
+      internal_analytics_enabled?: boolean;
+      portal_name?: string;
+      portal_logo_url?: string | null;
+    },
+    successMessage: string,
+    successMessageBn: string,
+  ) => {
     setSavingSettings(true);
     try {
       const { error } = await supabase
@@ -330,6 +343,12 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
       if (typeof updates.internal_analytics_enabled === 'boolean') {
         setInternalAnalyticsEnabled(updates.internal_analytics_enabled);
         resetInternalAnalyticsSettingCache(updates.internal_analytics_enabled);
+      }
+      if (typeof updates.portal_name === 'string') {
+        setPortalName(updates.portal_name.trim() || 'LifeOS');
+      }
+      if (Object.prototype.hasOwnProperty.call(updates, 'portal_logo_url')) {
+        setPortalLogoUrl((updates.portal_logo_url || '').trim());
       }
 
       toast({
@@ -361,6 +380,17 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
       { internal_analytics_enabled: enabled },
       `Internal analytics ${enabled ? 'enabled' : 'disabled'}.`,
       `ইন্টারনাল অ্যানালিটিক্স ${enabled ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে।`,
+    );
+  };
+
+  const updatePortalBranding = async () => {
+    await updateAppSetting(
+      {
+        portal_name: portalName.trim() || 'LifeOS',
+        portal_logo_url: portalLogoUrl.trim() || null,
+      },
+      'Portal branding updated.',
+      'পোর্টাল ব্র্যান্ডিং আপডেট হয়েছে।',
     );
   };
 
@@ -725,6 +755,88 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
                   </div>
                 </div>
 
+                <div className="p-4 rounded-lg bg-muted/50 border border-border space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                      <Star className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-foreground">
+                        {language === 'bn' ? 'পোর্টাল ব্র্যান্ডিং' : 'Portal Branding'}
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {language === 'bn'
+                          ? 'লোগো URL এবং পোর্টালের নাম সেট করুন।'
+                          : 'Set a portal name and logo URL for auth, sidebar, and mobile header.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="portal-name">
+                        {language === 'bn' ? 'পোর্টালের নাম' : 'Portal Name'}
+                      </Label>
+                      <Input
+                        id="portal-name"
+                        value={portalName}
+                        maxLength={120}
+                        onChange={(e) => setPortalName(e.target.value)}
+                        placeholder="LifeOS"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="portal-logo-url">
+                        {language === 'bn' ? 'লোগো URL' : 'Logo URL'}
+                      </Label>
+                      <Input
+                        id="portal-logo-url"
+                        value={portalLogoUrl}
+                        onChange={(e) => setPortalLogoUrl(e.target.value)}
+                        placeholder="https://example.com/logo.png"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 rounded-md border border-border bg-background p-3">
+                    <div className="h-10 w-10 rounded-md border border-border flex items-center justify-center bg-muted/20 overflow-hidden">
+                      {portalLogoUrl.trim() ? (
+                        <img src={portalLogoUrl.trim()} alt="Portal logo preview" className="h-8 w-8 object-contain" />
+                      ) : (
+                        <span className="text-sm font-semibold text-primary">
+                          {(portalName.trim() || 'LifeOS').charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{portalName.trim() || 'LifeOS'}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {language === 'bn' ? 'লাইভ প্রিভিউ' : 'Live preview'}
+                      </p>
+                    </div>
+                    <div className="ml-auto flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setPortalName('LifeOS');
+                          setPortalLogoUrl('');
+                        }}
+                        disabled={savingSettings}
+                      >
+                        {language === 'bn' ? 'রিসেট' : 'Reset'}
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={updatePortalBranding}
+                        disabled={savingSettings}
+                      >
+                        {savingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === 'bn' ? 'সেভ' : 'Save')}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
                 <Alert>
                   <Settings className="h-4 w-4" />
                   <AlertDescription>
@@ -1028,8 +1140,9 @@ export function AdminSettings({ activeTab = 'general', onAdminStatusChange }: Ad
                     </Badge>
                   </div>
                 </div>
+                </div>
+
               </div>
-            </div>
             )}
 
             {/* Integrations Settings */}

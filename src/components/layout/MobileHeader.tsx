@@ -16,6 +16,7 @@ import { AiStatusWidget } from "./AiStatusWidget";
 import { AiQuickActionBar } from '@/components/ai/AiQuickActionBar';
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePortalBranding } from "@/hooks/usePortalBranding";
 import { cn } from "@/lib/utils";
 import { avatarBadgeClass, floatingHeaderClass, iconBadgeClass, sidebarPanelClass } from "@/lib/design-tokens";
 
@@ -24,6 +25,7 @@ const mobileHeaderClass = `${floatingHeaderClass} safe-area-pt md:hidden z-40`;
 export function MobileHeader() {
   const { signOut, user } = useAuth();
   const { t } = useLanguage();
+  const { portalName, portalLogoUrl } = usePortalBranding();
   const [profileOpen, setProfileOpen] = useState(false);
   const [topQuickActionIds, setTopQuickActionIds] = useState<string[]>([]);
   const { actionById } = useQuickActions();
@@ -55,10 +57,20 @@ export function MobileHeader() {
         {/* Logo */}
         <div className="flex items-center gap-2">
           <div className={iconBadgeClass}>
-            <span className="text-primary font-bold text-sm">L</span>
+            {portalLogoUrl ? (
+              <img
+                src={portalLogoUrl}
+                alt={`${portalName} logo`}
+                className="h-5 w-5 rounded object-contain"
+              />
+            ) : (
+              <span className="text-primary font-bold text-sm">
+                {portalName.charAt(0).toUpperCase() || "L"}
+              </span>
+            )}
           </div>
           <div className="min-w-0">
-            <span className="block truncate text-sm font-semibold text-foreground">LifeOS</span>
+            <span className="block truncate text-sm font-semibold text-foreground">{portalName}</span>
             <span className="block text-[11px] text-muted-foreground">Mobile workspace</span>
           </div>
         </div>
