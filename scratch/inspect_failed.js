@@ -7,22 +7,12 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const email = 'mail@arifmahmud.com';
 const password = 'a329093+';
 
-const failedIds = [
-  '504003e6-b4e0-49c0-bf0f-29e85342939d',
-  'a4d9732a-f803-4070-a7b7-2945735ceb2c'
-];
-
-async function inspectFailed() {
+async function inspectSpecific() {
   const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_PUBLISHABLE_KEY);
-  const { data: supaAuth } = await supabase.auth.signInWithPassword({ email, password });
+  await supabase.auth.signInWithPassword({ email, password });
   
-  const { data: categories } = await supabase.from('budget_categories').select('*');
-  
-  for (const cat of categories || []) {
-    if (failedIds.includes(cat.id)) {
-      console.log('Failed Category:', JSON.stringify(cat, null, 2));
-    }
-  }
+  const { data: cat } = await supabase.from('budget_categories').select('*').eq('id', 'f4a8d7c8-0ddd-4f33-8e79-0fd2acd55a54').maybeSingle();
+  console.log('Category contents:', JSON.stringify(cat, null, 2));
 }
 
-inspectFailed();
+inspectSpecific();
