@@ -23,7 +23,8 @@ const firebaseConfig = {
 };
 
 const email = 'mail@arifmahmud.com';
-const password = 'Aa329093+-';
+const supaPassword = 'a329093+';
+const fbPassword = 'a329093+';
 
 const tables = [
   'profiles',
@@ -107,7 +108,7 @@ async function runMigration() {
   console.log(`Authenticating to Supabase as ${email}...`);
   const { data: supaAuth, error: supaAuthErr } = await supabase.auth.signInWithPassword({
     email,
-    password
+    password: supaPassword
   });
 
   if (supaAuthErr || !supaAuth.user) {
@@ -128,7 +129,7 @@ async function runMigration() {
   console.log(`Authenticating to Firebase as ${email}...`);
   let fbUser;
   try {
-    const fbAuth = await signInWithEmailAndPassword(auth, email, password);
+    const fbAuth = await signInWithEmailAndPassword(auth, email, fbPassword);
     fbUser = fbAuth.user;
   } catch (fbAuthErr) {
     console.error('Failed to authenticate with Firebase:', fbAuthErr);
@@ -186,7 +187,7 @@ async function runMigration() {
       try {
         await setDoc(doc(db, table, docId), mappedRow);
         count++;
-      } catch (writeErr: any) {
+      } catch (writeErr) {
         console.error(`Failed to write row to Firestore collection ${table} (ID: ${docId}):`, writeErr.message);
       }
     }
